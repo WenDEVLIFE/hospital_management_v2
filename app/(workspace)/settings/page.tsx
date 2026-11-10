@@ -1,112 +1,143 @@
-"use client";
+import {
+  BedIcon,
+  Buildings2Icon,
+  HistoryIcon,
+  PaletteIcon,
+  ServerIcon,
+  UsersGroupTwoRoundedIcon,
+} from "@solar-icons/react/linear";
 
-import * as React from "react";
-import { useHospital } from "@/lib/context/hospital-context";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { Alert } from "@/components/ui/alert";
-import { Save, Shield, Hospital } from "lucide-react";
+import { PageHeader } from "@/components/layout/page-header";
+import { PageSection } from "@/components/layout/page-section";
+import {
+  SettingsLinkList,
+  type SettingsLink,
+} from "@/components/settings/settings-link-list";
+import { StatusBadge } from "@/components/ui/status-badge";
+
+export const metadata = {
+  title: "Settings",
+};
+
+const ADMINISTRATION_LINKS: SettingsLink[] = [
+  {
+    href: "/settings/users",
+    title: "User Management",
+    description: "Staff accounts, roles and access.",
+    icon: UsersGroupTwoRoundedIcon,
+  },
+  {
+    href: "/audit-logs",
+    title: "Audit Logs",
+    description: "Accountability trail for sensitive operations.",
+    icon: HistoryIcon,
+  },
+];
+
+const REFERENCE_LINKS: SettingsLink[] = [
+  {
+    href: "/departments",
+    title: "Departments",
+    description: "Hospital departments and service units.",
+    icon: Buildings2Icon,
+  },
+  {
+    href: "/rooms-beds",
+    title: "Rooms & Beds",
+    description: "Room inventory and bed availability.",
+    icon: BedIcon,
+  },
+];
 
 export default function SettingsPage() {
-  const { systemMode } = useHospital();
-  const [saved, setSaved] = React.useState(false);
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-xl font-bold text-hospital-green-dark">
-          Platform Settings
-        </h1>
-        <p className="text-xs text-hospital-text-muted mt-0.5">
-          Configure hospital institution defaults, generation parameters, and governance policies
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Settings"
+        description="System configuration and administration."
+      />
 
-      {saved && (
-        <Alert variant="success" title="Settings Saved">
-          Hospital platform configuration updated successfully.
-        </Alert>
-      )}
+      <PageSection
+        title="Administration"
+        description="Management areas for hospital system administration."
+      >
+        <SettingsLinkList items={ADMINISTRATION_LINKS} />
+      </PageSection>
 
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* Hospital Institution Profile */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Hospital className="w-4 h-4 text-hospital-green" />
-              Hospital Institution Profile
-            </CardTitle>
-            <CardDescription>
-              Hospital branding injected into auto-generated documentation and forms
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Hospital Name"
-                defaultValue="Southern Philippines Medical Center"
-                disabled
-              />
-              <Input
-                label="Facility Code"
-                defaultValue="DOH-SPMC-DVO-001"
-                disabled
-              />
+      <PageSection
+        title="Hospital reference data"
+        description="Departments, rooms and beds used across hospital modules."
+      >
+        <SettingsLinkList items={REFERENCE_LINKS} />
+      </PageSection>
+
+      <PageSection title="Backend" description="Connection state for this build.">
+        <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-hospital-border bg-hospital-surface p-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-hospital-surface-muted text-hospital-text-muted">
+              <ServerIcon className="size-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-hospital-text">
+                Supabase connection
+              </p>
+              <p className="mt-0.5 text-xs text-hospital-text-muted">
+                Not configured
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-hospital-text-muted">
+                Authentication, database access and storage are not connected in
+                this build.
+              </p>
             </div>
-            <Input
-              label="Location / Address"
-              defaultValue="J.P. Laurel Avenue, Bajada, Davao City, 8000 Davao del Sur, Philippines"
-            />
-          </CardContent>
-        </Card>
+          </div>
+          <StatusBadge status="inactive" />
+        </div>
+      </PageSection>
 
-        {/* System Mode Governance (PROJECT.MD §5) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-hospital-green" />
-              Governance & System Modes
-            </CardTitle>
-            <CardDescription>
-              Define approval thresholds for Standard vs Complex System Modes
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Select
-                label="Default System Mode for New Projects"
-                defaultValue={systemMode}
-                options={[
-                  { label: "Standard Mode (1 Sign-off Required)", value: "standard" },
-                  { label: "Complex Mode (2+ Multi-Reviewer Sign-offs)", value: "complex" },
-                ]}
-              />
+      <PageSection
+        title="Interface"
+        description="Read-only values from the current design system theme."
+      >
+        <div className="flex items-center gap-2">
+          <PaletteIcon
+            className="size-4 text-hospital-text-muted"
+            aria-hidden="true"
+          />
+          <p className="text-xs text-hospital-text-muted">
+            Current theme values
+          </p>
+        </div>
 
-              <Select
-                label="Statutory Audit Retention Policy"
-                defaultValue="7_years"
-                options={[
-                  { label: "7 Years (Standard Clinical DOH Audit)", value: "7_years" },
-                  { label: "10 Years (Permanent Statutory Archive)", value: "10_years" },
-                ]}
+        <dl className="mt-3 grid gap-4 sm:grid-cols-3">
+          <div>
+            <dt className="text-[11px] font-medium text-hospital-text-muted">
+              Primary color token
+            </dt>
+            <dd className="mt-1 flex flex-wrap items-center gap-2 text-sm text-hospital-text">
+              <span
+                className="size-4 rounded-sm border border-hospital-border bg-hospital-green"
+                aria-hidden="true"
               />
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            <Button type="submit">
-              <Save className="w-4 h-4 mr-1.5" /> Save Preferences
-            </Button>
-          </CardFooter>
-        </Card>
-      </form>
+              <span className="font-mono text-xs">--hospital-green</span>
+              <span className="text-hospital-text-muted">#007A55</span>
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[11px] font-medium text-hospital-text-muted">
+              Base font size
+            </dt>
+            <dd className="mt-1 text-sm text-hospital-text">13px</dd>
+          </div>
+          <div>
+            <dt className="text-[11px] font-medium text-hospital-text-muted">
+              Interface font
+            </dt>
+            <dd className="mt-1 text-sm text-hospital-text">
+              Plus Jakarta Sans
+            </dd>
+          </div>
+        </dl>
+      </PageSection>
     </div>
   );
 }
