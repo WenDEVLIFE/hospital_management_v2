@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Activity } from "lucide-react";
+import { BrandPanel } from "@/components/auth/brand-panel";
 
 export default function AuthLayout({
   children,
@@ -7,21 +7,13 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-hospital-surface p-4">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-6 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-hospital-green text-white shadow-xs mb-3">
-            <Activity className="h-7 w-7 stroke-[2.5]" />
-          </div>
-          <h1 className="text-xl font-bold text-hospital-green-dark">
-            Southern Philippines Medical Center
-          </h1>
-          <p className="text-xs text-hospital-text-muted mt-1">
-            Integrated System & Documentation Generation Platform
-          </p>
+    <div className="grid min-h-screen w-full bg-hospital-surface lg:grid-cols-[minmax(0,1fr)_480px]">
+      <BrandPanel />
+      <main className="flex items-center justify-center bg-hospital-surface px-4 py-10 sm:px-6 lg:px-4">
+        <div className="w-full max-w-md rounded-md border border-hospital-border bg-white p-6 shadow-xs">
+          {children}
         </div>
-        {children}
-      </div>
+      </main>
     </div>
   );
 }
