@@ -1,103 +1,237 @@
-# SUPABASE.md — Supabase Implementation Specification
+# SUPABASE.md — Hospital Management System Implementation Specification
 
-Companion document to `docs/PROJECT.MD`. `PROJECT.MD` defines **what** the platform must do; this document defines **how Supabase is wired** to do it: schema, RLS, Storage, Realtime, Edge Functions, client integration, migrations, and testing.
-
-If the two documents ever disagree, `PROJECT.MD` wins. Update this document whenever the Supabase implementation changes.
-
----
-
-## 1. Non-Negotiable Architecture
-
-- **Supabase is the only backend.** No Express, FastAPI, standalone Node.js, or Python server.
-- The React/Next.js frontend talks to Supabase **directly** through `@supabase/supabase-js` and `@supabase/ssr`.
-- Authorization is enforced **in the database** with Row Level Security. Frontend route guards are UX only.
-- Only the **publishable/anon key** may ever reach the browser. The service-role key lives **only** inside Edge Function secrets.
-- Supabase Auth owns identity. `auth.users` is the identity table; `public.profiles` is the application profile.
-- Supabase Storage owns files. Supabase Realtime is used only where live updates are a real requirement.
-- Edge Functions are the exception, not the default: use them only for secrets, privileged admin operations, or heavy trusted processing.
-
-### What this forbids in practice
-
-- Creating `/api/*` route handlers to proxy Supabase calls.
-- Duplicating Auth/Storage/Realtime behind custom wrappers.
-- Reading `SUPABASE_SERVICE_ROLE_KEY` anywhere outside an Edge Function.
-- Trusting `project_members` checks done only in React.
+**Project:** SPMC Hospital Management System (HMS)  
+**Institution:** Southern Philippines Medical Center (SPMC)  
+**Backend Platform:** Supabase  
+**Database:** PostgreSQL  
+**Frontend:** React + TypeScript + Tailwind CSS  
+**Architecture:** Supabase Direct Client Integration
 
 ---
 
-## 2. Stack Facts (This Repository)
+# 1. Document Purpose & Architecture Rules
 
-| Item | Value |
+## 1.1 Purpose
+
+This document defines the complete Supabase implementation architecture for the Hospital Management System.
+
+`PROJECT.md` defines the functional requirements, modules, workflows, and business rules.
+
+`THEME.md` defines the interface design system, visual identity, and UI/UX standards.
+
+`SUPABASE.md` defines the backend implementation, including:
+
+- PostgreSQL database schema
+- Table relationships
+- Authentication
+- Role-based access control
+- Row Level Security (RLS)
+- Storage buckets and policies
+- Realtime subscriptions
+- Database functions and triggers
+- Edge Functions
+- Migrations
+- Type generation
+- Security testing
+- Deployment procedures
+
+If the documents conflict:
+
+1. `PROJECT.md` is the source of truth for system functionality.
+2. `THEME.md` is the source of truth for visual presentation.
+3. `SUPABASE.md` is the source of truth for Supabase implementation.
+
+## 1.2 Non-Negotiable Architecture
+
+**Supabase is the only backend.**
+
+The frontend communicates directly with Supabase using:
+
+- `@supabase/supabase-js`
+- `@supabase/ssr`
+
+Supabase provides:
+
+- PostgreSQL database
+- Authentication
+- Row Level Security
+- File storage
+- Realtime subscriptions
+- Database functions
+- Edge Functions
+
+Do not introduce another backend.
+
+### Forbidden Architecture
+
+Do not implement:
+
+- Express.js REST API
+- FastAPI backend
+- Standalone Node.js API server
+- Python backend server
+- Separate authentication server
+- Separate database server
+- Custom REST API proxies for Supabase
+- Separate ORM-based database layer
+- Another file-upload service
+
+Do not create `/api/*` route handlers simply to forward ordinary database requests to Supabase.
+
+Next.js Server Components and Server Actions may be used for frontend rendering and application workflows, but they must not become a replacement backend or bypass Supabase authorization.
+
+## 1.3 Database Security Principles
+
+- Enable RLS on every application table exposed through Supabase.
+- Use authenticated users for normal application access.
+- Enforce authorization at the database level.
+- Never trust frontend-only role checks.
+- Never expose the service-role key in browser code.
+- Never allow unauthorized users to access patient records by changing URLs or IDs.
+- Keep clinical, financial, and administrative records protected.
+- Maintain audit records for sensitive operations.
+- Use database transactions for multi-step operations that must succeed or fail together.
+
+## 1.4 Supabase Key Rules
+
+Only the publishable key may be used in the browser.
+
+The service-role key must never be included in:
+
+- React components
+- Browser JavaScript
+- Client-side environment variables
+- Public GitHub repositories
+- Frontend bundles
+- Browser network responses
+
+Privileged operations must use authorized Edge Functions and properly protected secrets.
+
+---
+
+# 2. Technology Stack & Dependencies
+
+## 2.1 Approved Stack
+
+| Component | Technology |
 |---|---|
-| Framework | Next.js `16.4.3` (App Router) |
-| UI | React `19.3.0`, Tailwind CSS `4` |
-| Language | TypeScript `5`, `strict: true` |
-| Path alias | `@/*` → repository root |
-| Backend | Supabase only |
-| Node modules | Not installed yet — run `npm install` before wiring the client |
+| Frontend Framework | Next.js / React |
+| Language | TypeScript |
+| Styling | Tailwind CSS 4 |
+| Backend Platform | Supabase |
+| Database | PostgreSQL |
+| Authentication | Supabase Auth |
+| Authorization | PostgreSQL RLS |
+| File Storage | Supabase Storage |
+| Realtime | Supabase Realtime |
+| Input Validation | Zod |
+| Database Client | Supabase JavaScript SDK |
+| SSR Integration | Supabase SSR |
+| Database Migrations | Supabase CLI |
+| Database Types | Supabase Type Generation |
 
-### Packages to add
+Use the existing repository versions rather than arbitrarily upgrading dependencies.
+
+## 2.2 Required Packages
 
 ```bash
 npm install @supabase/supabase-js @supabase/ssr zod
+
 npm install -D supabase
 ```
 
-- `@supabase/supabase-js` — browser client, database, storage, realtime.
-- `@supabase/ssr` — cookie-based session handling for the App Router (uses `getAll`/`setAll` cookie accessors).
-- `zod` — input validation before every mutation.
-- `supabase` (CLI) — local stack, migrations, type generation.
+Package responsibilities:
 
-Do not add a separate ORM, an auth library, or a file-upload service. Supabase already provides those.
+- `@supabase/supabase-js` — Database queries, authentication, storage, and realtime.
+- `@supabase/ssr` — Cookie-based authentication for server-rendered Next.js applications.
+- `zod` — Input validation before database mutations.
+- `supabase` — Supabase CLI for local development, migrations, and type generation.
 
-### Next.js 16 breaking change that affects this document
-
-Next.js 16 renamed **Middleware** to **Proxy**. Create `proxy.ts` at the repository root and export a function named `proxy` — not `middleware.ts`/`middleware`. Session refresh must run there, because server-rendered pages cannot reliably write cookies themselves.
+Do not add a separate ORM or authentication provider.
 
 ---
 
-## 3. Environment Configuration
+# 3. Environment Configuration
 
-`.env.local` (never committed — `.env*` is already git-ignored):
+## 3.1 Environment Variables
+
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
+```
+
+Only the Supabase URL and publishable key belong in the frontend environment.
+
+For privileged Edge Function operations, configure secrets separately:
 
 ```bash
-# Browser-safe (publishable key is the current name; anon key remains valid)
-NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-
-# Server-only: Edge Function runtime secrets ONLY. Never prefix with NEXT_PUBLIC_.
-SUPABASE_SERVICE_ROLE_KEY=...
-AI_PROVIDER_API_KEY=...
+npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
 ```
 
-Rules:
+Additional third-party provider secrets must also be stored through the appropriate secure secret-management mechanism.
 
-1. `NEXT_PUBLIC_*` values are baked into the browser bundle. Treat them as public.
-2. The service-role key must never appear in `.env.local` consumed by the Next.js runtime, only in `supabase secrets` for Edge Functions.
-3. CI must fail if `SUPABASE_SERVICE_ROLE_KEY` is referenced outside `supabase/functions/**`.
-4. Keep a checked-in `.env.example` with empty values and comments.
+## 3.2 Environment Rules
+
+1. Never commit `.env.local`.
+2. Never prefix secret keys with `NEXT_PUBLIC_`.
+3. Never place the service-role key in the Next.js application environment.
+4. Never hardcode Supabase credentials.
+5. Keep `.env.example` with empty placeholder values.
+6. Validate required public environment variables during application initialization.
+
+Example `.env.example`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+```
 
 ---
 
-## 4. Client Architecture
+# 4. Supabase Client Architecture
 
-Create exactly **one** Supabase client per execution context. Never instantiate inside components or rerender paths.
+## 4.1 Recommended Directory Structure
 
+```text
+src/
+├── lib/
+│   └── supabase/
+│       ├── client.ts
+│       ├── server.ts
+│       ├── proxy.ts
+│       ├── storage.ts
+│       ├── realtime.ts
+│       └── queries/
+│           ├── patients.ts
+│           ├── appointments.ts
+│           ├── admissions.ts
+│           ├── medical-records.ts
+│           ├── staff.ts
+│           ├── nursing.ts
+│           ├── laboratory.ts
+│           ├── radiology.ts
+│           ├── pharmacy.ts
+│           ├── billing.ts
+│           ├── inventory.ts
+│           ├── reports.ts
+│           └── users.ts
+│
+├── types/
+│   └── supabase.ts
+│
+└── proxy.ts
 ```
-lib/supabase/client.ts        # browser  → createBrowserClient
-lib/supabase/server.ts        # RSC/actions → createServerClient with cookies()
-lib/supabase/proxy.ts         # session refresh helper for proxy.ts
-lib/supabase/queries/*.ts     # domain query modules (typed, reusable)
-lib/supabase/storage.ts       # upload/download/signed URL helpers
-lib/supabase/realtime.ts      # subscription helpers
-types/supabase.ts             # generated database types (do not hand-edit)
-proxy.ts                      # Next.js 16 proxy entry point
-```
 
-### 4.1 Browser client
+Keep the project’s existing directory convention if it differs. Do not duplicate Supabase clients.
+
+## 4.2 Browser Client
+
+File: `src/lib/supabase/client.ts`
 
 ```ts
-// lib/supabase/client.ts
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/supabase";
 
@@ -106,57 +240,73 @@ let client: ReturnType<typeof createBrowserClient<Database>> | undefined;
 export function getSupabaseBrowserClient() {
   client ??= createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   );
+
   return client;
 }
 ```
 
-Only this module may read `NEXT_PUBLIC_SUPABASE_*`.
+Rules:
 
-### 4.2 Server client (React Server Components, Server Actions)
+- Reuse the browser client.
+- Do not instantiate it inside frequently rendered components.
+- Use generated database types.
+- Never use the service-role key in the browser.
+
+## 4.3 Server Client
+
+File: `src/lib/supabase/server.ts`
 
 ```ts
-// lib/supabase/server.ts
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/supabase";
 
 export async function getSupabaseServerClient() {
-  const cookieStore = await cookies(); // async in Next.js 15+/16
+  const cookieStore = await cookies();
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) => {
+        getAll() {
+          return cookieStore.getAll();
+        },
+
+        setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
           } catch {
-            // Called from an RSC render: safe to ignore when proxy refreshes sessions.
+            // Cookie writes may not be available during Server Component rendering.
+            // Session refresh is handled by the root proxy.
           }
         },
       },
-    },
+    }
   );
 }
 ```
 
-Never use the server client with the service-role key for ordinary feature code. It exists to carry the **caller's** identity and therefore the caller's RLS permissions.
+The server client must retain the authenticated user's identity and RLS permissions.
 
-### 4.3 Session refresh in `proxy.ts`
+Never replace the user's client with a service-role client for ordinary feature operations.
+
+## 4.4 Authentication Session Refresh
+
+Use the root `proxy.ts` file for Next.js versions that use the Proxy convention.
+
+File: `src/lib/supabase/proxy.ts`
 
 ```ts
-// proxy.ts
-import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/supabase";
 
-export async function proxy(request: NextRequest) {
+export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient<Database>(
@@ -164,24 +314,62 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        getAll() {
+          return request.cookies.getAll();
+        },
+
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
+
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
         },
       },
-    },
+    }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  await supabase.auth.getUser();
 
-  const isProtected = !request.nextUrl.pathname.startsWith("/login");
-  if (isProtected && !user) {
+  return response;
+}
+```
+
+Root `proxy.ts`:
+
+```ts
+import { NextResponse, type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/proxy";
+
+export async function proxy(request: NextRequest) {
+  const response = await updateSession(request);
+
+  const {
+    data: { user },
+  } = await (
+    await import("@/lib/supabase/server")
+  ).getSupabaseServerClient().then((client) => client.auth.getUser());
+
+  const pathname = request.nextUrl.pathname;
+
+  const isLogin = pathname.startsWith("/login");
+  const isPublicAsset =
+    pathname.startsWith("/_next") ||
+    pathname === "/favicon.ico";
+
+  if (!user && !isLogin && !isPublicAsset) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isLogin) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
@@ -189,563 +377,1499 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp)$).*)",
+  ],
 };
 ```
 
-This redirect is UX only. It is **not** security.
+Implementation note:
 
-### 4.4 Query modules
+The root Proxy should use the same request-scoped session refresh pattern and must avoid creating conflicting cookie contexts. Follow the installed Next.js and Supabase SSR version's recommended implementation. If the project uses a different Next.js major version, adapt the filename and export convention accordingly.
 
-Wrap repeated reads in small typed modules (`lib/supabase/queries/projects.ts`, etc.) so components never hand-build table names. Wrappers must not recreate REST semantics — they should return rows, throw typed errors, and let callers handle loading/empty/error states.
-
-Every mutation must:
-
-1. Validate input with `zod`.
-2. Call the Supabase client.
-3. Let RLS be the authorization decision.
-4. Return a typed result and surface `error` to the UI.
+**Route protection is only a UX layer. RLS remains the actual security boundary.**
 
 ---
 
-## 5. Local Development, Migrations, and Types
+# 5. Database Design Principles
 
-### 5.1 Bootstrap
+## 5.1 Naming Conventions
 
-```bash
-npx supabase init                 # creates supabase/config.toml
-npx supabase start                # local stack (API, DB, Studio, Storage)
-npx supabase db reset             # apply migrations + seed from scratch
-```
+| Element | Convention | Example |
+|---|---|---|
+| Tables | Plural snake_case | `patients` |
+| Columns | snake_case | `created_at` |
+| Primary Keys | UUID | `id` |
+| Foreign Keys | UUID with `_id` | `patient_id` |
+| Timestamps | timestamptz | `updated_at` |
+| Boolean Columns | is_/has_ | `is_active` |
+| PostgreSQL Functions | snake_case | `create_admission` |
+| Enums | snake_case | `appointment_status` |
 
-Local ports are written to `.supabase/` output; keep the printed values in the repo's onboarding notes when they differ from defaults.
+## 5.2 Common Column Standards
 
-### 5.2 Migration rules
-
-- Schema changes **only** through files in `supabase/migrations/`.
-- Never edit an applied migration. Add a new one.
-- Migrations must be idempotent where safe (`create table if not exists`, `create or replace function`, `drop policy if exists` before `create policy`).
-- Every table that the client can reach gets RLS in the **same migration** that creates it.
-- Every migration must pass `npx supabase db lint` and `npx supabase db reset`.
-
-### 5.3 Proposed migration order
-
-```
-20260101000000_extensions_and_helpers.sql
-20260101000100_enums.sql
-20260101000200_identity.sql          # profiles, roles, permissions, user_roles
-20260101000300_projects.sql
-20260101000400_models.sql            # system_models, model_versions, requirements, components, interfaces, entities
-20260101000500_generation.sql        # generated_artifacts
-20260101000600_documents.sql         # templates, documents, versions
-20260101000700_diagrams.sql
-20260101000800_traceability.sql      # test_cases, traceability_links, views
-20260101000900_reviews.sql
-20260101001000_audit_integrations.sql
-20260101001100_storage.sql
-20260101001200_realtime.sql
-20260101001300_seed_reference_data.sql
-```
-
-### 5.4 Type generation
-
-```bash
-npx supabase gen types typescript --local --schema public > types/supabase.ts
-npx supabase gen types typescript --project-id <ref> --schema public > types/supabase.ts
-```
-
-Regenerate after every migration and commit the result. Never hand-edit `types/supabase.ts`.
-
-### 5.5 Remote deployment
-
-```bash
-npx supabase link --project-ref <ref>
-npx supabase db push              # apply pending migrations
-npx supabase migration list       # verify local vs remote
-```
-
-Production migrations require a reviewed PR and a backup checkpoint.
-
----
-
-## 6. Database Schema
-
-All identifiers are `snake_case`, tables are plural, primary keys are `uuid` with `gen_random_uuid()`, timestamps are `timestamptz`.
-
-### 6.1 Relationship overview
-
-```
-auth.users 1─1 profiles
-profiles N─N roles                      (user_roles)
-roles N─N permissions                   (role_permissions)
-
-profiles 1─N projects (owner)
-projects N─N profiles                   (project_members, project_role)
-
-projects 1─N system_models
-system_models 1─N model_versions
-system_models 1─1 model_versions        (current_version_id)
-model_versions 1─N requirements
-model_versions 1─N system_components    (self-referencing parent)
-model_versions 1─N system_interfaces
-model_versions 1─N data_entities
-
-projects 1─N generated_artifacts        (from a model_version)
-document_templates 1─N generated_documents
-generated_documents 1─N document_versions
-generated_documents 1─1 document_versions (current_version_id)
-projects 1─N diagrams
-
-projects 1─N traceability_links         (polymorphic source/target)
-projects 1─N test_cases
-model_versions 1─N test_cases
-
-projects 1─N review_requests
-review_requests 1─N review_assignments
-review_requests 1─N review_comments
-review_requests 1─N approval_records
-
-profiles 1─N audit_logs
-projects 1─N integrations
-```
-
-### 6.2 Enums
+Most application tables should use:
 
 ```sql
-create type public.project_status      as enum ('planning','active','on_hold','completed','archived');
-create type public.system_mode         as enum ('standard','complex');
-create type public.project_role        as enum ('manager','analyst','developer','documentation_manager','reviewer','viewer');
-create type public.record_status       as enum ('draft','submitted','approved','rejected','superseded','outdated','archived');
-create type public.requirement_type    as enum ('functional','non_functional','business','interface','data','constraint');
-create type public.priority_level      as enum ('low','medium','high','critical');
-create type public.artifact_type       as enum ('directory_structure','service_skeleton','component_skeleton','database_schema','configuration_template','infrastructure_as_code','other');
-create type public.document_type       as enum ('technical','system','hospital_form','report','data_dictionary','user_manual','deployment_guide','operational');
-create type public.file_format         as enum ('docx','pdf','html','markdown','svg','png','json','zip');
-create type public.diagram_type        as enum ('context','component','sequence','data_flow');
-create type public.interface_direction as enum ('inbound','outbound','bidirectional');
-create type public.review_target_type  as enum ('system_model','model_version','generated_artifact','generated_document','diagram');
-create type public.review_status       as enum ('pending','in_review','approved','rejected','revision_requested','cancelled');
-create type public.review_decision     as enum ('pending','approved','rejected','revision_requested');
-create type public.entity_type         as enum ('requirement','system_component','system_interface','data_entity','test_case','generated_artifact','generated_document','diagram');
-create type public.link_type           as enum ('implements','realizes','verifies','documents','depends_on','derives_from');
+id uuid primary key default gen_random_uuid(),
+created_at timestamptz not null default now(),
+updated_at timestamptz not null default now()
 ```
 
-### 6.3 Identity and access
+Use `updated_at` only when the record is mutable.
+
+Use `created_by` and `updated_by` where accountability is required.
+
+Use `timestamptz` for dates and timestamps that represent actual moments in time.
+
+Use `date` for calendar-only values such as date of birth.
+
+## 5.3 Philippine Healthcare Data Considerations
+
+- Store dates consistently using PostgreSQL date and timestamp types.
+- Display local hospital dates and times using the `Asia/Manila` timezone.
+- Store currency as `numeric`, never floating-point.
+- Use explicit measurement units for clinical values.
+- Use generated or controlled identifiers for medical record numbers.
+- Do not use a patient's name as a unique identifier.
+- Do not assume that every patient has an email address.
+- Do not assume that every patient has a mobile number.
+- Treat medical record numbers as identifiers, not authentication credentials.
+
+---
+
+# 6. Database Relationship Overview
+
+The HMS database is organized into the following domains.
+
+```text
+AUTHENTICATION
+    auth.users
+        |
+        | 1:1
+        v
+    profiles
+        |
+        +---- user_roles ---- roles
+        |                       |
+        |                       +---- role_permissions ---- permissions
+        |
+        +---- staff_profiles
+                    |
+                    +---- departments
+
+PATIENT MANAGEMENT
+    patients
+        |
+        +---- patient_contacts
+        |
+        +---- emergency_contacts
+        |
+        +---- patient_allergies
+        |
+        +---- medical_histories
+        |
+        +---- appointments
+        |
+        +---- admissions
+        |       |
+        |       +---- rooms
+        |       |
+        |       +---- beds
+        |
+        +---- encounters
+                |
+                +---- vital_signs
+                |
+                +---- diagnoses
+                |
+                +---- clinical_notes
+                |
+                +---- prescriptions
+                |
+                +---- laboratory_orders
+                |
+                +---- radiology_orders
+
+LABORATORY
+    laboratory_orders
+        |
+        +---- laboratory_order_items
+        |
+        +---- laboratory_results
+        |
+        +---- laboratory_specimens
+
+PHARMACY
+    prescriptions
+        |
+        +---- prescription_items
+        |
+        +---- medication_dispenses
+
+INVENTORY
+    inventory_items
+        |
+        +---- inventory_batches
+        |
+        +---- stock_transactions
+
+BILLING
+    patients
+        |
+        +---- invoices
+                |
+                +---- invoice_items
+                |
+                +---- payments
+                |
+                +---- payment_transactions
+
+SYSTEM ACCOUNTABILITY
+    profiles
+        |
+        +---- audit_logs
+```
+
+All relationships must be enforced using actual PostgreSQL foreign keys wherever possible.
+
+---
+
+# 7. Authentication, Profiles & Role-Based Access Control
+
+## 7.1 Identity Architecture
+
+Supabase Auth owns authentication.
+
+Use:
+
+- `auth.users` for authentication identity.
+- `public.profiles` for application profile information.
+- `public.roles` for system roles.
+- `public.permissions` for individual permissions.
+- `public.user_roles` for role assignments.
+- `public.role_permissions` for role-to-permission relationships.
+
+## 7.2 Profiles Table
 
 ```sql
 create table public.profiles (
-  id          uuid primary key references auth.users(id) on delete cascade,
-  email       text not null,
-  full_name   text not null,
-  avatar_url  text,
-  is_active   boolean not null default true,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
+  id uuid primary key references auth.users(id) on delete cascade,
 
-create table public.roles (
-  id          uuid primary key default gen_random_uuid(),
-  slug        text not null unique,
-  name        text not null,
-  description text,
-  is_system   boolean not null default true,
-  created_at  timestamptz not null default now()
-);
+  email text not null,
+  full_name text not null,
 
-create table public.permissions (
-  id          uuid primary key default gen_random_uuid(),
-  slug        text not null unique,
-  description text,
-  created_at  timestamptz not null default now()
-);
+  avatar_path text,
+  contact_number text,
 
-create table public.role_permissions (
-  role_id       uuid not null references public.roles(id) on delete cascade,
-  permission_id uuid not null references public.permissions(id) on delete cascade,
-  primary key (role_id, permission_id)
-);
+  is_active boolean not null default true,
 
-create table public.user_roles (
-  user_id    uuid not null references public.profiles(id) on delete cascade,
-  role_id    uuid not null references public.roles(id) on delete cascade,
-  granted_by uuid references public.profiles(id),
-  created_at timestamptz not null default now(),
-  primary key (user_id, role_id)
-);
-```
-
-**Role model decision:** `user_roles` holds **global** roles only. Per-project roles live in `project_members.project_role`. This avoids nullable composite keys and keeps the access check unambiguous:
-
-- Global role → system-wide capabilities (administration, audit, user management).
-- Project role → what the user may do inside one project.
-
-Seed roles: `super_admin`, `system_admin`, `project_manager`, `system_analyst`, `developer`, `documentation_manager`, `reviewer`, `viewer`.
-
-Seed permissions: `project.create`, `project.manage`, `project.archive`, `model.edit`, `model.approve`, `artifact.generate`, `artifact.approve`, `artifact.review`, `document.generate`, `document.approve`, `document.review`, `document.template.manage`, `traceability.manage`, `review.request`, `review.assign`, `user.manage`, `audit.view`, `integration.manage`, `settings.manage`.
-
-Standard System Mode uses `required_approvals = 1`. Complex System Mode uses `required_approvals >= 2`; enforce this when creating a `review_requests` row.
-
-### 6.4 Projects
-
-```sql
-create table public.projects (
-  id           uuid primary key default gen_random_uuid(),
-  code         text not null unique,
-  name         text not null,
-  description  text,
-  objectives   text,
-  status       public.project_status not null default 'planning',
-  system_mode  public.system_mode not null default 'standard',
-  owner_id     uuid not null references public.profiles(id),
-  created_by   uuid not null references public.profiles(id),
-  archived_at  timestamptz,
-  created_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now()
-);
-
-create table public.project_members (
-  id           uuid primary key default gen_random_uuid(),
-  project_id   uuid not null references public.projects(id) on delete cascade,
-  user_id      uuid not null references public.profiles(id) on delete cascade,
-  project_role public.project_role not null default 'viewer',
-  added_by     uuid references public.profiles(id),
-  created_at   timestamptz not null default now(),
-  unique (project_id, user_id)
-);
-```
-
-### 6.5 System models and versioning
-
-```sql
-create table public.system_models (
-  id          uuid primary key default gen_random_uuid(),
-  project_id  uuid not null references public.projects(id) on delete cascade,
-  name        text not null,
-  description text,
-  status      public.record_status not null default 'draft',
-  system_mode public.system_mode not null default 'standard',
-  created_by  uuid not null references public.profiles(id),
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
-  unique (project_id, name)
-);
-
-create table public.model_versions (
-  id              uuid primary key default gen_random_uuid(),
-  system_model_id uuid not null references public.system_models(id) on delete cascade,
-  version_no      integer not null check (version_no > 0),
-  snapshot        jsonb not null default '{}'::jsonb,
-  change_summary  text,
-  status          public.record_status not null default 'draft',
-  created_by      uuid not null references public.profiles(id),
-  approved_by     uuid references public.profiles(id),
-  approved_at     timestamptz,
-  created_at      timestamptz not null default now(),
-  unique (system_model_id, version_no)
-);
-
-alter table public.system_models
-  add column current_version_id uuid;
-alter table public.system_models
-  add constraint system_models_current_version_fk
-  foreign key (current_version_id) references public.model_versions(id)
-  on delete set null;
-```
-
-`snapshot` keeps the complete structured model as submitted. Normalized child tables below provide queryable, diffable rows for the same version. Both are written in one transaction; the snapshot is the immutable record of what was approved.
-
-### 6.6 Model detail tables
-
-```sql
-create table public.requirements (
-  id                  uuid primary key default gen_random_uuid(),
-  model_version_id    uuid not null references public.model_versions(id) on delete cascade,
-  code                text not null,
-  title               text not null,
-  description         text,
-  req_type            public.requirement_type not null default 'functional',
-  priority            public.priority_level not null default 'medium',
-  acceptance_criteria text,
-  source              text,
-  created_at          timestamptz not null default now(),
-  updated_at          timestamptz not null default now(),
-  unique (model_version_id, code)
-);
-
-create table public.system_components (
-  id                  uuid primary key default gen_random_uuid(),
-  model_version_id    uuid not null references public.model_versions(id) on delete cascade,
-  name                text not null,
-  description         text,
-  component_type      text,
-  technology          text,
-  parent_component_id uuid references public.system_components(id) on delete set null,
-  created_at          timestamptz not null default now(),
-  updated_at          timestamptz not null default now(),
-  unique (model_version_id, name)
-);
-
-create table public.system_interfaces (
-  id                    uuid primary key default gen_random_uuid(),
-  model_version_id      uuid not null references public.model_versions(id) on delete cascade,
-  name                  text not null,
-  description           text,
-  source_component_id   uuid references public.system_components(id) on delete set null,
-  target_component_id   uuid references public.system_components(id) on delete set null,
-  protocol              text,
-  direction             public.interface_direction not null default 'bidirectional',
-  payload_schema        jsonb not null default '{}'::jsonb,
-  created_at            timestamptz not null default now(),
-  updated_at            timestamptz not null default now(),
-  unique (model_version_id, name)
-);
-
-create table public.data_entities (
-  id               uuid primary key default gen_random_uuid(),
-  model_version_id uuid not null references public.model_versions(id) on delete cascade,
-  name             text not null,
-  description      text,
-  table_name       text,
-  attributes       jsonb not null default '[]'::jsonb,
-  primary_key      text[] not null default '{}',
-  indexes          jsonb not null default '[]'::jsonb,
-  created_at       timestamptz not null default now(),
-  updated_at       timestamptz not null default now(),
-  unique (model_version_id, name)
-);
-```
-
-### 6.7 Generated artifacts
-
-```sql
-create table public.generated_artifacts (
-  id               uuid primary key default gen_random_uuid(),
-  project_id       uuid not null references public.projects(id) on delete cascade,
-  model_version_id uuid not null references public.model_versions(id) on delete restrict,
-  artifact_type    public.artifact_type not null,
-  name             text not null,
-  storage_path     text not null,
-  file_format      public.file_format not null default 'zip',
-  version_no       integer not null default 1 check (version_no > 0),
-  generator_version text not null,
-  checksum         text,
-  size_bytes       bigint check (size_bytes >= 0),
-  status           public.record_status not null default 'draft',
-  created_by       uuid not null references public.profiles(id),
-  approved_by      uuid references public.profiles(id),
-  approved_at      timestamptz,
-  created_at       timestamptz not null default now(),
-  updated_at       timestamptz not null default now(),
-  unique (project_id, name, version_no)
-);
-```
-
-### 6.8 Documents and templates
-
-```sql
-create table public.document_templates (
-  id            uuid primary key default gen_random_uuid(),
-  slug          text not null unique,
-  name          text not null,
-  description   text,
-  doc_type      public.document_type not null,
-  mode_scope    public.system_mode,            -- null = both modes
-  template_path text,                          -- Storage object in templates bucket
-  body          text,                          -- inline template when small
-  variables     jsonb not null default '[]'::jsonb,
-  version_no    integer not null default 1,
-  is_active     boolean not null default true,
-  created_by    uuid not null references public.profiles(id),
-  created_at    timestamptz not null default now(),
-  updated_at    timestamptz not null default now(),
-  check (template_path is not null or body is not null)
-);
-
-create table public.generated_documents (
-  id               uuid primary key default gen_random_uuid(),
-  project_id       uuid not null references public.projects(id) on delete cascade,
-  model_version_id uuid not null references public.model_versions(id) on delete restrict,
-  template_id      uuid not null references public.document_templates(id) on delete restrict,
-  title            text not null,
-  doc_type         public.document_type not null,
-  status           public.record_status not null default 'draft',
-  created_by       uuid not null references public.profiles(id),
-  created_at       timestamptz not null default now(),
-  updated_at       timestamptz not null default now()
-);
-
-create table public.document_versions (
-  id               uuid primary key default gen_random_uuid(),
-  document_id      uuid not null references public.generated_documents(id) on delete cascade,
-  version_no       integer not null check (version_no > 0),
-  storage_path     text not null,
-  file_format      public.file_format not null default 'markdown',
-  content_markdown text,
-  checksum         text,
-  change_summary   text,
-  status           public.record_status not null default 'draft',
-  created_by       uuid not null references public.profiles(id),
-  approved_by      uuid references public.profiles(id),
-  approved_at      timestamptz,
-  created_at       timestamptz not null default now(),
-  unique (document_id, version_no)
-);
-
-alter table public.generated_documents
-  add column current_version_id uuid;
-alter table public.generated_documents
-  add constraint generated_documents_current_version_fk
-  foreign key (current_version_id) references public.document_versions(id)
-  on delete set null;
-```
-
-`document_versions.storage_path` points to rendered output (`docx`, `pdf`, `html`). `content_markdown` is the editable source for authorized edits, so exports can be regenerated without re-reading binary files.
-
-### 6.9 Diagrams
-
-```sql
-create table public.diagrams (
-  id               uuid primary key default gen_random_uuid(),
-  project_id       uuid not null references public.projects(id) on delete cascade,
-  model_version_id uuid not null references public.model_versions(id) on delete cascade,
-  name             text not null,
-  diagram_type     public.diagram_type not null,
-  file_format      public.file_format not null default 'svg',
-  storage_path     text not null,
-  definition       jsonb not null default '{}'::jsonb,
-  version_no       integer not null default 1 check (version_no > 0),
-  status           public.record_status not null default 'draft',
-  created_by       uuid not null references public.profiles(id),
-  created_at       timestamptz not null default now(),
-  updated_at       timestamptz not null default now(),
-  unique (project_id, name, version_no)
-);
-```
-
-### 6.10 Traceability
-
-```sql
-create table public.test_cases (
-  id               uuid primary key default gen_random_uuid(),
-  project_id       uuid not null references public.projects(id) on delete cascade,
-  model_version_id uuid references public.model_versions(id) on delete set null,
-  requirement_id   uuid references public.requirements(id) on delete set null,
-  code             text not null,
-  title            text not null,
-  preconditions    text,
-  steps            jsonb not null default '[]'::jsonb,
-  expected_result  text,
-  status           public.record_status not null default 'draft',
-  created_by       uuid not null references public.profiles(id),
-  created_at       timestamptz not null default now(),
-  updated_at       timestamptz not null default now(),
-  unique (project_id, code)
-);
-
-create table public.traceability_links (
-  id          uuid primary key default gen_random_uuid(),
-  project_id  uuid not null references public.projects(id) on delete cascade,
-  source_type public.entity_type not null,
-  source_id   uuid not null,
-  target_type public.entity_type not null,
-  target_id   uuid not null,
-  link_type   public.link_type not null,
-  created_by  uuid not null references public.profiles(id),
-  created_at  timestamptz not null default now(),
-  unique (project_id, source_type, source_id, target_type, target_id, link_type),
-  check (source_type <> target_type or source_id <> target_id)
-);
-```
-
-**Polymorphic integrity note:** `traceability_links` cannot use real foreign keys on `source_id`/`target_id`. Referential integrity is enforced by:
-
-1. Application validation before insert (target exists, belongs to the same project).
-2. A nightly `traceability_integrity_scan()` SQL function that returns orphaned links.
-3. Deletion guard triggers on traceable tables that refuse deletion while links exist.
-
-Do not add a graph database. PostgreSQL relationships satisfy the requirement until measured otherwise.
-
-### 6.11 Review and approval
-
-```sql
-create table public.review_requests (
-  id                 uuid primary key default gen_random_uuid(),
-  project_id         uuid not null references public.projects(id) on delete cascade,
-  target_type        public.review_target_type not null,
-  target_id          uuid not null,
-  requested_by       uuid not null references public.profiles(id),
-  status             public.review_status not null default 'pending',
-  required_approvals integer not null default 1 check (required_approvals > 0),
-  due_at             timestamptz,
-  created_at         timestamptz not null default now(),
-  updated_at         timestamptz not null default now()
-);
-
-create table public.review_assignments (
-  id                uuid primary key default gen_random_uuid(),
-  review_request_id uuid not null references public.review_requests(id) on delete cascade,
-  reviewer_id       uuid not null references public.profiles(id) on delete cascade,
-  decision          public.review_decision not null default 'pending',
-  decided_at        timestamptz,
-  created_at        timestamptz not null default now(),
-  unique (review_request_id, reviewer_id)
-);
-
-create table public.review_comments (
-  id                uuid primary key default gen_random_uuid(),
-  review_request_id uuid not null references public.review_requests(id) on delete cascade,
-  author_id         uuid not null references public.profiles(id),
-  body              text not null,
-  visibility        text not null default 'reviewers' check (visibility in ('reviewers','project')),
-  created_at        timestamptz not null default now()
-);
-
-create table public.approval_records (
-  id                uuid primary key default gen_random_uuid(),
-  review_request_id uuid not null references public.review_requests(id) on delete cascade,
-  target_type       public.review_target_type not null,
-  target_id         uuid not null,
-  reviewer_id       uuid not null references public.profiles(id),
-  decision          public.review_decision not null,
-  comments          text,
-  decided_at        timestamptz not null default now()
-);
-```
-
-`approval_records` is append-only. It is written only by the Edge Function / RPC that also verifies the caller is an assigned reviewer, then flips `review_requests.status` and the target's `status`. Clients never insert approval rows directly.
-
-### 6.12 Audit and integrations
-
-```sql
-create table public.audit_logs (
-  id          bigint generated always as identity primary key,
-  actor_id    uuid references public.profiles(id) on delete set null,
-  project_id  uuid references public.projects(id) on delete set null,
-  action      text not null,
-  entity_type text not null,
-  entity_id   uuid,
-  before      jsonb,
-  after       jsonb,
-  user_agent  text,
-  created_at  timestamptz not null default now()
-);
-
-create table public.integrations (
-  id         uuid primary key default gen_random_uuid(),
-  project_id uuid references public.projects(id) on delete cascade,
-  provider   text not null,
-  name       text not null,
-  config     jsonb not null default '{}'::jsonb,  -- non-secret settings ONLY
-  status     text not null default 'inactive' check (status in ('inactive','active','error')),
-  created_by uuid not null references public.profiles(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 ```
 
-Provider API keys, tokens, and passwords **must not** be stored in `integrations.config`. They belong in Edge Function secrets or Supabase Vault, referenced there by name.
+The profile is not the authentication credential store.
 
-### 6.13 Shared triggers
+Never store passwords in `profiles`.
+
+## 7.3 Roles Table
+
+```sql
+create table public.roles (
+  id uuid primary key default gen_random_uuid(),
+
+  slug text not null unique,
+  name text not null,
+  description text,
+
+  is_system boolean not null default true,
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 7.4 Permissions Table
+
+```sql
+create table public.permissions (
+  id uuid primary key default gen_random_uuid(),
+
+  slug text not null unique,
+  description text,
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 7.5 Role Permissions
+
+```sql
+create table public.role_permissions (
+  role_id uuid not null references public.roles(id) on delete cascade,
+  permission_id uuid not null references public.permissions(id) on delete cascade,
+
+  primary key (role_id, permission_id)
+);
+```
+
+## 7.6 User Roles
+
+```sql
+create table public.user_roles (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  role_id uuid not null references public.roles(id) on delete cascade,
+
+  granted_by uuid references public.profiles(id),
+
+  created_at timestamptz not null default now(),
+
+  primary key (user_id, role_id)
+);
+```
+
+## 7.7 Approved System Roles
+
+Seed these roles:
+
+| Role Slug | Display Name |
+|---|---|
+| `super_admin` | Super Administrator |
+| `hospital_admin` | Hospital Administrator |
+| `receptionist` | Receptionist |
+| `physician` | Physician / Doctor |
+| `nurse` | Nurse |
+| `laboratory_staff` | Laboratory Staff |
+| `radiology_staff` | Radiology Staff |
+| `pharmacist` | Pharmacist |
+| `billing_staff` | Billing Staff |
+| `inventory_staff` | Inventory Staff |
+
+Do not grant every role to every authenticated user.
+
+A staff account must receive an authorized role assignment.
+
+## 7.8 Staff Profiles
+
+```sql
+create table public.staff_profiles (
+  id uuid primary key default gen_random_uuid(),
+
+  user_id uuid not null unique references public.profiles(id) on delete cascade,
+
+  staff_number text not null unique,
+
+  first_name text not null,
+  middle_name text,
+  last_name text not null,
+
+  department_id uuid,
+
+  employment_type text,
+  professional_license_number text,
+
+  is_active boolean not null default true,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+Staff-specific professional information must only be accessible to authorized users.
+
+---
+
+# 8. Hospital Reference Tables
+
+## 8.1 Departments
+
+```sql
+create table public.departments (
+  id uuid primary key default gen_random_uuid(),
+
+  code text not null unique,
+  name text not null unique,
+  description text,
+
+  is_active boolean not null default true,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 8.2 Physicians
+
+```sql
+create table public.physicians (
+  id uuid primary key default gen_random_uuid(),
+
+  staff_id uuid not null unique references public.staff_profiles(id),
+
+  specialty text,
+  license_number text not null unique,
+
+  is_available boolean not null default true,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 8.3 Department Assignments
+
+```sql
+create table public.staff_department_assignments (
+  id uuid primary key default gen_random_uuid(),
+
+  staff_id uuid not null references public.staff_profiles(id) on delete cascade,
+  department_id uuid not null references public.departments(id),
+
+  assigned_at timestamptz not null default now(),
+  ended_at timestamptz,
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 8.4 Rooms
+
+```sql
+create table public.rooms (
+  id uuid primary key default gen_random_uuid(),
+
+  room_number text not null,
+  department_id uuid not null references public.departments(id),
+
+  room_type text,
+  floor_number text,
+
+  is_active boolean not null default true,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  unique (department_id, room_number)
+);
+```
+
+## 8.5 Beds
+
+```sql
+create table public.beds (
+  id uuid primary key default gen_random_uuid(),
+
+  room_id uuid not null references public.rooms(id),
+
+  bed_number text not null,
+
+  status text not null default 'available'
+    check (status in ('available', 'occupied', 'maintenance', 'reserved')),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  unique (room_id, bed_number)
+);
+```
+
+Bed occupancy must be controlled through admission transactions, not arbitrary frontend status updates.
+
+---
+
+# 9. Patient Management Schema
+
+## 9.1 Patients
+
+```sql
+create table public.patients (
+  id uuid primary key default gen_random_uuid(),
+
+  medical_record_number text not null unique,
+
+  first_name text not null,
+  middle_name text,
+  last_name text not null,
+  suffix text,
+
+  date_of_birth date,
+  sex text,
+
+  civil_status text,
+  nationality text,
+
+  contact_number text,
+  email text,
+
+  address_line text,
+  barangay text,
+  city text,
+  province text,
+  postal_code text,
+
+  registration_date timestamptz not null default now(),
+
+  registration_status text not null default 'active'
+    check (registration_status in ('active', 'inactive', 'archived')),
+
+  created_by uuid not null references public.profiles(id),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+Medical record number generation must be handled by a database function or controlled registration transaction.
+
+Do not generate unique medical record numbers solely through frontend timestamps or random strings.
+
+## 9.2 Patient Emergency Contacts
+
+```sql
+create table public.emergency_contacts (
+  id uuid primary key default gen_random_uuid(),
+
+  patient_id uuid not null references public.patients(id) on delete cascade,
+
+  full_name text not null,
+  relationship text,
+  contact_number text not null,
+  address text,
+
+  is_primary boolean not null default false,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 9.3 Patient Allergies
+
+```sql
+create table public.patient_allergies (
+  id uuid primary key default gen_random_uuid(),
+
+  patient_id uuid not null references public.patients(id) on delete cascade,
+
+  allergen text not null,
+  reaction text,
+  severity text,
+
+  notes text,
+
+  recorded_by uuid not null references public.profiles(id),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 9.4 Medical Histories
+
+```sql
+create table public.medical_histories (
+  id uuid primary key default gen_random_uuid(),
+
+  patient_id uuid not null references public.patients(id) on delete cascade,
+
+  history_type text not null,
+  description text not null,
+
+  recorded_by uuid not null references public.profiles(id),
+
+  recorded_at timestamptz not null default now(),
+
+  created_at timestamptz not null default now()
+);
+```
+
+Medical history must not be silently overwritten.
+
+Use additional records or controlled corrections with audit history.
+
+---
+
+# 10. Appointment Management Schema
+
+## 10.1 Appointments
+
+```sql
+create table public.appointments (
+  id uuid primary key default gen_random_uuid(),
+
+  appointment_number text not null unique,
+
+  patient_id uuid not null references public.patients(id),
+
+  department_id uuid not null references public.departments(id),
+
+  physician_id uuid references public.physicians(id),
+
+  scheduled_at timestamptz not null,
+  duration_minutes integer not null default 30
+    check (duration_minutes > 0),
+
+  appointment_type text,
+  reason_for_visit text,
+
+  status text not null default 'scheduled'
+    check (
+      status in (
+        'scheduled',
+        'confirmed',
+        'waiting',
+        'in_consultation',
+        'completed',
+        'cancelled',
+        'no_show'
+      )
+    ),
+
+  notes text,
+
+  created_by uuid not null references public.profiles(id),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 10.2 Appointment Rules
+
+- A patient may have multiple appointments.
+- An appointment belongs to a department.
+- An appointment may be assigned to a physician.
+- Appointment scheduling must validate availability.
+- Concurrent scheduling must not create conflicting physician schedules.
+- Appointment status changes must be validated.
+- Cancellation must retain historical appointment information.
+
+Use a PostgreSQL transaction or database function when schedule validation and appointment creation must be atomic.
+
+---
+
+# 11. Admission, Discharge & Transfer Schema
+
+## 11.1 Admissions
+
+```sql
+create table public.admissions (
+  id uuid primary key default gen_random_uuid(),
+
+  admission_number text not null unique,
+
+  patient_id uuid not null references public.patients(id),
+
+  attending_physician_id uuid references public.physicians(id),
+
+  department_id uuid not null references public.departments(id),
+
+  admission_date timestamptz not null default now(),
+  discharge_date timestamptz,
+
+  admission_type text,
+
+  status text not null default 'admitted'
+    check (
+      status in (
+        'admitted',
+        'transferred',
+        'discharged',
+        'cancelled'
+      )
+    ),
+
+  admission_notes text,
+  discharge_notes text,
+
+  admitted_by uuid not null references public.profiles(id),
+  discharged_by uuid references public.profiles(id),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 11.2 Admission Bed Assignments
+
+```sql
+create table public.admission_bed_assignments (
+  id uuid primary key default gen_random_uuid(),
+
+  admission_id uuid not null references public.admissions(id),
+
+  bed_id uuid not null references public.beds(id),
+
+  assigned_at timestamptz not null default now(),
+  released_at timestamptz,
+
+  assigned_by uuid not null references public.profiles(id),
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 11.3 Patient Transfers
+
+```sql
+create table public.patient_transfers (
+  id uuid primary key default gen_random_uuid(),
+
+  admission_id uuid not null references public.admissions(id),
+
+  from_bed_id uuid references public.beds(id),
+  to_bed_id uuid not null references public.beds(id),
+
+  transfer_reason text,
+
+  transferred_by uuid not null references public.profiles(id),
+
+  transferred_at timestamptz not null default now(),
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 11.4 Admission Transaction Rules
+
+The following operations must be atomic:
+
+1. Validate patient admission eligibility.
+2. Lock the selected bed.
+3. Verify that the bed is available.
+4. Create the admission record.
+5. Create the bed assignment.
+6. Mark the bed as occupied.
+7. Record the responsible staff member.
+8. Commit the transaction.
+
+Discharge must:
+
+1. Validate that the admission is active.
+2. Record the discharge date and authorized user.
+3. Close the active bed assignment.
+4. Release the bed.
+5. Update admission status.
+6. Record the operation in the audit log.
+
+Use PostgreSQL functions for these operations.
+
+Never implement bed allocation as unrelated frontend updates.
+
+---
+
+# 12. Electronic Medical Records Schema
+
+## 12.1 Clinical Encounters
+
+```sql
+create table public.encounters (
+  id uuid primary key default gen_random_uuid(),
+
+  encounter_number text not null unique,
+
+  patient_id uuid not null references public.patients(id),
+
+  appointment_id uuid references public.appointments(id),
+  admission_id uuid references public.admissions(id),
+
+  physician_id uuid references public.physicians(id),
+
+  department_id uuid not null references public.departments(id),
+
+  encounter_type text not null,
+
+  chief_complaint text,
+
+  clinical_status text not null default 'open'
+    check (
+      clinical_status in (
+        'open',
+        'in_progress',
+        'completed',
+        'cancelled'
+      )
+    ),
+
+  started_at timestamptz not null default now(),
+  completed_at timestamptz,
+
+  created_by uuid not null references public.profiles(id),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 12.2 Vital Signs
+
+```sql
+create table public.vital_signs (
+  id uuid primary key default gen_random_uuid(),
+
+  patient_id uuid not null references public.patients(id),
+  encounter_id uuid not null references public.encounters(id),
+
+  systolic_bp numeric,
+  diastolic_bp numeric,
+
+  heart_rate numeric,
+  respiratory_rate numeric,
+
+  temperature numeric,
+  oxygen_saturation numeric,
+
+  weight_kg numeric,
+  height_cm numeric,
+
+  recorded_by uuid not null references public.profiles(id),
+
+  recorded_at timestamptz not null default now(),
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 12.3 Diagnoses
+
+```sql
+create table public.diagnoses (
+  id uuid primary key default gen_random_uuid(),
+
+  patient_id uuid not null references public.patients(id),
+  encounter_id uuid not null references public.encounters(id),
+
+  diagnosis_code text,
+  diagnosis_name text not null,
+
+  diagnosis_type text,
+  clinical_notes text,
+
+  is_primary boolean not null default false,
+
+  recorded_by uuid not null references public.profiles(id),
+
+  recorded_at timestamptz not null default now(),
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 12.4 Clinical Notes
+
+```sql
+create table public.clinical_notes (
+  id uuid primary key default gen_random_uuid(),
+
+  patient_id uuid not null references public.patients(id),
+  encounter_id uuid not null references public.encounters(id),
+
+  note_type text not null,
+  content text not null,
+
+  status text not null default 'draft'
+    check (status in ('draft', 'finalized', 'amended')),
+
+  authored_by uuid not null references public.profiles(id),
+
+  finalized_at timestamptz,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+Clinical notes must support controlled finalization and amendment workflows.
+
+Finalized clinical records must not be silently overwritten.
+
+## 12.5 Clinical Documentation Rules
+
+- Record the responsible staff member.
+- Record timestamps.
+- Maintain historical clinical information.
+- Restrict access according to role and patient-care authorization.
+- Do not allow unauthorized users to modify diagnoses.
+- Do not automatically invent diagnoses or treatment plans.
+- Do not expose clinical data through public Storage URLs.
+
+---
+
+# 13. Nursing Management Schema
+
+## 13.1 Nursing Assessments
+
+```sql
+create table public.nursing_assessments (
+  id uuid primary key default gen_random_uuid(),
+
+  patient_id uuid not null references public.patients(id),
+  encounter_id uuid not null references public.encounters(id),
+
+  assessment_type text not null,
+  assessment_data jsonb not null default '{}'::jsonb,
+
+  notes text,
+
+  assessed_by uuid not null references public.profiles(id),
+
+  assessed_at timestamptz not null default now(),
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 13.2 Nursing Care Notes
+
+```sql
+create table public.nursing_notes (
+  id uuid primary key default gen_random_uuid(),
+
+  patient_id uuid not null references public.patients(id),
+  encounter_id uuid not null references public.encounters(id),
+
+  note text not null,
+
+  recorded_by uuid not null references public.profiles(id),
+
+  recorded_at timestamptz not null default now(),
+
+  created_at timestamptz not null default now()
+);
+```
+
+Nursing assessments and nursing notes must be accessible only to appropriately authorized staff.
+
+---
+
+# 14. Laboratory Management Schema
+
+## 14.1 Laboratory Tests
+
+```sql
+create table public.laboratory_tests (
+  id uuid primary key default gen_random_uuid(),
+
+  test_code text not null unique,
+  test_name text not null,
+
+  category text,
+  description text,
+
+  specimen_type text,
+
+  is_active boolean not null default true,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 14.2 Laboratory Orders
+
+```sql
+create table public.laboratory_orders (
+  id uuid primary key default gen_random_uuid(),
+
+  order_number text not null unique,
+
+  patient_id uuid not null references public.patients(id),
+  encounter_id uuid not null references public.encounters(id),
+
+  ordered_by uuid not null references public.profiles(id),
+
+  priority text not null default 'routine'
+    check (priority in ('routine', 'urgent', 'stat')),
+
+  status text not null default 'pending'
+    check (
+      status in (
+        'pending',
+        'collection',
+        'processing',
+        'completed',
+        'cancelled'
+      )
+    ),
+
+  ordered_at timestamptz not null default now(),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 14.3 Laboratory Order Items
+
+```sql
+create table public.laboratory_order_items (
+  id uuid primary key default gen_random_uuid(),
+
+  order_id uuid not null references public.laboratory_orders(id) on delete cascade,
+
+  test_id uuid not null references public.laboratory_tests(id),
+
+  status text not null default 'pending',
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 14.4 Laboratory Specimens
+
+```sql
+create table public.laboratory_specimens (
+  id uuid primary key default gen_random_uuid(),
+
+  order_id uuid not null references public.laboratory_orders(id),
+
+  specimen_type text not null,
+
+  collection_status text not null default 'pending'
+    check (
+      collection_status in (
+        'pending',
+        'collected',
+        'rejected'
+      )
+    ),
+
+  collected_by uuid references public.profiles(id),
+
+  collected_at timestamptz,
+
+  notes text,
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 14.5 Laboratory Results
+
+```sql
+create table public.laboratory_results (
+  id uuid primary key default gen_random_uuid(),
+
+  order_item_id uuid not null references public.laboratory_order_items(id),
+
+  result_value text,
+  result_unit text,
+  reference_range text,
+
+  interpretation text,
+
+  verification_status text not null default 'pending'
+    check (
+      verification_status in (
+        'pending',
+        'verified',
+        'rejected'
+      )
+    ),
+
+  performed_by uuid references public.profiles(id),
+  verified_by uuid references public.profiles(id),
+
+  performed_at timestamptz,
+  verified_at timestamptz,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+Only authorized laboratory personnel may enter and verify results.
+
+Result verification must be a controlled workflow.
+
+---
+
+# 15. Radiology Management Schema
+
+## 15.1 Radiology Orders
+
+```sql
+create table public.radiology_orders (
+  id uuid primary key default gen_random_uuid(),
+
+  order_number text not null unique,
+
+  patient_id uuid not null references public.patients(id),
+  encounter_id uuid not null references public.encounters(id),
+
+  examination_type text not null,
+  body_part text,
+
+  ordered_by uuid not null references public.profiles(id),
+
+  scheduled_at timestamptz,
+
+  status text not null default 'pending'
+    check (
+      status in (
+        'pending',
+        'scheduled',
+        'in_progress',
+        'completed',
+        'cancelled'
+      )
+    ),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 15.2 Radiology Reports
+
+```sql
+create table public.radiology_reports (
+  id uuid primary key default gen_random_uuid(),
+
+  order_id uuid not null references public.radiology_orders(id),
+
+  report_content text,
+
+  report_status text not null default 'draft'
+    check (
+      report_status in (
+        'draft',
+        'verified',
+        'amended'
+      )
+    ),
+
+  reported_by uuid references public.profiles(id),
+  verified_by uuid references public.profiles(id),
+
+  reported_at timestamptz,
+  verified_at timestamptz,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+Radiology reports and related files must be protected by patient-level access policies.
+
+---
+
+# 16. Pharmacy & Prescription Schema
+
+## 16.1 Medications
+
+```sql
+create table public.medications (
+  id uuid primary key default gen_random_uuid(),
+
+  medication_code text not null unique,
+
+  generic_name text not null,
+  brand_name text,
+
+  strength text,
+  dosage_form text,
+
+  unit text,
+
+  description text,
+
+  is_active boolean not null default true,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 16.2 Prescriptions
+
+```sql
+create table public.prescriptions (
+  id uuid primary key default gen_random_uuid(),
+
+  prescription_number text not null unique,
+
+  patient_id uuid not null references public.patients(id),
+  encounter_id uuid not null references public.encounters(id),
+
+  prescribed_by uuid not null references public.profiles(id),
+
+  prescription_date timestamptz not null default now(),
+
+  status text not null default 'pending'
+    check (
+      status in (
+        'pending',
+        'partially_dispensed',
+        'dispensed',
+        'cancelled'
+      )
+    ),
+
+  notes text,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 16.3 Prescription Items
+
+```sql
+create table public.prescription_items (
+  id uuid primary key default gen_random_uuid(),
+
+  prescription_id uuid not null references public.prescriptions(id) on delete cascade,
+
+  medication_id uuid not null references public.medications(id),
+
+  dosage text not null,
+  frequency text not null,
+
+  duration_days integer,
+  quantity numeric not null check (quantity > 0),
+
+  instructions text,
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 16.4 Medication Dispensing
+
+```sql
+create table public.medication_dispenses (
+  id uuid primary key default gen_random_uuid(),
+
+  prescription_item_id uuid not null references public.prescription_items(id),
+
+  quantity_dispensed numeric not null check (quantity_dispensed > 0),
+
+  dispensed_by uuid not null references public.profiles(id),
+
+  dispensed_at timestamptz not null default now(),
+
+  notes text,
+
+  created_at timestamptz not null default now()
+);
+```
+
+Dispensing must be recorded transactionally with the appropriate inventory movement.
+
+Do not mark a prescription as fully dispensed unless its required dispensing conditions are satisfied.
+
+---
+
+# 17. Inventory Management Schema
+
+## 17.1 Inventory Categories
+
+```sql
+create table public.inventory_categories (
+  id uuid primary key default gen_random_uuid(),
+
+  name text not null unique,
+  description text,
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 17.2 Inventory Items
+
+```sql
+create table public.inventory_items (
+  id uuid primary key default gen_random_uuid(),
+
+  item_code text not null unique,
+
+  name text not null,
+  description text,
+
+  category_id uuid references public.inventory_categories(id),
+
+  unit text not null,
+
+  reorder_level numeric not null default 0,
+
+  is_active boolean not null default true,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+## 17.3 Inventory Batches
+
+```sql
+create table public.inventory_batches (
+  id uuid primary key default gen_random_uuid(),
+
+  item_id uuid not null references public.inventory_items(id),
+
+  batch_number text,
+
+  quantity_received numeric not null default 0,
+  quantity_remaining numeric not null default 0,
+
+  expiration_date date,
+
+  unit_cost numeric(12,2),
+
+  received_at timestamptz not null default now(),
+
+  created_at timestamptz not null default now(),
+
+  check (quantity_received >= 0),
+  check (quantity_remaining >= 0),
+  check (quantity_remaining <= quantity_received)
+);
+```
+
+## 17.4 Stock Transactions
+
+```sql
+create table public.stock_transactions (
+  id uuid primary key default gen_random_uuid(),
+
+  item_id uuid not null references public.inventory_items(id),
+
+  batch_id uuid references public.inventory_batches(id),
+
+  transaction_type text not null
+    check (
+      transaction_type in (
+        'stock_in',
+        'stock_out',
+        'adjustment',
+        'transfer',
+        'dispensing'
+      )
+    ),
+
+  quantity numeric not null check (quantity > 0),
+
+  reference_type text,
+  reference_id uuid,
+
+  reason text,
+
+  performed_by uuid not null references public.profiles(id),
+
+  performed_at timestamptz not null default now(),
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 17.5 Inventory Rules
+
+- Do not allow negative stock.
+- Record every stock movement.
+- Track batches and expiration dates where applicable.
+- Use transactions for stock changes.
+- Maintain a complete stock history.
+- Never directly overwrite historical stock transactions.
+- Medication dispensing must be linked to the corresponding prescription.
+
+---
+
+# 18. Billing & Payment Schema
+
+## 18.1 Invoices
+
+```sql
+create table public.invoices (
+  id uuid primary key default gen_random_uuid(),
+
+  invoice_number text not null unique,
+
+  patient_id uuid not null references public.patients(id),
+
+  admission_id uuid references public.admissions(id),
+  encounter_id uuid references public.encounters(id),
+
+  invoice_date timestamptz not null default now(),
+
+  subtotal numeric(12,2) not null default 0,
+  discount_amount numeric(12,2) not null default 0,
+  total_amount numeric(12,2) not null default 0,
+
+  amount_paid numeric(12,2) not null default 0,
+  balance numeric(12,2) not null default 0,
+
+  status text not null default 'unpaid'
+    check (
+      status in (
+        'unpaid',
+        'partially_paid',
+        'paid',
+        'cancelled',
+        'refunded'
+      )
+    ),
+
+  created_by uuid not null references public.profiles(id),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  check (subtotal >= 0),
+  check (discount_amount >= 0),
+  check (total_amount >= 0),
+  check (amount_paid >= 0),
+  check (balance >= 0)
+);
+```
+
+## 18.2 Invoice Items
+
+```sql
+create table public.invoice_items (
+  id uuid primary key default gen_random_uuid(),
+
+  invoice_id uuid not null references public.invoices(id) on delete cascade,
+
+  description text not null,
+
+  quantity numeric not null check (quantity > 0),
+
+  unit_price numeric(12,2) not null check (unit_price >= 0),
+
+  line_total numeric(12,2) not null check (line_total >= 0),
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 18.3 Payments
+
+```sql
+create table public.payments (
+  id uuid primary key default gen_random_uuid(),
+
+  payment_reference text not null unique,
+
+  invoice_id uuid not null references public.invoices(id),
+
+  amount numeric(12,2) not null check (amount > 0),
+
+  payment_method text not null,
+
+  payment_status text not null default 'completed'
+    check (
+      payment_status in (
+        'pending',
+        'completed',
+        'failed',
+        'refunded',
+        'cancelled'
+      )
+    ),
+
+  received_by uuid not null references public.profiles(id),
+
+  received_at timestamptz not null default now(),
+
+  notes text,
+
+  created_at timestamptz not null default now()
+);
+```
+
+## 18.4 Billing Rules
+
+- Store monetary amounts using `numeric`, not `float`.
+- Validate invoice totals inside the database.
+- Payment recording must be transactional.
+- Prevent duplicate payment processing.
+- Never delete completed payment records.
+- Refunds must retain the original payment history.
+- Maintain a complete audit trail.
+- Recalculate invoice balance using trusted database logic.
+
+---
+
+# 19. Notifications & Audit Logs
+
+## 19.1 Notifications
+
+```sql
+create table public.notifications (
+  id uuid primary key default gen_random_uuid(),
+
+  user_id uuid not null references public.profiles(id) on delete cascade,
+
+  title text not null,
+  message text not null,
+
+  notification_type text not null,
+
+  related_entity_type text,
+  related_entity_id uuid,
+
+  is_read boolean not null default false,
+
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+```
+
+Do not include sensitive clinical details in notification messages.
+
+Notifications should use references to records rather than reproducing confidential patient information.
+
+## 19.2 Audit Logs
+
+```sql
+create table public.audit_logs (
+  id bigint generated always as identity primary key,
+
+  actor_id uuid references public.profiles(id),
+
+  action text not null,
+
+  entity_type text not null,
+  entity_id uuid,
+
+  description text,
+
+  metadata jsonb not null default '{}'::jsonb,
+
+  ip_address inet,
+
+  created_at timestamptz not null default now()
+);
+```
+
+Audit logs should capture important operations, including:
+
+- Patient registration
+- Patient record updates
+- Clinical note creation and amendments
+- Diagnosis creation and corrections
+- Admission and discharge
+- Bed transfers
+- Laboratory result entry and verification
+- Prescription creation and dispensing
+- Invoice creation
+- Payment recording
+- Refund operations
+- Inventory adjustments
+- User role changes
+- Account deactivation
+- Sensitive file access where required
+
+Audit records must not be editable by ordinary users.
+
+Avoid copying entire medical records into audit metadata. Record only the minimum information required to establish accountability.
+
+---
+
+# 20. Updated Timestamps & Profile Bootstrap Triggers
+
+## 20.1 Updated Timestamp Function
 
 ```sql
 create or replace function public.set_updated_at()
@@ -757,663 +1881,1491 @@ begin
   return new;
 end;
 $$;
+```
 
--- Apply per table:
-create trigger trg_profiles_updated_at before update on public.profiles
-  for each row execute function public.set_updated_at();
--- repeat for projects, project_members (no updated_at), system_models, model_versions (no updated_at),
--- requirements, system_components, system_interfaces, data_entities, generated_artifacts,
--- document_templates, generated_documents, diagrams, test_cases, review_requests, integrations
+Apply this trigger to mutable tables that contain `updated_at`.
 
+Examples:
+
+- profiles
+- patients
+- departments
+- staff_profiles
+- rooms
+- beds
+- appointments
+- admissions
+- encounters
+- clinical_notes
+- laboratory_orders
+- laboratory_results
+- prescriptions
+- medications
+- inventory_items
+- invoices
+
+## 20.2 New User Profile Trigger
+
+```sql
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
-  insert into public.profiles (id, email, full_name)
+  insert into public.profiles (
+    id,
+    email,
+    full_name
+  )
   values (
     new.id,
     coalesce(new.email, ''),
-    coalesce(new.raw_user_meta_data ->> 'full_name', split_part(coalesce(new.email, ''), '@', 1))
+    coalesce(
+      new.raw_user_meta_data ->> 'full_name',
+      split_part(coalesce(new.email, ''), '@', 1)
+    )
   )
   on conflict (id) do nothing;
+
   return new;
 end;
 $$;
 
 create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
+after insert on auth.users
+for each row
+execute function public.handle_new_user();
 ```
 
-### 6.14 Indexes
+This trigger creates the application profile when a Supabase Auth account is created.
 
-```sql
-create index idx_project_members_user        on public.project_members(user_id);
-create index idx_project_members_project     on public.project_members(project_id);
-create index idx_projects_status             on public.projects(status);
-create index idx_projects_owner              on public.projects(owner_id);
-create index idx_system_models_project       on public.system_models(project_id);
-create index idx_system_models_status        on public.system_models(status);
-create index idx_model_versions_model        on public.model_versions(system_model_id);
-create index idx_model_versions_status       on public.model_versions(status);
-create index idx_requirements_version        on public.requirements(model_version_id);
-create index idx_components_version          on public.system_components(model_version_id);
-create index idx_interfaces_version          on public.system_interfaces(model_version_id);
-create index idx_entities_version            on public.data_entities(model_version_id);
-create index idx_artifacts_project           on public.generated_artifacts(project_id);
-create index idx_artifacts_version           on public.generated_artifacts(model_version_id);
-create index idx_artifacts_status            on public.generated_artifacts(status);
-create index idx_documents_project           on public.generated_documents(project_id);
-create index idx_documents_status            on public.generated_documents(status);
-create index idx_document_versions_document  on public.document_versions(document_id);
-create index idx_diagrams_project            on public.diagrams(project_id);
-create index idx_diagrams_version            on public.diagrams(model_version_id);
-create index idx_test_cases_project          on public.test_cases(project_id);
-create index idx_test_cases_requirement      on public.test_cases(requirement_id);
-create index idx_trace_project               on public.traceability_links(project_id);
-create index idx_trace_source                on public.traceability_links(source_type, source_id);
-create index idx_trace_target                on public.traceability_links(target_type, target_id);
-create index idx_review_project              on public.review_requests(project_id);
-create index idx_review_target               on public.review_requests(target_type, target_id);
-create index idx_review_status               on public.review_requests(status);
-create index idx_review_assignments_reviewer on public.review_assignments(reviewer_id);
-create index idx_review_comments_request     on public.review_comments(review_request_id);
-create index idx_approvals_review            on public.approval_records(review_request_id);
-create index idx_audit_project_created       on public.audit_logs(project_id, created_at desc);
-create index idx_audit_actor_created         on public.audit_logs(actor_id, created_at desc);
-create index idx_integrations_project        on public.integrations(project_id);
-```
-
-### 6.15 Traceability views
-
-```sql
-create or replace view public.v_requirement_coverage
-with (security_invoker = true) as
-select
-  r.id                as requirement_id,
-  r.model_version_id,
-  r.code              as requirement_code,
-  r.title,
-  count(tl.id) filter (where tl.target_type = 'test_case') as test_case_links,
-  count(tl.id) filter (where tl.target_type = 'generated_artifact') as artifact_links,
-  count(tl.id) filter (where tl.target_type = 'generated_document') as document_links
-from public.requirements r
-left join public.traceability_links tl
-  on tl.source_type = 'requirement' and tl.source_id = r.id
-group by r.id, r.model_version_id, r.code, r.title;
-
-create or replace view public.v_outdated_documents
-with (security_invoker = true) as
-select
-  d.id as document_id,
-  d.project_id,
-  d.title,
-  d.model_version_id as generated_from_version,
-  m.current_version_id as current_model_version
-from public.generated_documents d
-join public.system_models m
-  on m.id = (select mv.system_model_id from public.model_versions mv where mv.id = d.model_version_id)
-where d.model_version_id <> m.current_version_id
-  and d.status = 'approved';
-```
-
-Views use `security_invoker = true` so caller RLS still applies (PostgreSQL 15+, available on Supabase).
+It must not automatically grant privileged hospital roles.
 
 ---
 
-## 7. Row Level Security
+# 21. Database Functions & Transactional Operations
 
-### 7.1 Rules
+Operations that require atomic database changes must use PostgreSQL functions.
 
-1. RLS is enabled on **every** table in `public` that the client can reach.
-2. Helper functions are `security definer` with a fixed `search_path`, owned by the migration role, so they can read membership tables without recursive policy evaluation.
-3. Policies are written for `authenticated` only. `anon` gets no access to application data.
-4. Service-role bypasses RLS by design — that is why it stays server-side.
-5. Deny by default: no policy means no access.
+The frontend may invoke these functions using the Supabase SDK's `rpc()` method.
 
-### 7.2 Helper functions
+This is not a separate REST backend.
+
+## 21.1 Required Transactional Functions
+
+| Function | Purpose |
+|---|---|
+| `register_patient` | Create patient and assign medical record number |
+| `create_appointment` | Validate schedule and create appointment |
+| `create_admission` | Create admission and allocate an available bed |
+| `transfer_patient` | Transfer patient between beds |
+| `discharge_patient` | Complete discharge and release bed |
+| `finalize_clinical_note` | Finalize an authorized clinical note |
+| `verify_laboratory_result` | Verify an authorized laboratory result |
+| `dispense_prescription` | Record dispensing and update inventory |
+| `record_payment` | Record payment and update invoice balance |
+| `refund_payment` | Process an authorized refund |
+| `adjust_inventory` | Record controlled stock adjustment |
+| `generate_reference_number` | Generate controlled unique identifiers |
+
+## 21.2 Function Requirements
+
+Every transactional function must:
+
+1. Identify the authenticated caller using `auth.uid()`.
+2. Verify the required permission.
+3. Validate the requested record.
+4. Lock affected rows where concurrent changes are possible.
+5. Perform the operation inside one transaction.
+6. Maintain data consistency.
+7. Write appropriate audit records.
+8. Return a clear result.
+9. Reject unauthorized operations.
+
+## 21.3 Example: Secure Payment Recording
 
 ```sql
-create or replace function public.is_admin()
+create or replace function public.record_payment(
+  p_invoice_id uuid,
+  p_amount numeric,
+  p_payment_method text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_payment_id uuid;
+  v_invoice public.invoices%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'Invalid payment amount';
+  end if;
+
+  select *
+  into v_invoice
+  from public.invoices
+  where id = p_invoice_id
+  for update;
+
+  if not found then
+    raise exception 'Invoice not found';
+  end if;
+
+  if not public.has_permission('billing.payment.create') then
+    raise exception 'Insufficient permission';
+  end if;
+
+  if v_invoice.status in ('cancelled', 'refunded') then
+    raise exception 'Invoice cannot accept payments';
+  end if;
+
+  if p_amount > v_invoice.balance then
+    raise exception 'Payment exceeds outstanding balance';
+  end if;
+
+  insert into public.payments (
+    payment_reference,
+    invoice_id,
+    amount,
+    payment_method,
+    payment_status,
+    received_by
+  )
+  values (
+    'PAY-' || gen_random_uuid()::text,
+    p_invoice_id,
+    p_amount,
+    p_payment_method,
+    'completed',
+    auth.uid()
+  )
+  returning id into v_payment_id;
+
+  update public.invoices
+  set
+    amount_paid = amount_paid + p_amount,
+    balance = balance - p_amount,
+    status = case
+      when balance - p_amount = 0 then 'paid'
+      else 'partially_paid'
+    end,
+    updated_at = now()
+  where id = p_invoice_id;
+
+  return v_payment_id;
+end;
+$$;
+```
+
+Important:
+
+The example is a reference implementation. The final production function must additionally enforce the hospital's billing authorization model, patient access rules, payment idempotency, and audit requirements.
+
+Test function ownership, execution grants, and RLS behavior before deployment.
+
+---
+
+# 22. Role-Based Permissions
+
+## 22.1 Permission Catalog
+
+Seed the following permissions.
+
+### Administration
+
+```text
+system.admin
+system.settings.manage
+user.view
+user.create
+user.update
+user.deactivate
+role.manage
+audit.view
+```
+
+### Patient Management
+
+```text
+patient.view
+patient.create
+patient.update
+patient.archive
+patient.search
+patient.export
+```
+
+### Appointments
+
+```text
+appointment.view
+appointment.create
+appointment.update
+appointment.cancel
+appointment.manage_schedule
+```
+
+### Admissions
+
+```text
+admission.view
+admission.create
+admission.update
+admission.transfer
+admission.discharge
+bed.view
+bed.manage
+```
+
+### Medical Records
+
+```text
+medical_record.view
+medical_record.create
+medical_record.update
+medical_record.finalize
+medical_record.amend
+diagnosis.view
+diagnosis.create
+diagnosis.update
+vital_signs.view
+vital_signs.record
+```
+
+### Nursing
+
+```text
+nursing.view
+nursing.assessment.create
+nursing.notes.create
+nursing.notes.view
+```
+
+### Laboratory
+
+```text
+laboratory.view
+laboratory.order.view
+laboratory.order.create
+laboratory.specimen.manage
+laboratory.result.create
+laboratory.result.verify
+```
+
+### Radiology
+
+```text
+radiology.view
+radiology.order.manage
+radiology.report.create
+radiology.report.verify
+```
+
+### Pharmacy
+
+```text
+pharmacy.view
+prescription.view
+prescription.create
+prescription.dispense
+medication.manage
+```
+
+### Billing
+
+```text
+billing.view
+billing.invoice.create
+billing.invoice.update
+billing.payment.create
+billing.refund
+billing.report.view
+```
+
+### Inventory
+
+```text
+inventory.view
+inventory.item.manage
+inventory.stock.in
+inventory.stock.out
+inventory.stock.adjust
+inventory.report.view
+```
+
+### Reports
+
+```text
+reports.patient.view
+reports.admission.view
+reports.appointment.view
+reports.financial.view
+reports.inventory.view
+reports.laboratory.view
+```
+
+## 22.2 Role Permission Matrix
+
+This matrix is the initial proposed access model. Final permissions must be approved by hospital stakeholders.
+
+| Module | Admin | Receptionist | Physician | Nurse | Laboratory | Radiology | Pharmacist | Billing | Inventory |
+|---|---|---|---|---|---|---|---|---|---|
+| Dashboard | Full | Limited | Clinical | Clinical | Department | Department | Department | Financial | Stock |
+| Patients | Full | Register / Update | Authorized View | Assigned View | Necessary View | Necessary View | Necessary View | Necessary View | None |
+| Appointments | Full | Manage | Own Schedule | View | None | None | None | None | None |
+| Admissions | Full | Register | Clinical View | Assigned View | Necessary View | Necessary View | Necessary View | Billing View | None |
+| Medical Records | Full | Restricted | Clinical | Assigned Clinical | Necessary | Necessary | Medication Context | Billing Context | None |
+| Nursing | Full | None | Clinical View | Full Nursing | None | None | None | None | None |
+| Laboratory | Full | None | Order / View | Authorized View | Full Lab | None | None | None | None |
+| Radiology | Full | None | Order / View | Authorized View | None | Full Radiology | None | None | None |
+| Pharmacy | Full | None | Prescribe / View | Authorized View | None | None | Full Pharmacy | None | None |
+| Billing | Full | Limited | View Relevant | None | None | None | None | Full Billing | None |
+| Inventory | Full | None | None | None | Department Items | Department Items | Medication Stock | None | Full Inventory |
+| Reports | Full | Limited | Clinical | Nursing | Laboratory | Radiology | Pharmacy | Financial | Inventory |
+| User Management | Full | None | None | None | None | None | None | None | None |
+
+**Important:** A role matrix is not sufficient security by itself. The actual database policies must enforce access at the row and operation level.
+
+A user with multiple roles receives only the combined permissions explicitly assigned to those roles.
+
+Clinical access must also consider the hospital's authorized patient-care relationship and applicable privacy rules.
+
+---
+
+# 23. Row Level Security (RLS)
+
+## 23.1 Mandatory RLS Rules
+
+1. Enable RLS on every application table in the `public` schema.
+2. Do not grant anonymous users access to patient information.
+3. Write policies for authenticated users only.
+4. Use permission helper functions.
+5. Restrict sensitive clinical data.
+6. Restrict financial records.
+7. Restrict audit logs.
+8. Use deny-by-default policies.
+9. Do not rely on frontend route guards.
+10. Test policies using actual authenticated user tokens.
+
+## 23.2 Permission Helper Functions
+
+### Check User Role
+
+```sql
+create or replace function public.has_role(p_role text)
 returns boolean
-language sql stable security definer
-set search_path = public
+language sql
+stable
+security definer
+set search_path = ''
 as $$
   select exists (
     select 1
     from public.user_roles ur
     join public.roles r on r.id = ur.role_id
     where ur.user_id = auth.uid()
-      and r.slug in ('super_admin','system_admin')
+      and r.slug = p_role
   );
-$$;
-
-create or replace function public.has_role(p_slug text)
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.user_roles ur
-    join public.roles r on r.id = ur.role_id
-    where ur.user_id = auth.uid() and r.slug = p_slug
-  );
-$$;
-
-create or replace function public.has_permission(p_slug text)
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select public.is_admin() or exists (
-    select 1
-    from public.user_roles ur
-    join public.role_permissions rp on rp.role_id = ur.role_id
-    join public.permissions p on p.id = rp.permission_id
-    where ur.user_id = auth.uid() and p.slug = p_slug
-  );
-$$;
-
-create or replace function public.has_project_role(p_project_id uuid, p_roles public.project_role[])
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.project_members pm
-    where pm.project_id = p_project_id
-      and pm.user_id = auth.uid()
-      and pm.project_role = any (p_roles)
-  );
-$$;
-
-create or replace function public.can_access_project(p_project_id uuid)
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select public.is_admin() or exists (
-    select 1 from public.project_members pm
-    where pm.project_id = p_project_id and pm.user_id = auth.uid()
-  ) or exists (
-    select 1 from public.projects p
-    where p.id = p_project_id and p.owner_id = auth.uid()
-  );
-$$;
-
-create or replace function public.can_manage_project(p_project_id uuid)
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select public.is_admin()
-    or exists (
-      select 1 from public.projects p
-      where p.id = p_project_id and p.owner_id = auth.uid()
-    )
-    or public.has_project_role(p_project_id, array['manager']::public.project_role[]);
-$$;
-
-create or replace function public.can_edit_model(p_project_id uuid)
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select public.has_permission('model.edit')
-    and (public.is_admin() or public.has_project_role(
-      p_project_id, array['manager','analyst']::public.project_role[]
-    ));
-$$;
-
--- Resolve the owning project/mode from a model version (used by child tables).
-create or replace function public.model_version_project(p_version_id uuid)
-returns uuid
-language sql stable security definer
-set search_path = public
-as $$
-  select sm.project_id
-  from public.model_versions mv
-  join public.system_models sm on sm.id = mv.system_model_id
-  where mv.id = p_version_id;
-$$;
-
-create or replace function public.can_edit_model_version(p_version_id uuid)
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select public.can_edit_model(public.model_version_project(p_version_id))
-     and exists (
-       select 1 from public.model_versions mv
-       where mv.id = p_version_id and mv.status in ('draft','rejected')
-     );
-$$;
-
-create or replace function public.can_access_document(p_document_id uuid)
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.generated_documents d
-    where d.id = p_document_id and public.can_access_project(d.project_id)
-  );
-$$;
-
--- Safe uuid parsing for Storage object paths shaped `{project_id}/...`
-create or replace function public.safe_uuid(p_text text)
-returns uuid
-language plpgsql immutable
-as $$
-begin
-  return p_text::uuid;
-exception when others then
-  return null;
-end;
-$$;
-
-create or replace function public.storage_project_id(p_object_name text)
-returns uuid
-language sql stable
-as $$
-  select public.safe_uuid((storage.foldername(p_object_name))[1]);
 $$;
 ```
 
-### 7.3 Policy matrix
-
-Use this table as the review checklist. `access` = `can_access_project(project_id)`, `manage` = `can_manage_project(project_id)`.
-
-| Table | SELECT | INSERT | UPDATE | DELETE |
-|---|---|---|---|---|
-| `profiles` | authenticated | trigger only | self or `is_admin()` | none (deactivate) |
-| `roles` / `permissions` / `role_permissions` | authenticated | `is_admin()` | `is_admin()` | `is_admin()` |
-| `user_roles` | self or `is_admin()` | `is_admin()` | `is_admin()` | `is_admin()` |
-| `projects` | `access` | `has_permission('project.create')` | `manage` | none (archive) |
-| `project_members` | `access` | `manage` | `manage` | `manage` |
-| `system_models` | `access` | `can_edit_model(project_id)` | `can_edit_model(project_id)` | `manage` and `status='draft'` |
-| `model_versions` | `access` via model | `can_edit_model(project_id)` | `can_edit_model_version(id)` | none |
-| `requirements` / `system_components` / `system_interfaces` / `data_entities` | `access` via version | `can_edit_model_version(model_version_id)` | same | same |
-| `generated_artifacts` | `access` | `has_permission('artifact.generate')` and `access` | `access` and `status='draft'` and `created_by=auth.uid()` | creator draft or `manage` |
-| `document_templates` | authenticated and `is_active` (or admin) | `has_permission('document.template.manage')` | same | same |
-| `generated_documents` | `access` | `has_permission('document.generate')` and `access` | creator draft or `has_permission('document.approve')` | none (supersede) |
-| `document_versions` | `can_access_document(document_id)` | `can_access_document` and creator | creator draft or approver | none |
-| `diagrams` | `access` | `has_permission('artifact.generate')` and `access` | creator draft or `manage` | creator draft or `manage` |
-| `test_cases` | `access` | `can_edit_model` or `has_permission('traceability.manage')` | same | same |
-| `traceability_links` | `access` | `has_permission('traceability.manage')` or `can_edit_model(project_id)` | same | same |
-| `review_requests` | `access` | `has_permission('review.request')` and `access` | requester, `manage`, or assigned reviewer | none |
-| `review_assignments` | assigned reviewer, requester, or `manage` | `has_permission('review.assign')` | assigned reviewer (own row) or `manage` | `manage` |
-| `review_comments` | `access` and (`visibility='project'` or reviewer/manager) | `access` and `author_id=auth.uid()` | author only | author or admin |
-| `approval_records` | `access` | Edge Function / RPC only | none | none |
-| `audit_logs` | `is_admin()` or `has_permission('audit.view')` | triggers/service only | none | none |
-| `integrations` | `is_admin()` or (`access` and `manage`) | `has_permission('integration.manage')` | same | same |
-
-### 7.4 Example policies (pattern for every table)
+### Check Administrator
 
 ```sql
-alter table public.projects enable row level security;
-
-create policy "projects_select_members"
-  on public.projects for select to authenticated
-  using (public.can_access_project(id));
-
-create policy "projects_insert_permitted"
-  on public.projects for insert to authenticated
-  with check (
-    public.has_permission('project.create')
-    and created_by = auth.uid()
-  );
-
-create policy "projects_update_managers"
-  on public.projects for update to authenticated
-  using (public.can_manage_project(id))
-  with check (public.can_manage_project(id));
-
-alter table public.traceability_links enable row level security;
-
-create policy "trace_select"
-  on public.traceability_links for select to authenticated
-  using (public.can_access_project(project_id));
-
-create policy "trace_insert"
-  on public.traceability_links for insert to authenticated
-  with check (
-    public.can_access_project(project_id)
-    and created_by = auth.uid()
-    and (
-      public.has_permission('traceability.manage')
-      or public.can_edit_model(project_id)
-    )
-  );
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    public.has_role('super_admin')
+    or public.has_role('hospital_admin');
+$$;
 ```
 
-Apply the same three-part shape everywhere: `for select` with an access predicate, `for insert` with `with check` + identity, `for update` with both `using` and `with check`.
+### Check Permission
 
-### 7.5 RLS pitfalls to avoid
+```sql
+create or replace function public.has_permission(p_permission text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    public.is_admin()
+    or exists (
+      select 1
+      from public.user_roles ur
+      join public.role_permissions rp
+        on rp.role_id = ur.role_id
+      join public.permissions p
+        on p.id = rp.permission_id
+      where ur.user_id = auth.uid()
+        and p.slug = p_permission
+    );
+$$;
+```
 
-- Never write a policy that queries the same table it protects without a `security definer` helper — that recurses.
-- Never use `auth.jwt() ->> 'role'` as the permission model; the JWT only says `authenticated`.
-- Never mark a helper `security definer` without `set search_path`.
-- Never enable RLS but forget the `authenticated` grant; check with a real user token, not the dashboard SQL editor (which runs as `postgres` and bypasses RLS).
+Security-definer helpers must:
+
+- Use a fixed search path.
+- Be owned by an appropriate trusted database role.
+- Have explicit execution grants.
+- Avoid exposing privileged operations.
+- Be tested against privilege escalation.
+
+## 23.3 Patient Access Helper
+
+Patient access must be controlled through explicit permission and authorized care relationships.
+
+A patient-care assignment table should be used where the hospital requires staff-to-patient assignment.
+
+Example:
+
+```sql
+create table public.patient_care_assignments (
+  id uuid primary key default gen_random_uuid(),
+
+  patient_id uuid not null references public.patients(id),
+  staff_id uuid not null references public.staff_profiles(id),
+
+  assignment_type text not null,
+
+  assigned_by uuid not null references public.profiles(id),
+
+  assigned_at timestamptz not null default now(),
+  ended_at timestamptz
+);
+```
+
+Example helper:
+
+```sql
+create or replace function public.can_access_patient(p_patient_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    public.is_admin()
+    or (
+      public.has_permission('patient.view')
+      and exists (
+        select 1
+        from public.patient_care_assignments pca
+        join public.staff_profiles sp
+          on sp.id = pca.staff_id
+        where pca.patient_id = p_patient_id
+          and sp.user_id = auth.uid()
+          and pca.ended_at is null
+      )
+    );
+$$;
+```
+
+The final helper must be adapted to the approved hospital access policy. For example, receptionists may need access to registration information without access to full clinical records.
+
+Do not use a broad patient-access helper as the only policy for every clinical table.
+
+## 23.4 Example Patient Policies
+
+```sql
+alter table public.patients enable row level security;
+
+create policy "patients_select_authorized"
+on public.patients
+for select
+to authenticated
+using (
+  public.has_permission('patient.view')
+);
+
+create policy "patients_insert_authorized"
+on public.patients
+for insert
+to authenticated
+with check (
+  public.has_permission('patient.create')
+  and created_by = auth.uid()
+);
+
+create policy "patients_update_authorized"
+on public.patients
+for update
+to authenticated
+using (
+  public.has_permission('patient.update')
+)
+with check (
+  public.has_permission('patient.update')
+);
+```
+
+This is a basic policy pattern. In production, patient visibility must also enforce the appropriate department, assignment, and field-level privacy rules.
+
+## 23.5 Example Clinical Record Policies
+
+```sql
+alter table public.clinical_notes enable row level security;
+
+create policy "clinical_notes_select_authorized"
+on public.clinical_notes
+for select
+to authenticated
+using (
+  public.has_permission('medical_record.view')
+  and public.can_access_patient(patient_id)
+);
+
+create policy "clinical_notes_insert_authorized"
+on public.clinical_notes
+for insert
+to authenticated
+with check (
+  public.has_permission('medical_record.create')
+  and public.can_access_patient(patient_id)
+  and authored_by = auth.uid()
+);
+```
+
+Finalized clinical records require additional restrictions against unauthorized editing and deletion.
+
+## 23.6 RLS Implementation Requirements
+
+Every table must have a documented access policy.
+
+The following are not acceptable:
+
+- Unrestricted patient table access.
+- Public medical records.
+- Public invoices.
+- Public prescriptions.
+- Public laboratory results.
+- User-controlled role assignments.
+- Client-side-only permission checks.
+- Unrestricted audit log access.
 
 ---
 
-## 8. Storage
+# 24. Supabase Storage
 
-### 8.1 Buckets
+## 24.1 Storage Buckets
 
-| Bucket | Public | Contents | Path convention |
-|---|---|---|---|
-| `avatars` | yes | profile images | `{user_id}/avatar.{ext}` |
-| `project-files` | no | source uploads, attachments | `{project_id}/{folder}/{filename}` |
-| `generated-artifacts` | no | generator output archives | `{project_id}/{artifact_id}/{filename}` |
-| `generated-documents` | no | rendered DOCX/PDF/HTML | `{project_id}/{document_id}/{version}/{filename}` |
-| `diagrams` | no | SVG/PNG exports | `{project_id}/{diagram_id}/{filename}` |
-| `templates` | no | document templates | `{template_id}/{filename}` |
+Use private buckets for patient-related and hospital documents.
 
-Create buckets through a migration so environments stay reproducible:
+| Bucket | Public | Contents |
+|---|---|---|
+| `avatars` | No | Staff profile images |
+| `patient-documents` | No | Authorized patient attachments |
+| `medical-record-files` | No | Clinical documents |
+| `laboratory-files` | No | Laboratory attachments |
+| `radiology-files` | No | Radiology documents and authorized images |
+| `prescription-files` | No | Prescription-related attachments |
+| `billing-documents` | No | Invoices and payment documents |
+| `hospital-documents` | No | Internal administrative documents |
+
+All buckets must have explicit file-size and MIME-type restrictions appropriate to their contents.
+
+## 24.2 Bucket Creation
+
+Create buckets through SQL migrations.
+
+Example:
 
 ```sql
-insert into storage.buckets (id, name, public)
+insert into storage.buckets (
+  id,
+  name,
+  public
+)
 values
-  ('avatars', 'avatars', true),
-  ('project-files', 'project-files', false),
-  ('generated-artifacts', 'generated-artifacts', false),
-  ('generated-documents', 'generated-documents', false),
-  ('diagrams', 'diagrams', false),
-  ('templates', 'templates', false)
+  ('avatars', 'avatars', false),
+  ('patient-documents', 'patient-documents', false),
+  ('medical-record-files', 'medical-record-files', false),
+  ('laboratory-files', 'laboratory-files', false),
+  ('radiology-files', 'radiology-files', false),
+  ('prescription-files', 'prescription-files', false),
+  ('billing-documents', 'billing-documents', false),
+  ('hospital-documents', 'hospital-documents', false)
 on conflict (id) do nothing;
 ```
 
-### 8.2 Storage policies
+## 24.3 Storage Path Convention
 
-```sql
--- Private project files: members read, editors write.
-create policy "project_files_read"
-  on storage.objects for select to authenticated
-  using (
-    bucket_id = 'project-files'
-    and public.can_access_project(public.storage_project_id(name))
-  );
+Use predictable, access-controlled paths.
 
-create policy "project_files_write"
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id = 'project-files'
-    and public.can_edit_model(public.storage_project_id(name))
-    and owner_id = auth.uid()::text
-  );
+```text
+avatars/
+  {user_id}/
+    profile-image.png
 
-create policy "project_files_delete"
-  on storage.objects for delete to authenticated
-  using (
-    bucket_id = 'project-files'
-    and public.can_manage_project(public.storage_project_id(name))
-  );
+patient-documents/
+  {patient_id}/
+    {document_id}/
+      document.pdf
 
--- Generated documents are written by generators (client-side with the user token)
-create policy "generated_documents_rw"
-  on storage.objects for all to authenticated
-  using (
-    bucket_id = 'generated-documents'
-    and public.can_access_project(public.storage_project_id(name))
-  )
-  with check (
-    bucket_id = 'generated-documents'
-    and public.can_edit_model(public.storage_project_id(name))
-  );
+medical-record-files/
+  {patient_id}/
+    {encounter_id}/
+      document.pdf
+
+laboratory-files/
+  {patient_id}/
+    {order_id}/
+      attachment.pdf
+
+radiology-files/
+  {patient_id}/
+    {order_id}/
+      image.dcm
+
+prescription-files/
+  {patient_id}/
+    {prescription_id}/
+      prescription.pdf
+
+billing-documents/
+  {patient_id}/
+    {invoice_id}/
+      invoice.pdf
 ```
 
-Repeat with the matching predicate for `generated-artifacts`, `diagrams`, and `templates` (templates: read for all authenticated, write for `has_permission('document.template.manage')`). Avatars: read public, write only under the caller's own user id:
+Object paths are not authorization. Storage policies must validate access against the related patient record and authorized user.
 
-```sql
-create policy "avatars_write_own"
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = auth.uid()::text
-  );
-```
+## 24.4 Storage Security
 
-### 8.3 File handling rules
+- Do not make patient documents public.
+- Use signed URLs with short expiration periods.
+- Verify patient authorization before downloads.
+- Validate MIME types and file sizes.
+- Do not trust the file extension alone.
+- Restrict uploads to authorized roles.
+- Prevent unauthorized object deletion.
+- Record sensitive file operations when required.
+- Do not expose confidential documents through permanent public links.
 
-- Validate MIME type and size in the client **and** rely on bucket restrictions (`file_size_limit`, `allowed_mime_types`).
-- Upload path must always start with a UUID the caller can prove access to.
-- Download restricted files with `createSignedUrl(path, 60)` — short-lived links, never public URLs for private buckets.
-- Never `remove()` another user's object without a `manage` policy.
-- Generated files are always written **before** the metadata row, so a failed upload leaves no orphan record. Delete the object on rollback.
-
----
-
-## 9. Realtime
-
-Use Realtime only where live update changes behavior. Do not substitute polling for Supabase features that are already realtime, and do not subscribe to entire tables out of convenience.
-
-```sql
-alter publication supabase_realtime add table
-  public.review_requests,
-  public.review_comments,
-  public.approval_records,
-  public.generated_documents,
-  public.generated_artifacts,
-  public.diagrams;
-```
-
-Typical subscriptions:
-
-| Feature | Channel | Event |
-|---|---|---|
-| Review inbox / status badge | `postgres_changes` on `review_requests` filtered by `project_id` | `*` |
-| Review thread | `postgres_changes` on `review_comments` filtered by `review_request_id` | `INSERT` |
-| Approval state | `postgres_changes` on `approval_records` | `INSERT` |
-| Generation progress | `broadcast` private channel `project:{id}:generation` | custom payload |
-| Document list badge | `postgres_changes` on `generated_documents` filtered by `project_id` | `INSERT`, `UPDATE` |
-
-Client helper rules:
+Example signed URL:
 
 ```ts
-// lib/supabase/realtime.ts
-supabase
-  .channel(`project:${projectId}:reviews`)
-  .on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "review_requests", filter: `project_id=eq.${projectId}` },
-    handler,
-  )
-  .subscribe();
+const { data, error } = await supabase.storage
+  .from("patient-documents")
+  .createSignedUrl(filePath, 60);
+
+if (error) {
+  throw error;
+}
+
+const signedUrl = data.signedUrl;
 ```
 
-- Always remove the channel on unmount (`supabase.removeChannel(channel)`).
-- `postgres_changes` runs under the subscriber's RLS; verify with a restricted user, not only an admin.
-- Use private channels (`realtime.messages` policies) for broadcast/presence that must be scoped by project membership.
-- Never broadcast confidential document content; broadcast IDs and let the client fetch through RLS.
+The frontend must first retrieve an authorized object path through RLS-protected records.
 
 ---
 
-## 10. Edge Functions
+# 25. Supabase Realtime
 
-Only these categories justify an Edge Function. Everything else uses the client SDK.
+Realtime must only be enabled for features that benefit from immediate updates.
 
-| Function | Purpose | Why it cannot be client-side |
+## 25.1 Recommended Realtime Features
+
+| Feature | Table | Event |
 |---|---|---|
-| `admin-users` | create/deactivate users, assign global roles | requires service-role Admin API |
-| `approve-item` | transactional approval: insert `approval_records`, update target + request status, write audit log | must be atomic and trusted; prevents self-approval bypass |
-| `generate-document` | server-side DOCX/PDF rendering when browser output is insufficient or the template is large | trusted heavy processing (optional) |
-| `ai-assist` | AI drafting/summarization | provider secret key |
-| `integrity-scan` | traceability gaps, outdated documents, orphan detection | scheduled trusted job |
-| `notify` | email/webhook notifications | provider secret |
+| Appointment Updates | `appointments` | INSERT / UPDATE |
+| Admission Updates | `admissions` | INSERT / UPDATE |
+| Bed Availability | `beds` | UPDATE |
+| Laboratory Queue | `laboratory_orders` | INSERT / UPDATE |
+| Laboratory Results | `laboratory_results` | INSERT / UPDATE |
+| Pharmacy Queue | `prescriptions` | INSERT / UPDATE |
+| Notifications | `notifications` | INSERT / UPDATE |
+| Payment Updates | `payments` | INSERT |
+| Inventory Changes | `stock_transactions` | INSERT |
 
-### 10.1 Function rules
+## 25.2 Enable Publication
 
-1. Verify the caller: `const { data: { user } } = await supabase.auth.getUser()` with the request's `Authorization` header. Reject anonymous.
-2. Build a **user-scoped** client to check authorization through RLS, or re-check the same predicates explicitly.
-3. Use the service-role client only for the privileged step, never to bypass a check you did not perform.
-4. Validate input with `zod`. Reject unknown fields.
-5. Never log secrets, tokens, or patient data.
-6. Return `{ data }` or `{ error: { code, message } }`. No stack traces to the client.
-7. Prefer one RPC (`create or replace function`) when the logic is pure SQL — Postgres functions are cheaper than a function invocation.
+Only publish tables that require Realtime.
 
-### 10.2 Approval function contract
+Example:
 
+```sql
+alter publication supabase_realtime
+add table
+  public.appointments,
+  public.admissions,
+  public.beds,
+  public.laboratory_orders,
+  public.laboratory_results,
+  public.prescriptions,
+  public.notifications,
+  public.payments,
+  public.stock_transactions;
 ```
-approve-item(before: { review_request_id, decision, comments })
 
-1. Auth: caller must have an assignment row on the request.
-2. Reject if the caller is the requester (no self-approval).
-3. Insert into approval_records.
-4. Recompute approvals: if approvals needed met → request.status='approved', target.status='approved';
-   if any rejection → 'rejected'; else 'in_review'.
-5. Write audit_logs.
-6. Return the updated request.
+Check existing publication membership before applying migrations.
+
+## 25.3 Client Subscription Example
+
+```ts
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+
+export function subscribeToAppointments(
+  handler: (payload: unknown) => void
+) {
+  const supabase = getSupabaseBrowserClient();
+
+  const channel = supabase
+    .channel("hospital-appointments")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "appointments",
+      },
+      handler
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
 ```
 
-Store the transactional part in a Postgres function (`public.approve_review_item`) invoked by the Edge Function, so the operation is atomic even under retries.
+## 25.4 Realtime Security
 
-### 10.3 Secrets
+- Always enforce RLS.
+- Do not subscribe to confidential records unnecessarily.
+- Avoid broadcasting clinical notes or patient details.
+- Send record identifiers and retrieve authorized data separately.
+- Remove subscriptions when components unmount.
+- Test subscriptions using restricted user accounts.
+
+---
+
+# 26. Supabase Edge Functions
+
+Edge Functions are reserved for operations requiring trusted execution, secrets, or privileged administrative capabilities.
+
+They are not the default way to access PostgreSQL.
+
+## 26.1 Approved Edge Functions
+
+| Function | Purpose |
+|---|---|
+| `admin-users` | Create, deactivate, and manage authentication accounts |
+| `admin-role-assignment` | Privileged role administration |
+| `send-notification` | External email or notification provider integration |
+| `generate-document` | Trusted document rendering when browser processing is insufficient |
+| `ai-assist` | Optional AI-based drafting or summarization using a protected provider key |
+| `scheduled-maintenance` | Trusted scheduled maintenance tasks |
+
+Do not create an Edge Function for ordinary patient CRUD, appointments CRUD, or other operations already supported by the Supabase SDK and PostgreSQL.
+
+## 26.2 Function Security Rules
+
+Every Edge Function must:
+
+1. Authenticate the caller.
+2. Reject anonymous requests where authentication is required.
+3. Validate request input.
+4. Check authorization.
+5. Use service-role access only for the exact privileged operation.
+6. Avoid returning sensitive secrets.
+7. Avoid logging patient information unnecessarily.
+8. Return structured errors.
+9. Handle retries safely.
+10. Record sensitive administrative operations.
+
+## 26.3 Example Function Directory
+
+```text
+supabase/
+└── functions/
+    ├── admin-users/
+    │   └── index.ts
+    ├── admin-role-assignment/
+    │   └── index.ts
+    ├── send-notification/
+    │   └── index.ts
+    ├── generate-document/
+    │   └── index.ts
+    └── ai-assist/
+        └── index.ts
+```
+
+## 26.4 Secrets
+
+Configure secrets using:
 
 ```bash
-npx supabase secrets set AI_PROVIDER_API_KEY=...
-npx supabase secrets list
+npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=YOUR_KEY
+
+npx supabase secrets set AI_PROVIDER_API_KEY=YOUR_KEY
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` is injected automatically into the Edge Function runtime. It must never be copied into frontend env or returned in a response.
+Never copy secrets into frontend environment variables.
 
 ---
 
-## 11. Error Handling Contract
+# 27. Supabase Query Implementation
 
-Every data operation returns one of four UI states:
+## 27.1 Query Module Rules
 
-| State | Trigger | UI |
+Organize queries by hospital domain.
+
+Example:
+
+`src/lib/supabase/queries/patients.ts`
+
+```ts
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+
+export async function getPatients() {
+  const supabase = getSupabaseBrowserClient();
+
+  const { data, error } = await supabase
+    .from("patients")
+    .select(`
+      id,
+      medical_record_number,
+      first_name,
+      middle_name,
+      last_name,
+      date_of_birth,
+      registration_date,
+      registration_status
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+```
+
+## 27.2 Patient Registration Example
+
+```ts
+import { z } from "zod";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+
+const patientSchema = z.object({
+  first_name: z.string().min(1),
+  middle_name: z.string().optional(),
+  last_name: z.string().min(1),
+  date_of_birth: z.string().optional(),
+  sex: z.string().optional(),
+  contact_number: z.string().optional(),
+  address_line: z.string().optional(),
+});
+
+export async function registerPatient(input: unknown) {
+  const validated = patientSchema.parse(input);
+
+  const supabase = getSupabaseBrowserClient();
+
+  const { data: authData, error: authError } =
+    await supabase.auth.getUser();
+
+  if (authError || !authData.user) {
+    throw new Error("Authentication required.");
+  }
+
+  const { data, error } = await supabase
+    .from("patients")
+    .insert({
+      ...validated,
+      created_by: authData.user.id,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+```
+
+In production, medical record number assignment must be generated securely by the database, not by this frontend function.
+
+## 27.3 Mutation Rules
+
+Every mutation must:
+
+1. Validate input with Zod.
+2. Use the shared Supabase client.
+3. Allow RLS to enforce authorization.
+4. Handle database errors.
+5. Return typed results.
+6. Update the interface only after confirmed success.
+7. Prevent duplicate submissions.
+8. Maintain auditability for sensitive operations.
+
+Do not duplicate business rules in multiple unrelated components.
+
+---
+
+# 28. Database Indexes & Performance
+
+Create indexes for frequently filtered columns, foreign keys, and operational queries.
+
+Recommended indexes:
+
+```sql
+create index idx_patients_mrn
+on public.patients(medical_record_number);
+
+create index idx_patients_name
+on public.patients(last_name, first_name);
+
+create index idx_appointments_patient
+on public.appointments(patient_id);
+
+create index idx_appointments_physician_schedule
+on public.appointments(physician_id, scheduled_at);
+
+create index idx_appointments_status
+on public.appointments(status);
+
+create index idx_admissions_patient
+on public.admissions(patient_id);
+
+create index idx_admissions_status
+on public.admissions(status);
+
+create index idx_beds_room
+on public.beds(room_id);
+
+create index idx_beds_status
+on public.beds(status);
+
+create index idx_encounters_patient
+on public.encounters(patient_id);
+
+create index idx_vital_signs_encounter
+on public.vital_signs(encounter_id);
+
+create index idx_diagnoses_patient
+on public.diagnoses(patient_id);
+
+create index idx_laboratory_orders_patient
+on public.laboratory_orders(patient_id);
+
+create index idx_laboratory_orders_status
+on public.laboratory_orders(status);
+
+create index idx_prescriptions_patient
+on public.prescriptions(patient_id);
+
+create index idx_prescriptions_status
+on public.prescriptions(status);
+
+create index idx_inventory_batches_item
+on public.inventory_batches(item_id);
+
+create index idx_stock_transactions_item
+on public.stock_transactions(item_id);
+
+create index idx_invoices_patient
+on public.invoices(patient_id);
+
+create index idx_invoices_status
+on public.invoices(status);
+
+create index idx_payments_invoice
+on public.payments(invoice_id);
+
+create index idx_notifications_user
+on public.notifications(user_id, created_at desc);
+
+create index idx_audit_logs_actor
+on public.audit_logs(actor_id, created_at desc);
+```
+
+Additional indexes must be added based on actual query plans and workload.
+
+Avoid indexing every column without justification.
+
+## 28.1 Query Performance Rules
+
+- Use pagination for large tables.
+- Avoid retrieving every patient record at once.
+- Select only required columns.
+- Avoid unnecessarily nested joins.
+- Use database views for appropriate reporting queries.
+- Use indexed filters.
+- Avoid repeated database requests from the same component.
+- Cache only data that can safely be reused under the current user's authorization context.
+
+---
+
+# 29. Views & Reporting Queries
+
+Create database views for reusable reporting logic.
+
+Examples:
+
+- `v_patient_summary`
+- `v_appointment_summary`
+- `v_admission_census`
+- `v_bed_availability`
+- `v_laboratory_summary`
+- `v_pharmacy_summary`
+- `v_billing_summary`
+- `v_inventory_summary`
+
+Example:
+
+```sql
+create or replace view public.v_bed_availability
+with (security_invoker = true)
+as
+select
+  b.id as bed_id,
+  b.bed_number,
+  b.status,
+  r.room_number,
+  d.name as department_name
+from public.beds b
+join public.rooms r on r.id = b.room_id
+join public.departments d on d.id = r.department_id;
+```
+
+Views must preserve the caller's RLS behavior.
+
+Never expose patient or financial information through an unrestricted reporting view.
+
+---
+
+# 30. Error Handling Contract
+
+All Supabase operations must support four interface states.
+
+| State | Trigger | UI Behavior |
 |---|---|---|
-| Loading | request in flight | skeleton or spinner |
-| Empty | zero rows, no error | empty state with next action |
-| Success | rows or mutation result | data / toast |
-| Error | `error` object | inline message + retry |
+| Loading | Request in progress | Skeleton or spinner |
+| Empty | Successful query with zero rows | Empty state with relevant action |
+| Success | Successful query or mutation | Render data or success notification |
+| Error | Supabase returns an error | Friendly error message and retry option |
+
+## 30.1 PostgreSQL Error Mapping
+
+| Code | Meaning | User-Facing Message |
+|---|---|---|
+| 23505 | Unique violation | This record already exists. |
+| 23503 | Foreign key violation | This record is linked to another record and cannot be removed. |
+| 23502 | Not-null violation | A required field is missing. |
+| 42501 | Insufficient privilege | You do not have permission to perform this action. |
+| 23514 | Check constraint violation | The provided information does not meet the required rules. |
+| 22P02 | Invalid input syntax | One or more values are invalid. |
 
 Rules:
 
-- Map Postgres error codes to friendly messages. `23503` (FK) and `23505` (unique) are normal validation errors, not crashes.
-- RLS denial returns **zero rows**, not an error. Distinguish "empty" from "not allowed" by checking membership before rendering a page (and still rely on RLS for the data).
-- Never swallow errors. Never render `error.message` from Postgres verbatim to end users.
-- Never retry mutations blindly; mutations are not idempotent unless the schema says so.
+- Never silently swallow errors.
+- Never display raw SQL errors to ordinary users.
+- Never retry financial or inventory mutations blindly.
+- Preserve form input after recoverable errors.
+- Provide appropriate retry behavior for safe reads.
+- Distinguish empty results from authorization failures.
 
 ---
 
-## 12. Feature → Supabase Mapping
+# 31. Migration Architecture
 
-| Module (`PROJECT.MD` §4) | Tables | Storage | Realtime | Edge Function |
-|---|---|---|---|---|
-| 4.1 Auth & users | `profiles`, `roles`, `permissions`, `role_permissions`, `user_roles` | `avatars` | — | `admin-users` |
-| 4.2 Projects | `projects`, `project_members` | `project-files` | — | — |
-| 4.3 System modeling | `system_models`, `model_versions`, model detail tables | `project-files` | optional | — |
-| 4.4 System generator | `generated_artifacts` | `generated-artifacts` | broadcast progress | optional |
-| 4.5 Documentation | `document_templates`, `generated_documents`, `document_versions` | `templates`, `generated-documents` | `generated_documents` | `generate-document` |
-| 4.6 Diagrams | `diagrams` | `diagrams` | optional | — |
-| 4.7 Versioning | `model_versions`, `document_versions`, artifact/diagram `version_no` | all versioned paths | — | — |
-| 4.8 Traceability | `traceability_links`, `test_cases`, coverage views | — | — | `integrity-scan` |
-| 4.9 Reviews | `review_requests`, `review_assignments`, `review_comments`, `approval_records` | — | review tables | `approve-item` |
-| 4.10 Portal | `generated_documents`, `document_versions` | `generated-documents` | — | — |
-| Audit | `audit_logs` | — | — | triggers + functions |
-| AI assistance | — | — | — | `ai-assist` |
+## 31.1 Initialize Supabase
 
----
+```bash
+npx supabase init
 
-## 13. Security Checklist
+npx supabase start
 
-- [ ] RLS enabled on every `public` table and every `storage.objects` policy path.
-- [ ] `anon` has no policy granting application data.
-- [ ] Public sign-up disabled; accounts provisioned by an administrator.
-- [ ] Service-role key absent from all client bundles (verify with a production build grep).
-- [ ] Every helper is `security definer` with a pinned `search_path`.
-- [ ] Policies tested with: unauthenticated, viewer, member-editor, reviewer, project manager, system admin.
-- [ ] Private buckets verified via signed URL only.
-- [ ] Upload MIME/size validated server-side by bucket config.
-- [ ] Audit rows written for create/update/approve/archive on critical entities.
-- [ ] `approval_records` has no direct client insert policy.
-- [ ] No real patient data in seeds, fixtures, or tests.
-- [ ] Security-definer functions reviewed for privilege escalation.
-- [ ] `supabase db lint` clean; migrations reviewed.
-
----
-
-## 14. Testing
-
-### 14.1 RLS test pattern
-
-Run inside a transaction and reset with `rollback`, so the test never mutates data:
-
-```sql
-begin;
-
--- impersonate a user
-set local role authenticated;
-set local request.jwt.claims = '{"sub":"<user-uuid>","role":"authenticated"}';
-
-select count(*) from public.projects;                       -- expect: only member projects
-select * from public.generated_documents;                   -- expect: 0 rows for non-member
-select public.can_manage_project('<project-uuid>');          -- expect: false for viewer
-
-rollback;
+npx supabase status
 ```
 
-Required cases for each table:
+## 31.2 Migration Rules
 
-1. Non-member cannot `select`, `insert`, `update`, or `delete`.
-2. Viewer can read, cannot write.
-3. Analyst/manager can write model data within their project only.
-4. Reviewer can read review targets and comment, cannot approve their own request.
-5. System admin can administer; normal user cannot read `audit_logs`.
-6. Storage: non-member cannot download another project's file; signed URL works for a member.
+- All database changes must use SQL migrations.
+- Never manually modify production tables outside the migration process.
+- Never edit an already-applied migration.
+- Create a new migration for every schema change.
+- Enable RLS in the same migration that creates an application table.
+- Include indexes and relevant policies.
+- Test migration execution using a clean local database.
+- Regenerate TypeScript types after schema changes.
 
-Automate with `pgTAP` (`supabase test db`) or a Vitest suite that runs the SQL above through `psql` in CI. A feature is not secure because its page is hidden.
+## 31.3 Proposed Migration Order
 
-### 14.2 Integration tests
+```text
+supabase/
+└── migrations/
+    ├── 20261110000100_extensions_and_helpers.sql
+    ├── 20261110000200_enums_and_reference_types.sql
+    ├── 20261110000300_identity_and_roles.sql
+    ├── 20261110000400_departments_and_staff.sql
+    ├── 20261110000500_patient_management.sql
+    ├── 20261110000600_appointments.sql
+    ├── 20261110000700_rooms_and_beds.sql
+    ├── 20261110000800_admissions_and_transfers.sql
+    ├── 20261110000900_medical_records.sql
+    ├── 20261110001000_nursing.sql
+    ├── 20261110001100_laboratory.sql
+    ├── 20261110001200_radiology.sql
+    ├── 20261110001300_pharmacy.sql
+    ├── 20261110001400_inventory.sql
+    ├── 20261110001500_billing_and_payments.sql
+    ├── 20261110001600_notifications_and_audit.sql
+    ├── 20261110001700_database_functions.sql
+    ├── 20261110001800_row_level_security.sql
+    ├── 20261110001900_storage.sql
+    ├── 20261110002000_realtime.sql
+    ├── 20261110002100_indexes_and_views.sql
+    └── 20261110002200_seed_reference_data.sql
+```
 
-- Auth: sign-in, sign-out, session refresh across a hard reload, password reset.
-- CRUD: project → model → version → requirement → artifact → document → diagram.
-- Generation: browser export produces a file, metadata row matches `storage_path` and checksum.
-- Approval: standard mode completes with one reviewer; complex mode blocks until the required count is met.
-- Traceability: coverage view reports a requirement without a test link; integrity scan finds it.
-- Realtime: two clients see a review status change within the subscription.
+Migration timestamps are examples. Generate unique timestamps using the Supabase CLI when creating actual migration files.
 
-### 14.3 Definition of Done for any Supabase change
+## 31.4 Create Migration
 
-- [ ] Migration added, `db reset` passes, types regenerated.
-- [ ] RLS policies added and tested for at least three roles.
-- [ ] Indexes added for every new FK and filter column.
-- [ ] Storage policies added when a bucket path is introduced.
-- [ ] Client code uses the shared client module and `zod` validation.
-- [ ] Loading / empty / success / error states handled.
-- [ ] Documentation (`PROJECT.MD` change log or this file) updated.
-- [ ] `npm run lint` and `npm run build` pass.
+```bash
+npx supabase migration new patient_management
+```
+
+## 31.5 Apply Migrations Locally
+
+```bash
+npx supabase db reset
+```
+
+## 31.6 Validate Database
+
+```bash
+npx supabase db lint
+```
 
 ---
 
-## 15. Bootstrap Checklist (Phase 2 Start)
+# 32. Type Generation
 
-1. `npm install` — this repository currently has no `node_modules`.
-2. Create the Supabase project; copy URL and publishable key into `.env.local`.
-3. Add `@supabase/supabase-js`, `@supabase/ssr`, `zod`, and the `supabase` CLI.
-4. `npx supabase init` and `npx supabase start`.
-5. Add migrations in the order from §5.3, RLS included from the first table.
-6. `npx supabase db reset` until clean.
-7. `npx supabase gen types typescript --local > types/supabase.ts`.
-8. Implement `lib/supabase/{client,server,proxy}.ts` and root `proxy.ts` (Next.js 16 naming).
-9. Build `/login`, `/logout`, and the profile bootstrap flow; verify the `auth.users` trigger creates a `profiles` row.
-10. Seed roles, permissions, and a single synthetic administrator. No real patient data.
-11. Write the RLS test suite and wire it into CI before feature work expands.
-12. Implement modules in `PROJECT.MD` order: projects → models → generation → documents → diagrams → traceability → reviews → portal → audit.
+Generated TypeScript types must match the actual Supabase database schema.
+
+## 32.1 Generate Local Types
+
+```bash
+npx supabase gen types typescript --local --schema public > src/types/supabase.ts
+```
+
+## 32.2 Generate Remote Types
+
+```bash
+npx supabase gen types typescript --project-id YOUR_PROJECT_REF --schema public > src/types/supabase.ts
+```
+
+Rules:
+
+- Never manually edit generated types.
+- Regenerate after schema migrations.
+- Commit updated generated types.
+- Use `Database` when initializing Supabase clients.
+- Avoid using `any` for database results.
 
 ---
 
-## 16. Change Control
+# 33. Testing & Security Validation
 
-- Any schema or policy change ships as a migration plus a type regeneration in the same PR.
-- Any change to the access model updates §7 of this document.
-- Any new bucket or path convention updates §8.
-- Any new Edge Function updates §10 with its authorization contract.
-- If a requirement cannot be met with Supabase primitives, document the gap here before adding anything outside the approved architecture. `PROJECT.MD` §16 remains the final authority.
+## 33.1 Authentication Tests
+
+Test:
+
+- Login
+- Logout
+- Session refresh
+- Password reset
+- Invalid credentials
+- Disabled account handling
+- Unauthorized route access
+- Profile creation after signup
+- Role assignment
+
+## 33.2 Role Tests
+
+Test every approved system role.
+
+Minimum test users:
+
+1. Super Administrator
+2. Hospital Administrator
+3. Receptionist
+4. Physician
+5. Nurse
+6. Laboratory Staff
+7. Radiology Staff
+8. Pharmacist
+9. Billing Staff
+10. Inventory Staff
+
+## 33.3 RLS Tests
+
+Required scenarios:
+
+- Anonymous user cannot access patient records.
+- Receptionist cannot access restricted clinical notes.
+- Physician cannot access unauthorized administrative functions.
+- Nurse cannot modify finalized physician documentation.
+- Laboratory staff cannot access billing administration.
+- Pharmacist cannot assign administrator roles.
+- Billing staff cannot modify clinical diagnoses.
+- Inventory staff cannot read unrestricted patient medical records.
+- Ordinary users cannot read audit logs.
+- Unauthorized users cannot access another patient's files.
+- Users cannot change their own roles.
+- Users cannot bypass authorization by changing record IDs.
+
+## 33.4 Clinical Integrity Tests
+
+Test:
+
+- Duplicate patient registration.
+- Invalid appointment scheduling.
+- Concurrent bed allocation.
+- Discharge and bed release.
+- Patient transfer.
+- Clinical note finalization.
+- Laboratory result verification.
+- Prescription dispensing.
+- Inventory quantity validation.
+- Payment recording.
+- Duplicate payment submission.
+- Refund processing.
+
+## 33.5 Storage Tests
+
+Verify:
+
+- Private buckets cannot be accessed publicly.
+- Authorized users can access permitted files.
+- Unauthorized users cannot download patient documents.
+- Signed URLs expire.
+- Unauthorized uploads are rejected.
+- Unauthorized deletions are rejected.
+
+## 33.6 Test Data Rules
+
+Never use actual patient information in:
+
+- Development databases
+- Seed files
+- Unit tests
+- Integration tests
+- Public repositories
+- Screenshots
+- AI prompts
+
+Use synthetic patient records only.
+
+---
+
+# 34. Initial Reference Data
+
+Seed only non-sensitive reference information.
+
+Recommended department examples:
+
+```sql
+insert into public.departments (code, name)
+values
+  ('ER', 'Emergency Department'),
+  ('OPD', 'Outpatient Department'),
+  ('IPD', 'Inpatient Department'),
+  ('LAB', 'Laboratory'),
+  ('RAD', 'Radiology'),
+  ('PHARM', 'Pharmacy'),
+  ('BILL', 'Billing'),
+  ('ADMIN', 'Administration')
+on conflict do nothing;
+```
+
+Role and permission records must be seeded separately.
+
+Do not automatically create privileged user accounts through a public signup flow.
+
+Create the initial administrator through a controlled, documented provisioning process.
+
+---
+
+# 35. Development Bootstrap Checklist
+
+Follow this sequence before building the hospital modules.
+
+1. Install project dependencies.
+2. Create or connect the Supabase project.
+3. Configure the project URL and publishable key.
+4. Initialize the Supabase CLI.
+5. Start the local Supabase environment.
+6. Create database migrations.
+7. Create authentication and profile tables.
+8. Create roles and permissions.
+9. Implement profile creation triggers.
+10. Implement RLS helper functions.
+11. Implement RLS policies.
+12. Create hospital reference tables.
+13. Create patient management tables.
+14. Create appointment tables.
+15. Create admission and bed management tables.
+16. Create medical records tables.
+17. Create laboratory and radiology tables.
+18. Create pharmacy and inventory tables.
+19. Create billing and payment tables.
+20. Create audit and notification tables.
+21. Configure Storage buckets.
+22. Configure Realtime.
+23. Generate TypeScript database types.
+24. Implement shared Supabase clients.
+25. Implement authentication and profile bootstrap.
+26. Build role-based frontend navigation.
+27. Test RLS before exposing hospital modules.
+28. Implement transactional database functions.
+29. Connect the frontend modules to Supabase.
+30. Run integration, security, and build tests.
+
+---
+
+# 36. Recommended Implementation Order
+
+Build the system in the following order:
+
+| Phase | Module | Dependencies |
+|---|---|---|
+| 1 | Authentication & User Management | Supabase Auth, profiles, roles |
+| 2 | Hospital Reference Data | Departments, staff |
+| 3 | Patient Management | Profiles, patients |
+| 4 | Appointment Management | Patients, physicians, departments |
+| 5 | Room & Bed Management | Departments, rooms, beds |
+| 6 | Admission & Discharge | Patients, beds, physicians |
+| 7 | Electronic Medical Records | Patients, encounters, staff |
+| 8 | Nursing Management | Patients, encounters, staff |
+| 9 | Laboratory Management | Patients, encounters, laboratory tests |
+| 10 | Radiology Management | Patients, encounters, staff |
+| 11 | Pharmacy Management | Prescriptions, medications, inventory |
+| 12 | Inventory Management | Inventory items, batches, transactions |
+| 13 | Billing & Payments | Patients, encounters, admissions |
+| 14 | Notifications & Audit Logs | All relevant modules |
+| 15 | Reports & Analytics | Operational database views |
+
+Do not implement all modules as disconnected mock interfaces.
+
+Each completed module must use the actual Supabase schema and appropriate permissions.
+
+---
+
+# 37. Definition of Done for Supabase Changes
+
+A Supabase implementation change is complete only when:
+
+- [ ] Database migration is created.
+- [ ] Migration applies successfully.
+- [ ] RLS is enabled.
+- [ ] Policies are implemented.
+- [ ] Permissions are tested.
+- [ ] Foreign keys are valid.
+- [ ] Required indexes are present.
+- [ ] Database functions are tested where applicable.
+- [ ] Storage policies are tested when files are involved.
+- [ ] Realtime policies are tested when subscriptions are involved.
+- [ ] TypeScript types are regenerated.
+- [ ] Frontend query modules use the shared Supabase client.
+- [ ] Zod validation is implemented for mutations.
+- [ ] Loading, empty, success, and error states are implemented.
+- [ ] Sensitive operations are audited.
+- [ ] No secret is exposed in the frontend.
+- [ ] No actual patient data is used in test fixtures.
+- [ ] `npm run lint` passes.
+- [ ] `npm run build` passes.
+- [ ] Database security tests pass.
+
+---
+
+# 38. Change Control & Final Engineering Rules
+
+1. `PROJECT.md` remains the authority for hospital functionality and business rules.
+2. `THEME.md` remains the authority for UI/UX and visual styling.
+3. `SUPABASE.md` remains the authority for database and Supabase implementation.
+4. Every database schema change requires a migration.
+5. Every role or permission change requires RLS policy review.
+6. Every new file bucket requires Storage policy review.
+7. Every new Realtime subscription requires access-control review.
+8. Every new Edge Function requires an authorization contract.
+9. Every clinical or financial transaction must preserve database consistency.
+10. Every sensitive operation must have an appropriate audit record.
+11. Never introduce a separate backend without an explicitly approved architecture change.
+12. Never expose the service-role key.
+13. Never use frontend-only authorization.
+14. Never expose confidential patient records through public URLs.
+15. Never use real patient data in development or testing.
+16. Never silently overwrite finalized clinical or financial records.
+17. Never implement fake operational data as though it came from the hospital database.
+18. Prefer PostgreSQL transactions and functions for atomic business operations.
+19. Keep database queries typed, reusable, and domain-organized.
+20. Keep the implementation consistent with the approved Hospital Management System requirements.
+
+**FINAL ARCHITECTURE:**
+
+```text
++------------------------------------------------------+
+|                  HMS FRONTEND                        |
+|                                                      |
+|            React + TypeScript + Tailwind             |
+|                                                      |
+|  Dashboard | Patients | EMR | Pharmacy | Billing     |
+|                                                      |
++---------------------------+--------------------------+
+                            |
+                            |
+                   Supabase SDK / SSR
+                            |
+                            v
++------------------------------------------------------+
+|                    SUPABASE                          |
+|                                                      |
+|  +----------------+    +--------------------------+  |
+|  | Supabase Auth  |    | PostgreSQL Database      |  |
+|  +----------------+    |                          |  |
+|                        | Patients                 |  |
+|  +----------------+    | Appointments             |  |
+|  | Row Level      |    | Admissions               |  |
+|  | Security       |    | Medical Records          |  |
+|  +----------------+    | Laboratory               |  |
+|                        | Pharmacy                 |  |
+|  +----------------+    | Billing                  |  |
+|  | Storage        |    | Inventory                |  |
+|  +----------------+    | Audit Logs               |  |
+|                        +--------------------------+  |
+|  +----------------+                                  |
+|  | Realtime       |    +--------------------------+  |
+|  +----------------+    | Database Functions       |  |
+|                        +--------------------------+  |
+|  +----------------+                                  |
+|  | Edge Functions |    Privileged Operations       |
+|  +----------------+                                  |
+|                                                      |
++------------------------------------------------------+
+```
+
+**The final system must use Supabase as its single backend platform, with PostgreSQL as the source of truth, RLS as the authorization boundary, and the React frontend communicating directly through the Supabase SDK.**
