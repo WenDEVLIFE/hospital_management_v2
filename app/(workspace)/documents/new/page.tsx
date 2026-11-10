@@ -25,22 +25,18 @@ function CreateDocumentContent() {
 
   const { activeProject } = useHospital();
 
-  const [selectedTemplateId, setSelectedTemplateId] = React.useState(
+  const initialTemplateId =
     templateParam && mockTemplates.some((t) => t.id === templateParam)
       ? templateParam
-      : mockTemplates[0]?.id || "tmpl-sad"
-  );
-  const [selectedModelId, setSelectedModelId] = React.useState(mockModels[0]?.id || "model-ehr-core");
-  const [docTitle, setDocTitle] = React.useState("");
-  const [generating, setGenerating] = React.useState(false);
+      : mockTemplates[0]?.id || "tmpl-sad";
 
-  // Update title default when template is selected
-  React.useEffect(() => {
-    const tmpl = mockTemplates.find((t) => t.id === selectedTemplateId);
-    if (tmpl && !docTitle) {
-      setDocTitle(`${activeProject.code} — ${tmpl.name}`);
-    }
-  }, [selectedTemplateId, activeProject.code, docTitle]);
+  const [selectedTemplateId, setSelectedTemplateId] = React.useState(initialTemplateId);
+  const [selectedModelId, setSelectedModelId] = React.useState(mockModels[0]?.id || "model-ehr-core");
+  const [docTitle, setDocTitle] = React.useState(() => {
+    const tmpl = mockTemplates.find((t) => t.id === initialTemplateId);
+    return tmpl ? `${activeProject.code} — ${tmpl.name}` : "";
+  });
+  const [generating, setGenerating] = React.useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
