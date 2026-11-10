@@ -1,78 +1,154 @@
 @import "tailwindcss";
 
 :root {
-  /* SPMC Hospital Green & White Semantic Design Tokens */
+  /* Primary Healthcare Green */
   --hospital-green: #007A55;
   --hospital-green-hover: #006345;
   --hospital-green-dark: #064E3B;
   --hospital-green-light: #F0FDF4;
   --hospital-green-border: #BBF7D0;
   --hospital-green-foreground: #FFFFFF;
-  
+
+  /* Surfaces & Canvas */
   --hospital-white: #FFFFFF;
   --hospital-surface: #F8FAFC;
   --hospital-surface-muted: #F1F5F9;
   --hospital-border: #E2E8F0;
   --hospital-border-subtle: #F1F5F9;
 
+  /* Typography */
   --hospital-text: #0F172A;
   --hospital-text-muted: #475569;
+  --hospital-text-subtle: #64748B;
   --hospital-text-inverse: #FFFFFF;
 
-  /* Clinical Multi-Cue Status Accents */
+  /* Clinical Status */
   --status-success: #16A34A;
   --status-warning: #D97706;
   --status-danger: #DC2626;
   --status-info: #0284C7;
+  --status-neutral: #64748B;
 
-  /* System Modes (PROJECT.MD §5) */
-  --mode-standard: #007A55;
-  --mode-complex: #B45309;
+  /* Department Accent Colors */
+  --department-emergency: #DC2626;
+  --department-outpatient: #2563EB;
+  --department-inpatient: #059669;
+  --department-laboratory: #7C3AED;
+  --department-pharmacy: #D97706;
+  --department-radiology: #0891B2;
+  --department-billing: #475569;
+  --department-administration: #007A55;
+
+  /* Layout */
+  --header-height: 4rem;
+  --sidebar-width: 16rem;
+  --sidebar-collapsed-width: 4.5rem;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 }
 
 @theme inline {
+  /* Primary Healthcare Green */
   --color-hospital-green: var(--hospital-green);
   --color-hospital-green-hover: var(--hospital-green-hover);
   --color-hospital-green-dark: var(--hospital-green-dark);
   --color-hospital-green-light: var(--hospital-green-light);
   --color-hospital-green-border: var(--hospital-green-border);
   --color-hospital-green-foreground: var(--hospital-green-foreground);
-  
+
+  /* Surfaces */
   --color-hospital-white: var(--hospital-white);
   --color-hospital-surface: var(--hospital-surface);
   --color-hospital-surface-muted: var(--hospital-surface-muted);
   --color-hospital-border: var(--hospital-border);
   --color-hospital-border-subtle: var(--hospital-border-subtle);
 
+  /* Typography */
   --color-hospital-text: var(--hospital-text);
   --color-hospital-text-muted: var(--hospital-text-muted);
+  --color-hospital-text-subtle: var(--hospital-text-subtle);
   --color-hospital-text-inverse: var(--hospital-text-inverse);
 
+  /* Status */
   --color-status-success: var(--status-success);
   --color-status-warning: var(--status-warning);
   --color-status-danger: var(--status-danger);
   --color-status-info: var(--status-info);
+  --color-status-neutral: var(--status-neutral);
 
-  --color-mode-standard: var(--mode-standard);
-  --color-mode-complex: var(--mode-complex);
+  /* Department Colors */
+  --color-department-emergency: var(--department-emergency);
+  --color-department-outpatient: var(--department-outpatient);
+  --color-department-inpatient: var(--department-inpatient);
+  --color-department-laboratory: var(--department-laboratory);
+  --color-department-pharmacy: var(--department-pharmacy);
+  --color-department-radiology: var(--department-radiology);
+  --color-department-billing: var(--department-billing);
+  --color-department-administration: var(--department-administration);
+
+  /* Font Families */
+  --font-sans: var(--font-plus-jakarta), "Plus Jakarta Sans", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background-color: var(--hospital-surface);
+  background: var(--hospital-surface);
   color: var(--hospital-text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  margin: 0;
-  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar for data tables and editor panes */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: var(--hospital-green-light);
+  color: var(--hospital-green-dark);
+}
+
+:focus-visible {
+  outline: 2px solid var(--hospital-green);
+  outline-offset: 2px;
+}
+
+/* Slim scrollbar using hospital surface tokens */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: var(--hospital-surface-muted);
 }
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
@@ -80,4 +156,15 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
