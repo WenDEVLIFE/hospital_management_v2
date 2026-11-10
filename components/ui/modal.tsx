@@ -1,91 +1,173 @@
 "use client";
 
 import * as React from "react";
+import { CloseIcon } from "@solar-icons/react/linear";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+
+export type ModalSize = "sm" | "md" | "lg";
 
 export interface ModalProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
-  title?: string;
+  title: string;
   description?: string;
-  children: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl";
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
+  size?: ModalSize;
+  preventDismiss?: boolean;
 }
 
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "textarea:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+const sizeStyles: Record<ModalSize, string> = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+};
+
 export function Modal({
-  isOpen,
+  open,
   onClose,
   title,
   description,
   children,
-  maxWidth = "lg",
+  footer,
+  size = "lg",
+  preventDismiss = false,
 }: ModalProps) {
+  const titleId = React.useId();
+  const descriptionId = React.useId();
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const restoreFocusRef = React.useRef<HTMLElement | null>(null);
+
   React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
-    }
+    if (!open) return;
+
+    restoreFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const frame = window.requestAnimationFrame(() => {
+      dialogRef.current?.focus();
+    });
+
     return () => {
-      document.body.style.overflow = "unset";
-      window.removeEventListener("keydown", handleKeyDown);
+      window.cancelAnimationFrame(frame);
+      document.body.style.overflow = previousOverflow;
+      restoreFocusRef.current?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [open]);
 
-  if (!isOpen) return null;
+  React.useEffect(() => {
+    if (!open) return;
 
-  const maxWidthStyles = {
-    sm: "max-w-sm",
-    md: "max-w-md",
-    lg: "max-w-lg",
-    xl: "max-w-xl",
-    "2xl": "max-w-2xl",
-  };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (!preventDismiss) {
+          event.preventDefault();
+          onClose();
+        }
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const container = dialogRef.current;
+      if (!container) return;
+
+      const focusable = Array.from(
+        container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).filter((element) => element.offsetParent !== null);
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        container.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && (active === first || active === container)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, preventDismiss, onClose]);
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
+        className="fixed inset-0 bg-slate-900/40"
+        onClick={preventDismiss ? undefined : onClose}
         aria-hidden="true"
       />
-
-      {/* Dialog box */}
       <div
-        className={cn(
-          "relative w-full rounded-md bg-hospital-white border border-hospital-border shadow-lg z-10 overflow-hidden flex flex-col max-h-[90vh]",
-          maxWidthStyles[maxWidth]
-        )}
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
+        tabIndex={-1}
+        className={cn(
+          "relative z-10 w-full rounded-md bg-white border border-hospital-border shadow-lg max-h-[90vh] overflow-y-auto focus:outline-none",
+          sizeStyles[size]
+        )}
       >
-        <div className="flex items-center justify-between p-5 border-b border-hospital-border">
-          <div>
-            {title && (
-              <h2 className="text-base font-semibold text-hospital-text">
-                {title}
-              </h2>
-            )}
+        <div className="p-5 border-b border-hospital-border flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2
+              id={titleId}
+              className="text-sm font-semibold text-hospital-text"
+            >
+              {title}
+            </h2>
             {description && (
-              <p className="text-xs text-hospital-text-muted mt-0.5">
+              <p
+                id={descriptionId}
+                className="text-xs text-hospital-text-muted mt-1"
+              >
                 {description}
               </p>
             )}
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-hospital-text-muted hover:text-hospital-text hover:bg-hospital-surface-muted transition-colors cursor-pointer"
             aria-label="Close dialog"
+            className="-mr-1 shrink-0 rounded-md p-1 text-hospital-text-muted transition-colors hover:bg-hospital-surface-muted hover:text-hospital-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1 cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <CloseIcon className="size-4" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto">{children}</div>
+        {children && <div className="p-5">{children}</div>}
+
+        {footer && (
+          <div className="p-5 border-t border-hospital-border flex items-center justify-end gap-2">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

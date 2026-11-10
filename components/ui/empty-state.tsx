@@ -1,12 +1,13 @@
 import * as React from "react";
+import { FolderErrorIcon } from "@solar-icons/react/linear";
 import { cn } from "@/lib/utils";
-import { FolderX } from "lucide-react";
 
-export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface EmptyStateProps {
   icon?: React.ReactNode;
   title: string;
   description?: string;
   action?: React.ReactNode;
+  className?: string;
 }
 
 export function EmptyState({
@@ -15,22 +16,20 @@ export function EmptyState({
   description,
   action,
   className,
-  ...props
 }: EmptyStateProps) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center p-8 text-center rounded-md border border-dashed border-hospital-border bg-hospital-white",
+        "flex flex-col items-center justify-center px-6 py-12 text-center",
         className
       )}
-      {...props}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-hospital-surface-muted text-hospital-green mb-3">
-        {icon || <FolderX className="h-6 w-6" />}
-      </div>
-      <h4 className="text-sm font-semibold text-hospital-text">{title}</h4>
+      <span className="mb-3 flex size-10 items-center justify-center rounded-md bg-hospital-surface-muted text-hospital-text-muted">
+        {icon ?? <FolderErrorIcon className="size-5" aria-hidden="true" />}
+      </span>
+      <p className="text-sm font-semibold text-hospital-text">{title}</p>
       {description && (
-        <p className="mt-1 text-xs text-hospital-text-muted max-w-sm">
+        <p className="mt-1 max-w-sm text-xs text-hospital-text-muted">
           {description}
         </p>
       )}

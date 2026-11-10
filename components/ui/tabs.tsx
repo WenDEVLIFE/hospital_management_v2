@@ -3,121 +3,90 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-interface TabsContextValue {
-  activeTab: string;
-  setActiveTab: (value: string) => void;
+export interface TabItem {
+  value: string;
+  label: string;
+  count?: number;
 }
 
-const TabsContext = React.createContext<TabsContextValue | undefined>(undefined);
-
-export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {
-  defaultValue: string;
-  value?: string;
-  onValueChange?: (value: string) => void;
+export interface TabsProps {
+  items: TabItem[];
+  value: string;
+  onValueChange: (value: string) => void;
+  className?: string;
 }
 
-export function Tabs({
-  defaultValue,
-  value,
-  onValueChange,
-  className,
-  children,
-  ...props
-}: TabsProps) {
-  const [internalTab, setInternalTab] = React.useState(defaultValue);
-  const activeTab = value !== undefined ? value : internalTab;
+export function Tabs({ items, value, onValueChange, className }: TabsProps) {
+  const baseId = React.useId();
+  const buttonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const activeIndex = items.findIndex((item) => item.value === value);
 
-  const handleTabChange = (newVal: string) => {
-    if (value === undefined) {
-      setInternalTab(newVal);
+  const moveFocus = (index: number) => {
+    if (items.length === 0) return;
+    const nextIndex = (index + items.length) % items.length;
+    const nextItem = items[nextIndex];
+    onValueChange(nextItem.value);
+    buttonRefs.current[nextItem.value]?.focus();
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      moveFocus(activeIndex + 1);
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      moveFocus(activeIndex - 1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      moveFocus(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      moveFocus(items.length - 1);
     }
-    onValueChange?.(newVal);
   };
 
   return (
-    <TabsContext.Provider value={{ activeTab, setActiveTab: handleTabChange }}>
-      <div className={cn("w-full flex flex-col space-y-4", className)} {...props}>
-        {children}
-      </div>
-    </TabsContext.Provider>
-  );
-}
-
-export function TabsList({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
     <div
+      role="tablist"
+      aria-orientation="horizontal"
       className={cn(
-        "inline-flex h-9 items-center justify-start rounded-md bg-hospital-surface-muted p-1 text-hospital-text-muted border border-hospital-border",
+        "flex items-center gap-1 border-b border-hospital-border overflow-x-auto",
         className
       )}
-      {...props}
-    />
-  );
-}
-
-export interface TabsTriggerProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  value: string;
-}
-
-export function TabsTrigger({
-  value,
-  className,
-  children,
-  ...props
-}: TabsTriggerProps) {
-  const context = React.useContext(TabsContext);
-  if (!context) throw new Error("TabsTrigger must be used within Tabs");
-
-  const isActive = context.activeTab === value;
-
-  return (
-    <button
-      type="button"
-      onClick={() => context.setActiveTab(value)}
-      className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-xs font-medium cursor-pointer transition-all",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green",
-        isActive
-          ? "bg-hospital-white text-hospital-green-dark font-semibold shadow-xs"
-          : "hover:text-hospital-text text-hospital-text-muted",
-        className
-      )}
-      {...props}
     >
-      {children}
-    </button>
-  );
-}
+      {items.map((item) => {
+        const isActive = item.value === value;
 
-export interface TabsContentProps
-  extends React.HTMLAttributes<HTMLDivElement> {
-  value: string;
-}
-
-export function TabsContent({
-  value,
-  className,
-  children,
-  ...props
-}: TabsContentProps) {
-  const context = React.useContext(TabsContext);
-  if (!context) throw new Error("TabsContent must be used within Tabs");
-
-  if (context.activeTab !== value) return null;
-
-  return (
-    <div
-      className={cn(
-        "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green",
-        className
-      )}
-      {...props}
-    >
-      {children}
+        return (
+          <button
+            key={item.value}
+            ref={(node) => {
+              buttonRefs.current[item.value] = node;
+            }}
+            type="button"
+            role="tab"
+            id={`${baseId}-tab-${item.value}`}
+            aria-selected={isActive}
+            tabIndex={isActive ? 0 : -1}
+            onClick={() => onValueChange(item.value)}
+            onKeyDown={handleKeyDown}
+            className={cn(
+              "-mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors cursor-pointer",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1",
+              isActive
+                ? "text-hospital-green border-b-2 border-hospital-green"
+                : "text-hospital-text-muted border-transparent hover:text-hospital-text"
+            )}
+          >
+            <span>{item.label}</span>
+            {typeof item.count === "number" && (
+              <span className="text-[11px] font-medium text-hospital-text-subtle">
+                {item.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

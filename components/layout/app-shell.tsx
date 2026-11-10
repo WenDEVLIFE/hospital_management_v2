@@ -1,48 +1,50 @@
-"use client";
-
 import * as React from "react";
 import { HospitalHeader } from "./hospital-header";
 import { HospitalSidebar } from "./hospital-sidebar";
 import { Breadcrumbs } from "./breadcrumbs";
+import { PreviewNotice } from "./preview-notice";
+import { SidebarProvider } from "./sidebar-provider";
+import { isPreviewMode } from "@/lib/data/config";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-hospital-surface">
-      {/* Anchored Hospital Header */}
-      <HospitalHeader />
-
-      {/* Main Split Layout: Fixed Sidebar + Scrollable Viewport */}
-      <div className="flex flex-1 overflow-hidden">
+    <SidebarProvider>
+      <div className="flex h-screen flex-col overflow-hidden bg-hospital-surface">
         <React.Suspense
           fallback={
-            <div className="w-64 shrink-0 bg-hospital-white border-r border-hospital-border" />
+            <div
+              aria-hidden="true"
+              className="h-16 w-full shrink-0 border-b border-hospital-border bg-white"
+            />
           }
         >
-          <HospitalSidebar />
+          <HospitalHeader />
         </React.Suspense>
 
-        <main className="flex-1 h-full overflow-y-auto flex flex-col">
+        {isPreviewMode ? <PreviewNotice /> : null}
+
+        <div className="flex flex-1 overflow-hidden">
           <React.Suspense
             fallback={
-              <div className="h-10 bg-hospital-white border-b border-hospital-border" />
+              <div
+                aria-hidden="true"
+                className="hidden h-[calc(100vh-4rem)] w-64 shrink-0 border-r border-hospital-border bg-white sm:block"
+              />
             }
           >
-            <Breadcrumbs />
+            <HospitalSidebar />
           </React.Suspense>
 
-          <div className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
-            <React.Suspense
-              fallback={
-                <div className="p-6 text-xs text-hospital-text-muted">
-                  Loading workspace...
-                </div>
-              }
-            >
+          <main className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-[1440px] space-y-6 p-6">
+              <React.Suspense fallback={null}>
+                <Breadcrumbs />
+              </React.Suspense>
               {children}
-            </React.Suspense>
-          </div>
-        </main>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

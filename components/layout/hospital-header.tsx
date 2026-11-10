@@ -1,140 +1,243 @@
 "use client";
 
 import * as React from "react";
-import { useHospital, UserRole } from "@/lib/context/hospital-context";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  Activity,
-  Layers,
-  ShieldCheck,
-  User,
-  ChevronDown,
-  Building2,
-  LogOut,
-} from "lucide-react";
+  AltArrowDownIcon,
+  BellIcon,
+  HamburgerMenuIcon,
+  HospitalIcon,
+  Logout2Icon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
+  SettingsIcon,
+  UserCircleIcon,
+} from "@solar-icons/react/linear";
+import { cn } from "@/lib/utils";
+import { isNavItemActive, navigation } from "@/lib/navigation";
+import { useSidebar } from "./sidebar-provider";
 
-export function HospitalHeader() {
-  const {
-    projects,
-    activeProject,
-    setActiveProjectId,
-    systemMode,
-    activeRole,
-    setActiveRole,
-    currentUser,
-    logout,
-  } = useHospital();
+const SESSION_KEY = "spmc_auth_session";
 
-  const roleLabels: Record<UserRole, string> = {
-    super_admin: "Super Admin",
-    system_admin: "System Admin",
-    project_manager: "Project Manager",
-    system_analyst: "System Analyst",
-    developer: "Developer",
-    documentation_manager: "Doc Manager",
-    reviewer: "Reviewer",
-    viewer: "Viewer",
+export type HospitalHeaderProfile = {
+  email?: string;
+  role?: string;
+};
+
+export type HospitalHeaderProps = {
+  profile?: HospitalHeaderProfile;
+};
+
+export function HospitalHeader({ profile }: HospitalHeaderProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { mobileOpen, toggleMobile, collapsed, toggleCollapsed } = useSidebar();
+
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const userMenuRef = React.useRef<HTMLDivElement>(null);
+  const userMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
+  const mobileTriggerRef = React.useRef<HTMLButtonElement>(null);
+  const wasMobileOpen = React.useRef(false);
+
+  const currentItem = React.useMemo(() => {
+    const items = navigation.flatMap((section) => section.items);
+
+    return items
+      .filter((item) => isNavItemActive(pathname, item.href))
+      .sort((left, right) => right.href.length - left.href.length)[0];
+  }, [pathname]);
+
+  React.useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!userMenuRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+        userMenuTriggerRef.current?.focus();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMenuOpen(false);
+        userMenuTriggerRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
+
+  React.useEffect(() => {
+    if (wasMobileOpen.current && !mobileOpen) {
+      mobileTriggerRef.current?.focus();
+    }
+
+    wasMobileOpen.current = mobileOpen;
+  }, [mobileOpen]);
+
+  const closeMenu = (restoreFocus = true) => {
+    setMenuOpen(false);
+
+    if (restoreFocus) {
+      userMenuTriggerRef.current?.focus();
+    }
+  };
+
+  const handleSignOut = () => {
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch {
+      // Ignore storage failures and leave the workspace anyway.
+    }
+
+    closeMenu(false);
+    router.replace("/login");
   };
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-hospital-border bg-hospital-white px-6 shrink-0">
-      {/* SPMC Brand Identity */}
-      <div className="flex items-center space-x-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-hospital-green text-white shadow-xs shrink-0">
-          <Activity className="h-6 w-6 stroke-[2.5]" />
-        </div>
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm tracking-tight text-hospital-green-dark">
-              SPMC
-            </span>
-            <span className="text-xs text-hospital-border">|</span>
-            <span className="text-xs font-semibold text-hospital-text truncate max-w-[200px] sm:max-w-none">
+    <header className="sticky top-0 z-40 flex h-16 w-full shrink-0 items-center justify-between gap-4 border-b border-hospital-border bg-white px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          ref={mobileTriggerRef}
+          type="button"
+          onClick={toggleMobile}
+          aria-label="Open navigation"
+          aria-expanded={mobileOpen}
+          aria-controls="hospital-sidebar"
+          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-hospital-text-muted transition-colors hover:bg-hospital-surface-muted hover:text-hospital-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1 sm:hidden"
+        >
+          <HamburgerMenuIcon className="size-5" />
+        </button>
+
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-hospital-green text-white">
+            <HospitalIcon className="size-5" />
+          </span>
+
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-semibold text-hospital-green-dark">
               Southern Philippines Medical Center
             </span>
-          </div>
-          <p className="text-[11px] text-hospital-text-muted hidden sm:block">
-            Integrated System & Documentation Generation Platform
-          </p>
+            <span className="truncate text-[11px] text-hospital-text-muted">
+              Hospital Management System
+            </span>
+          </span>
         </div>
+
+        {currentItem ? (
+          <span className="hidden min-w-0 truncate border-l border-hospital-border pl-3 text-xs text-hospital-text-muted sm:block">
+            {currentItem.label}
+          </span>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-pressed={collapsed}
+          className="hidden size-9 cursor-pointer items-center justify-center rounded-md text-hospital-text-muted transition-colors hover:bg-hospital-surface-muted hover:text-hospital-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1 sm:inline-flex"
+        >
+          {collapsed ? (
+            <PanelLeftOpenIcon className="size-5" />
+          ) : (
+            <PanelLeftCloseIcon className="size-5" />
+          )}
+        </button>
       </div>
 
-      {/* Control Strip */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* Active Project Dropdown Chip */}
-        <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-hospital-border bg-hospital-surface max-w-[220px] sm:max-w-[260px]">
-          <Building2 className="w-3.5 h-3.5 text-hospital-green shrink-0" />
-          <div className="relative flex-1 flex items-center min-w-0">
-            <select
-              value={activeProject.id}
-              onChange={(e) => setActiveProjectId(e.target.value)}
-              className="w-full appearance-none bg-transparent pr-5 text-xs font-semibold text-hospital-text focus:outline-none cursor-pointer truncate"
-              title={`${activeProject.code} — ${activeProject.name}`}
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} — {p.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3 h-3 text-hospital-text-muted pointer-events-none absolute right-0" />
-          </div>
-        </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          aria-label="Notifications"
+          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-hospital-text-muted transition-colors hover:bg-hospital-surface-muted hover:text-hospital-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
+        >
+          <BellIcon className="size-5" />
+        </button>
 
-        {/* System Mode Indicator Chip */}
-        <div className="hidden md:flex items-center gap-1.5 h-9 px-2.5 rounded-md border border-hospital-border bg-hospital-surface">
-          <Layers className="w-3.5 h-3.5 text-hospital-text-muted shrink-0" />
-          <Badge
-            variant={systemMode === "complex" ? "complex" : "standard"}
-            className="uppercase tracking-wide font-semibold text-[10px]"
-          >
-            {systemMode === "complex" ? "Complex Mode" : "Standard Mode"}
-          </Badge>
-        </div>
-
-        {/* Live Role Simulation Switcher */}
-        <div className="hidden lg:flex items-center gap-2 h-9 px-2.5 rounded-md border border-hospital-border bg-hospital-surface">
-          <ShieldCheck className="w-3.5 h-3.5 text-hospital-green shrink-0" />
-          <div className="relative flex items-center">
-            <select
-              value={activeRole}
-              onChange={(e) => setActiveRole(e.target.value as UserRole)}
-              className="appearance-none bg-transparent pr-4 text-xs font-medium text-hospital-text cursor-pointer focus:outline-none"
-            >
-              {(Object.keys(roleLabels) as UserRole[]).map((r) => (
-                <option key={r} value={r}>
-                  {roleLabels[r]}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3 h-3 text-hospital-text-muted pointer-events-none absolute right-0" />
-          </div>
-        </div>
-
-        {/* Staff User Avatar & Sign Out */}
-        <div className="flex items-center gap-2.5 pl-2 border-l border-hospital-border">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-hospital-green-light text-hospital-green border border-hospital-green-border font-semibold text-xs shrink-0">
-              <User className="w-4 h-4" />
-            </div>
-            <div className="hidden xl:flex flex-col text-left leading-tight">
-              <span className="text-xs font-semibold text-hospital-text truncate max-w-[130px]">
-                {currentUser?.name || "Dr. Maria Santos"}
-              </span>
-              <span className="text-[10px] text-hospital-text-muted truncate max-w-[130px]">
-                {currentUser?.email || "m.santos@spmc.gov.ph"}
-              </span>
-            </div>
-          </div>
-
+        <div ref={userMenuRef} className="relative">
           <button
-            onClick={logout}
-            title="Sign out of hospital platform"
-            className="flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold text-red-700 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors cursor-pointer select-none"
+            ref={userMenuTriggerRef}
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-controls="account-menu"
+            className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-hospital-border bg-white px-3 text-xs font-medium text-hospital-text transition-colors hover:bg-hospital-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Sign Out</span>
+            <UserCircleIcon className="size-4 text-hospital-text-muted" />
+            <span>Account</span>
+            <AltArrowDownIcon
+              aria-hidden="true"
+              className={cn(
+                "size-3 text-hospital-text-muted transition-transform duration-150 ease-out",
+                menuOpen && "rotate-180"
+              )}
+            />
           </button>
+
+          {menuOpen ? (
+            <div
+              id="account-menu"
+              role="menu"
+              aria-label="Account menu"
+              className="absolute right-0 top-full z-50 mt-2 w-56 rounded-md border border-hospital-border bg-white shadow-lg"
+            >
+              <div className="border-b border-hospital-border-subtle px-3 py-2">
+                {profile ? (
+                  <>
+                    {profile.email ? (
+                      <p className="truncate text-xs font-medium text-hospital-text">
+                        {profile.email}
+                      </p>
+                    ) : null}
+                    {profile.role ? (
+                      <p className="mt-1 text-[11px] text-hospital-text-muted">
+                        {profile.role}
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-xs font-medium text-hospital-text">
+                    Account
+                  </p>
+                )}
+              </div>
+
+              <div className="p-1">
+                <Link
+                  href="/settings"
+                  role="menuitem"
+                  onClick={() => closeMenu(false)}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-hospital-text transition-colors hover:bg-hospital-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
+                >
+                  <SettingsIcon className="size-4 text-hospital-text-muted" />
+                  <span>Account settings</span>
+                </Link>
+              </div>
+
+              <div className="mt-1 border-t border-hospital-border-subtle p-1">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleSignOut}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-1"
+                >
+                  <Logout2Icon className="size-4" />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </header>

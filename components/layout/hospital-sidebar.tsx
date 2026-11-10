@@ -3,185 +3,169 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CloseIcon } from "@solar-icons/react/linear";
 import { cn } from "@/lib/utils";
-import { useHospital } from "@/lib/context/hospital-context";
-import {
-  LayoutDashboard,
-  FolderGit2,
-  Cpu,
-  Boxes,
-  FileText,
-  Network,
-  GitMerge,
-  ClipboardCheck,
-  BookOpen,
-  Users,
-  Settings,
-  History,
-} from "lucide-react";
+import { isNavItemActive, navigation } from "@/lib/navigation";
+import { useSidebar } from "./sidebar-provider";
 
-export function HospitalSidebar() {
+type SidebarNavProps = {
+  collapsed: boolean;
+  onNavigate?: () => void;
+};
+
+function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
-  const { activeProject } = useHospital();
-
-  const navigationSections = [
-    {
-      title: "Overview",
-      items: [
-        {
-          name: "Dashboard",
-          href: "/dashboard",
-          icon: LayoutDashboard,
-          moduleNumber: 1,
-        },
-        {
-          name: "Projects",
-          href: "/projects",
-          icon: FolderGit2,
-          moduleNumber: 2,
-        },
-      ],
-    },
-    {
-      title: "Engineering & Modeling",
-      items: [
-        {
-          name: "System Models",
-          href: "/models",
-          icon: Cpu,
-          moduleNumber: 3,
-        },
-        {
-          name: "System Generator",
-          href: "/generator",
-          icon: Boxes,
-          moduleNumber: 4,
-        },
-        {
-          name: "Doc Generator",
-          href: "/documents",
-          icon: FileText,
-          moduleNumber: 5,
-        },
-        {
-          name: "Diagrams",
-          href: "/diagrams",
-          icon: Network,
-          moduleNumber: 6,
-        },
-        {
-          name: "Traceability",
-          href: "/traceability",
-          icon: GitMerge,
-          moduleNumber: 7,
-        },
-      ],
-    },
-    {
-      title: "Governance & Reviews",
-      items: [
-        {
-          name: "Reviews & Approvals",
-          href: "/reviews",
-          icon: ClipboardCheck,
-          moduleNumber: 8,
-          badge: activeProject?.pendingApprovalsCount || 0,
-        },
-        {
-          name: "Document Portal",
-          href: "/portal",
-          icon: BookOpen,
-          moduleNumber: 9,
-        },
-      ],
-    },
-    {
-      title: "Administration",
-      items: [
-        {
-          name: "User Management",
-          href: "/admin/users",
-          icon: Users,
-          moduleNumber: 10,
-        },
-        {
-          name: "Settings",
-          href: "/settings",
-          icon: Settings,
-          moduleNumber: 11,
-        },
-        {
-          name: "Audit Logs",
-          href: "/admin/audit",
-          icon: History,
-          moduleNumber: 12,
-        },
-      ],
-    },
-  ];
 
   return (
-    <aside className="w-64 shrink-0 border-r border-hospital-border bg-hospital-white flex flex-col h-full select-none">
-      {/* Navigation List */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-        {navigationSections.map((section, idx) => (
-          <div
-            key={section.title}
-            className={cn("space-y-1", idx > 0 && "pt-3 border-t border-hospital-border-subtle")}
-          >
-            <h4 className="px-3 text-[10px] font-bold uppercase tracking-wider text-hospital-text-muted/80">
+    <nav
+      aria-label="Primary"
+      className="flex-1 space-y-5 overflow-y-auto px-2 py-4"
+    >
+      {navigation.map((section) => (
+        <div key={section.title}>
+          {collapsed ? (
+            <div
+              aria-hidden="true"
+              className="mx-auto mb-2 h-px w-8 bg-hospital-border"
+            />
+          ) : (
+            <h2 className="mb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-hospital-text-muted">
               {section.title}
-            </h4>
-            <div className="space-y-0.5 mt-1">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/dashboard" &&
-                    item.href !== "/projects" &&
-                    pathname.startsWith(item.href + "/"));
+            </h2>
+          )}
 
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
+          <div className="space-y-1">
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = isNavItemActive(pathname, item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  aria-current={isActive ? "page" : undefined}
+                  aria-label={collapsed ? item.label : undefined}
+                  title={collapsed ? item.label : undefined}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-md py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1",
+                    collapsed
+                      ? isActive
+                        ? "justify-center border-l-2 border-hospital-green pl-[10px] pr-2"
+                        : "justify-center px-2"
+                      : isActive
+                        ? "border-l-2 border-hospital-green pl-[10px] pr-3"
+                        : "px-3",
+                    isActive
+                      ? "bg-hospital-green-light font-semibold text-hospital-green-dark"
+                      : "text-hospital-text hover:bg-hospital-surface-muted"
+                  )}
+                >
+                  <Icon
                     className={cn(
-                      "group flex items-center justify-between px-3 py-2 text-xs font-medium rounded-md transition-colors border-l-2",
+                      "size-4 shrink-0",
                       isActive
-                        ? "bg-hospital-green-light text-hospital-green-dark font-semibold border-hospital-green"
-                        : "border-transparent text-hospital-text hover:bg-hospital-surface-muted hover:text-hospital-green-dark"
+                        ? "text-hospital-green"
+                        : "text-hospital-text-muted"
                     )}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Icon
-                        className={cn(
-                          "w-4 h-4 shrink-0 transition-colors",
-                          isActive
-                            ? "text-hospital-green"
-                            : "text-hospital-text-muted group-hover:text-hospital-green"
-                        )}
-                      />
-                      <span className="truncate">{item.name}</span>
-                    </div>
-
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span className="inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
+                  />
+                  {collapsed ? null : (
+                    <span className="truncate">{item.label}</span>
+                  )}
+                </Link>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
+    </nav>
+  );
+}
 
-      {/* Hospital Footer Tag */}
-      <div className="p-3 border-t border-hospital-border bg-hospital-surface text-[11px] text-hospital-text-muted flex items-center justify-between shrink-0">
-        <span className="font-medium">SPMC v0.1.0</span>
-        <span className="text-hospital-green font-semibold">Hospital Safe</span>
+function SidebarFooter({ collapsed }: { collapsed: boolean }) {
+  return (
+    <div
+      className={cn(
+        "shrink-0 border-t border-hospital-border px-3 py-3",
+        collapsed && "px-2 text-center"
+      )}
+    >
+      {collapsed ? (
+        <p className="text-[11px] text-hospital-text-muted">v0.1.0</p>
+      ) : (
+        <>
+          <p className="text-[11px] font-semibold text-hospital-text-muted">
+            SPMC HMS
+          </p>
+          <p className="text-[11px] text-hospital-text-muted">v0.1.0</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function HospitalSidebar() {
+  const { mobileOpen, closeMobile, collapsed } = useSidebar();
+
+  return (
+    <>
+      <aside
+        aria-label="Main navigation"
+        className={cn(
+          "hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-hospital-border bg-white sm:flex",
+          collapsed ? "w-[72px]" : "w-64"
+        )}
+      >
+        <SidebarNav collapsed={collapsed} />
+        <SidebarFooter collapsed={collapsed} />
+      </aside>
+
+      <div
+        aria-hidden={!mobileOpen}
+        inert={!mobileOpen}
+        className={cn(
+          "fixed inset-0 z-50 sm:hidden",
+          !mobileOpen && "pointer-events-none"
+        )}
+      >
+        <div
+          aria-hidden="true"
+          onClick={closeMobile}
+          className={cn(
+            "absolute inset-0 bg-slate-900/40 transition-opacity duration-150 ease-out",
+            mobileOpen ? "opacity-100" : "opacity-0"
+          )}
+        />
+
+        <aside
+          id="hospital-sidebar"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Main navigation"
+          className={cn(
+            "absolute inset-y-0 left-0 flex w-64 flex-col border-r border-hospital-border bg-white shadow-lg transition-transform duration-200 ease-out",
+            mobileOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <div className="flex h-16 shrink-0 items-center justify-between border-b border-hospital-border px-3">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-hospital-text-muted">
+              SPMC HMS
+            </span>
+
+            <button
+              type="button"
+              onClick={closeMobile}
+              aria-label="Close navigation"
+              className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-hospital-text-muted transition-colors hover:bg-hospital-surface-muted hover:text-hospital-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
+            >
+              <CloseIcon className="size-5" />
+            </button>
+          </div>
+
+          <SidebarNav collapsed={false} onNavigate={closeMobile} />
+          <SidebarFooter collapsed={false} />
+        </aside>
       </div>
-    </aside>
+    </>
   );
 }
