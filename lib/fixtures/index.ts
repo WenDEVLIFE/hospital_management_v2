@@ -14,4 +14,5 @@ export * from "./nursing";
 export * from "./emergency";
 export * from "./surgery";
 export * from "./hr";
+export * from "./insurance";
 export * from "./system";

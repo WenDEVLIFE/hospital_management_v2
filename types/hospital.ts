@@ -1072,6 +1072,193 @@ export type HrStats = {
   payrollStatus: PayrollStatus | null;
 };
 
+export type InsuranceProviderType =
+  | "philhealth"
+  | "private_hmo"
+  | "private_insurer"
+  | "government";
+
+export type IntegrationStatus = "not_connected" | "manual" | "connected";
+
+export type InsuranceProvider = {
+  id: string;
+  name: string;
+  code: string;
+  type: InsuranceProviderType;
+  contact_number: string | null;
+  integration_status: IntegrationStatus;
+  is_active: boolean;
+};
+
+export type InsurancePolicyStatus =
+  | "active"
+  | "expired"
+  | "pending"
+  | "cancelled";
+
+export type CoverageVerificationStatus =
+  | "unverified"
+  | "verified"
+  | "failed";
+
+export type InsurancePolicy = {
+  id: string;
+  patient_id: string;
+  provider_id: string;
+  policy_number: string;
+  member_number: string;
+  coverage_type: string;
+  effective_date: string;
+  expiry_date: string;
+  status: InsurancePolicyStatus;
+  verification_status: CoverageVerificationStatus;
+  last_verified_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CoverageVerification = {
+  id: string;
+  policy_id: string;
+  status: "verified" | "failed";
+  reference_number: string;
+  verified_at: string;
+  verified_by_name: string;
+  notes: string | null;
+};
+
+export type PolicyListRow = InsurancePolicy & {
+  patient_name: string;
+  patient_mrn: string;
+  provider_name: string;
+  provider_type: InsuranceProviderType;
+  linked_claims: number;
+};
+
+export type AuthorizationStatus =
+  | "pending"
+  | "approved"
+  | "denied"
+  | "expired";
+
+export type AuthorizationRequest = {
+  id: string;
+  authorization_number: string;
+  patient_id: string;
+  provider_id: string;
+  policy_id: string;
+  procedure_name: string;
+  diagnosis: string;
+  requested_at: string;
+  status: AuthorizationStatus;
+  reference_number: string | null;
+  approved_at: string | null;
+  valid_until: string | null;
+  notes: string | null;
+};
+
+export type AuthorizationListRow = AuthorizationRequest & {
+  patient_name: string;
+  patient_mrn: string;
+  provider_name: string;
+  policy_number: string;
+};
+
+export type ClaimStatus =
+  | "draft"
+  | "prepared"
+  | "submitted"
+  | "in_review"
+  | "approved"
+  | "partially_approved"
+  | "rejected"
+  | "paid";
+
+export type InsuranceClaim = {
+  id: string;
+  claim_number: string;
+  patient_id: string;
+  provider_id: string;
+  policy_id: string;
+  authorization_id: string | null;
+  claim_type: string;
+  diagnosis: string;
+  total_charged: number;
+  amount_claimed: number;
+  amount_approved: number;
+  amount_paid: number;
+  status: ClaimStatus;
+  submitted_at: string | null;
+  adjudicated_at: string | null;
+  paid_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ClaimListRow = InsuranceClaim & {
+  patient_name: string;
+  patient_mrn: string;
+  provider_name: string;
+  policy_number: string;
+  line_count: number;
+};
+
+export type ClaimLine = {
+  id: string;
+  claim_id: string;
+  description: string;
+  quantity: number;
+  unit_amount: number;
+  line_total: number;
+};
+
+export type ClaimEvent = {
+  id: string;
+  claim_id: string;
+  event_type: string;
+  description: string;
+  actor_name: string;
+  created_at: string;
+};
+
+export type InsuranceBenefit = {
+  id: string;
+  provider_id: string;
+  name: string;
+  coverage_type: string;
+  case_rate: number;
+  description: string;
+  is_active: boolean;
+};
+
+export type InsuranceClaimDetail = {
+  claim: InsuranceClaim;
+  patient: Patient;
+  provider: InsuranceProvider;
+  policy: InsurancePolicy;
+  lines: ClaimLine[];
+  events: ClaimEvent[];
+};
+
+export type InsurancePolicyDetail = {
+  policy: InsurancePolicy;
+  patient: Patient;
+  provider: InsuranceProvider;
+  verifications: CoverageVerification[];
+  linked_claims: ClaimListRow[];
+};
+
+export type InsuranceStats = {
+  activePolicies: number;
+  pendingVerifications: number;
+  pendingAuthorizations: number;
+  claimsInReview: number;
+  approvedClaims: number;
+  outstandingClaimAmount: number;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;

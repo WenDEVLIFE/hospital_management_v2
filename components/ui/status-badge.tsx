@@ -22,6 +22,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   approved: { variant: "success", label: "Approved" },
   present: { variant: "success", label: "Present" },
   valid: { variant: "success", label: "Valid" },
+  connected: { variant: "success", label: "Connected" },
   admitted: { variant: "success", label: "Admitted" },
   completed: { variant: "success", label: "Completed" },
   verified: { variant: "success", label: "Verified" },
@@ -51,6 +52,9 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   late: { variant: "pending", label: "Late" },
   probationary: { variant: "pending", label: "Probationary" },
   sick: { variant: "pending", label: "Sick" },
+  manual: { variant: "pending", label: "Manual only" },
+  unverified: { variant: "pending", label: "Unverified" },
+  partially_approved: { variant: "pending", label: "Partially Approved" },
 
   in_progress: { variant: "processing", label: "In Progress" },
   processing: { variant: "processing", label: "Processing" },
@@ -69,6 +73,9 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   paternity: { variant: "info", label: "Paternity" },
   regular: { variant: "info", label: "Regular" },
   consultant: { variant: "info", label: "Consultant" },
+  prepared: { variant: "processing", label: "Prepared" },
+  submitted: { variant: "processing", label: "Submitted" },
+  in_review: { variant: "processing", label: "In Review" },
 
   cancelled: { variant: "critical", label: "Cancelled" },
   no_show: { variant: "critical", label: "No Show" },
@@ -80,6 +87,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   expired: { variant: "critical", label: "Expired" },
   emergency: { variant: "critical", label: "Emergency" },
   absent: { variant: "critical", label: "Absent" },
+  denied: { variant: "critical", label: "Denied" },
 
   inactive: { variant: "inactive", label: "Inactive" },
   archived: { variant: "inactive", label: "Archived" },
@@ -93,6 +101,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   contractual: { variant: "inactive", label: "Contractual" },
   part_time: { variant: "inactive", label: "Part-time" },
   holiday: { variant: "inactive", label: "Holiday" },
+  not_connected: { variant: "inactive", label: "Not connected" },
   elective: { variant: "inactive", label: "Elective" },
 };
 

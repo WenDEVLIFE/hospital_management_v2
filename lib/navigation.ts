@@ -18,6 +18,7 @@ import {
   Pills2Icon,
   Scanner2Icon,
   SettingsIcon,
+  ShieldCheckIcon,
   SirenRoundedIcon,
   StethoscopeIcon,
   TestTubeIcon,
@@ -96,6 +97,11 @@ export const navigation: NavSection[] = [
     items: [
       { label: "Billing", href: "/billing", icon: BillListIcon },
       { label: "Payments", href: "/payments", icon: WalletMoneyIcon },
+      {
+        label: "Insurance & PhilHealth",
+        href: "/insurance",
+        icon: ShieldCheckIcon,
+      },
     ],
   },
   {
