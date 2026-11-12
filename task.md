@@ -21,13 +21,13 @@
 | 1 | Database schema | 24 / 29 | In progress (live apply pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 34 / 47 | Complete (verification in Phase 7) |
-| 4 | Row Level Security | 0 / 25 | Not started |
+| 4 | Row Level Security | 21 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
 | 6 | Frontend ↔ backend integration | 0 / 54 | Not started |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **98 / 282** | |
+| **Total** | | **119 / 282** | |
 
 ---
 
@@ -231,46 +231,46 @@
 
 ### 4.1 Enablement
 
-- [ ] `alter table ... enable row level security` on all 47 application tables (deny direct access to `reference_sequences`; the generator is `security definer`)
-- [ ] `alter table ... force row level security` where the table owner must also be constrained
-- [ ] Verify no table has RLS disabled: query `pg_tables` for `rowsecurity = false`
+- [x] `alter table ... enable row level security` on all 47 application tables (deny direct access to `reference_sequences`; the generator is `security definer`) — 2026-11-12, migration 018 enables all 47
+- [ ] `alter table ... force row level security` where the table owner must also be constrained — intentionally not applied: `SECURITY DEFINER` helpers and migrations need owner bypass
+- [ ] Verify no table has RLS disabled: query `pg_tables` for `rowsecurity = false` — **blocked by: no running database**
 
 ### 4.2 Identity & RBAC
 
-- [ ] `profiles` — self read/update, admin manage
-- [ ] `roles`, `permissions`, `role_permissions` — read for authenticated, write admin-only
-- [ ] `user_roles` — users cannot grant themselves roles (critical escalation test)
-- [ ] `staff_profiles`, `physicians`, `staff_department_assignments` — admin write, department-scoped read
+- [x] `profiles` — self read/update, admin manage — 2026-11-12, migration 018; email/is_active changes blocked by trigger for non-admins
+- [x] `roles`, `permissions`, `role_permissions` — read for authenticated, write admin-only — 2026-11-12, migration 018
+- [x] `user_roles` — users cannot grant themselves roles (critical escalation test) — 2026-11-12, insert/update/delete require `is_admin()` and `user_id <> auth.uid()`
+- [x] `staff_profiles`, `physicians`, `staff_department_assignments` — admin write, department-scoped read — 2026-11-12, migration 018 uses `current_staff_department_id()`
 
 ### 4.3 Patient & clinical
 
-- [ ] `patients` — `patient.view` to read, `patient.create`/`update` to write, `created_by = auth.uid()` on insert
-- [ ] `emergency_contacts`, `patient_allergies`, `medical_histories` — inherit patient access
-- [ ] `patient_care_assignments` — admin/physician only
-- [ ] `encounters`, `vital_signs`, `diagnoses`, `clinical_notes` — permission + `can_access_patient(patient_id)`
-- [ ] Finalized clinical notes immutable without `medical_record.amend`
-- [ ] `nursing_assessments`, `nursing_notes` — nursing permission + assignment scope
+- [x] `patients` — `patient.view` to read, `patient.create`/`update` to write, `created_by = auth.uid()` on insert — 2026-11-12, migration 018
+- [x] `emergency_contacts`, `patient_allergies`, `medical_histories` — inherit patient access — 2026-11-12, contacts use `patient.view`; allergies/histories use `medical_record.view` + `can_access_patient`
+- [x] `patient_care_assignments` — admin/physician only — 2026-11-12, migration 018
+- [x] `encounters`, `vital_signs`, `diagnoses`, `clinical_notes` — permission + `can_access_patient(patient_id)` — 2026-11-12, migration 018
+- [x] Finalized clinical notes immutable without `medical_record.amend` — 2026-11-12, update policy requires author + update/finalize; finalized rows require amend
+- [x] `nursing_assessments`, `nursing_notes` — nursing permission + assignment scope — 2026-11-12, migration 018
 
 ### 4.4 Diagnostics, pharmacy, inventory
 
-- [ ] `laboratory_*` — order permission vs result verification permission split
-- [ ] `radiology_*` — report write vs verify split
-- [ ] `medications`, `prescriptions`, `prescription_items`, `medication_dispenses` — pharmacist dispensing scope
-- [ ] `inventory_*`, `stock_transactions` — append-only history, no update/delete policy
+- [x] `laboratory_*` — order permission vs result verification permission split — 2026-11-12, migration 018
+- [x] `radiology_*` — report write vs verify split — 2026-11-12, migration 018
+- [x] `medications`, `prescriptions`, `prescription_items`, `medication_dispenses` — pharmacist dispensing scope — 2026-11-12, migration 018
+- [x] `inventory_*`, `stock_transactions` — append-only history, no update/delete policy — 2026-11-12, `stock_transactions` has no update/delete policy
 
 ### 4.5 Financial, ADT, system
 
-- [ ] `invoices`, `invoice_items`, `payments` — billing permission; no delete; refund path only
-- [ ] `appointments`, `admissions`, `admission_bed_assignments`, `patient_transfers`, `rooms`, `beds` — scheduling/ADT permissions
-- [ ] `notifications` — owner read/update only
-- [ ] `audit_logs` — `audit.view` to read, no update/delete policy for anyone
-- [ ] `departments` — authenticated read, admin write
+- [x] `invoices`, `invoice_items`, `payments` — billing permission; no delete; refund path only — 2026-11-12, migration 018; payments are insert/select only
+- [x] `appointments`, `admissions`, `admission_bed_assignments`, `patient_transfers`, `rooms`, `beds` — scheduling/ADT permissions — 2026-11-12, migration 018
+- [x] `notifications` — owner read/update only — 2026-11-12, migration 018
+- [x] `audit_logs` — `audit.view` to read, no update/delete policy for anyone — 2026-11-12, migration 018
+- [x] `departments` — authenticated read, admin write — 2026-11-12, migration 018
 
 ### 4.6 Helper hardening
 
-- [ ] Confirm every `security definer` helper has a fixed `search_path` and explicit `grant execute`
-- [ ] Test privilege escalation through `has_permission` / `can_access_patient`
-- [ ] Add `SECURITY INVOKER` views verified against RLS (all 8 views)
+- [x] Confirm every `security definer` helper has a fixed `search_path` and explicit `grant execute` — 2026-11-12, `has_role`, `is_admin`, `has_permission`, `can_access_patient`, `current_staff_department_id`
+- [ ] Test privilege escalation through `has_permission` / `can_access_patient` — **blocked by: no running database or authenticated test tokens**
+- [ ] Add `SECURITY INVOKER` views verified against RLS (all 8 views) — views are `security_invoker` and grants are applied; runtime RLS verification **blocked by: no running database**
 
 ---
 

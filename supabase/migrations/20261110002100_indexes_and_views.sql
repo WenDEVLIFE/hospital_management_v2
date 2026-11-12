@@ -250,3 +250,53 @@ from public.inventory_items ii
 left join public.inventory_categories c on c.id = ii.category_id
 left join public.inventory_batches ib on ib.item_id = ii.id
 group by ii.id, c.name;
+
+-- ----------------------------------------------------------------------------
+-- VIEW GRANTS
+-- ----------------------------------------------------------------------------
+-- The views are security_invoker, so RLS on the underlying tables is the row
+-- boundary. They are read-only API projections.
+
+grant select on
+  public.v_bed_availability,
+  public.v_patient_summary,
+  public.v_appointment_summary,
+  public.v_admission_census,
+  public.v_laboratory_summary,
+  public.v_pharmacy_summary,
+  public.v_billing_summary,
+  public.v_inventory_summary
+to authenticated;
+
+grant select on
+  public.v_bed_availability,
+  public.v_patient_summary,
+  public.v_appointment_summary,
+  public.v_admission_census,
+  public.v_laboratory_summary,
+  public.v_pharmacy_summary,
+  public.v_billing_summary,
+  public.v_inventory_summary
+to service_role;
+
+revoke all on
+  public.v_bed_availability,
+  public.v_patient_summary,
+  public.v_appointment_summary,
+  public.v_admission_census,
+  public.v_laboratory_summary,
+  public.v_pharmacy_summary,
+  public.v_billing_summary,
+  public.v_inventory_summary
+from anon;
+
+revoke insert, update, delete on
+  public.v_bed_availability,
+  public.v_patient_summary,
+  public.v_appointment_summary,
+  public.v_admission_census,
+  public.v_laboratory_summary,
+  public.v_pharmacy_summary,
+  public.v_billing_summary,
+  public.v_inventory_summary
+from authenticated, service_role;
