@@ -18,7 +18,7 @@
 | Phase | Scope | Done | Status |
 |---|---|---|---|
 | 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
-| 1 | Database schema | 15 / 29 | In progress (live apply pending) |
+| 1 | Database schema | 19 / 29 | In progress (live apply pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 34 / 47 | Complete (verification in Phase 7) |
 | 4 | Row Level Security | 0 / 25 | Not started |
@@ -27,7 +27,7 @@
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **89 / 282** | |
+| **Total** | | **93 / 282** | |
 
 ---
 
@@ -56,15 +56,15 @@
 
 ### 1.1 Schema authoring
 
-- [x] `supabase/schema.sql` created — 46 application tables
+- [x] `supabase/schema.sql` created — 47 application tables (46 domain tables + `reference_sequences`)
 - [x] Common column standards applied (`uuid` PK `gen_random_uuid()`, `created_at`/`updated_at timestamptz`)
 - [x] Naming conventions applied (plural snake_case tables, `_id` FKs, `is_`/`has_` booleans)
 - [x] Foreign keys declared for every relationship in `SUPABASE.MD` §6
-- [x] Check constraints for all status columns (appointments, admissions, lab, radiology, prescriptions, invoices, payments, stock)
+- [x] PostgreSQL enum types for all fixed-value status columns (appointments, admissions, beds, encounters, notes, lab, radiology, prescriptions, invoices, payments, stock)
 - [x] Money columns as `numeric(12,2)` (never float)
 - [x] Indexes created (24+ including `idx_patients_mrn`, `idx_appointments_physician_schedule`, partial unique index on active bed assignments)
 - [x] 8 reporting views with `security_invoker = true`
-- [x] `set_updated_at()` trigger applied to 22 mutable tables
+- [x] `set_updated_at()` trigger applied to 23 mutable tables (also stamps `updated_by` when present)
 - [x] `handle_new_user()` profile bootstrap trigger on `auth.users`
 - [x] RBAC helpers: `has_role`, `is_admin`, `has_permission`, `can_access_patient`
 - [x] `patient_care_assignments` table for patient-level access control
@@ -81,12 +81,14 @@
 
 ### 1.3 Schema hardening
 
-- [ ] Convert status `text + check` columns to PostgreSQL enum types (`SUPABASE.MD` §5.1)
-- [ ] Add `created_by` / `updated_by` accountability columns where `SUPABASE.MD` §5.2 requires them
-- [ ] Add medical record number generator function (`generate_reference_number`)
-- [ ] Review every FK for an `on delete` rule (currently `restrict` by default — confirm clinical records must never cascade)
+- [x] Convert status `text + check` columns to PostgreSQL enum types (`SUPABASE.MD` §5.1) — 2026-11-12, 16 enum types in `supabase/schema.sql` §0; `laboratory_order_items.status` stays `text` because the spec defines no allowed values
+- [x] Add `created_by` / `updated_by` accountability columns where `SUPABASE.MD` §5.2 requires them — 2026-11-12, added to mutable reference/admin tables and editable clinical records; `set_updated_at()` now stamps `updated_by` from `auth.uid()`
+- [x] Add medical record number generator function (`generate_reference_number`) — 2026-11-12, `supabase/schema.sql` §16.4; atomic `PREFIX-YYYY-NNNN` counter in `reference_sequences`
+- [x] Review every FK for an `on delete` rule (currently `restrict` by default — confirm clinical records must never cascade) — 2026-11-12, all 126 FKs now declare a rule; `cascade` limited to identity/role-join/notification rows
 
 ### 1.4 Migration workflow
+
+> Transitional migration exists: `supabase/migrations/20261112000000_schema_hardening.sql` upgrades an already-created database in place. Fold it into the timestamped migration split below when `npx supabase init` is done.
 
 - [ ] `npx supabase init` → create `supabase/config.toml`
 - [ ] Split `schema.sql` into the 22 timestamped migrations listed in `SUPABASE.MD` §31.3
@@ -225,11 +227,11 @@
 **Goal:** The database, not the UI, becomes the authorization boundary.
 **Depends on:** Phase 1 applied; Phase 0 role matrix approved.
 **Definition of done:** every `public` table has RLS enabled and a documented policy; anonymous access is denied; role isolation tests pass.
-**⚠ Risk if skipped:** all 46 tables are reachable with the publishable key. Do not expose a production frontend before this phase.
+**⚠ Risk if skipped:** all 47 tables are reachable with the publishable key. Do not expose a production frontend before this phase.
 
 ### 4.1 Enablement
 
-- [ ] `alter table ... enable row level security` on all 46 application tables
+- [ ] `alter table ... enable row level security` on all 47 application tables (deny direct access to `reference_sequences`; the generator is `security definer`)
 - [ ] `alter table ... force row level security` where the table owner must also be constrained
 - [ ] Verify no table has RLS disabled: query `pg_tables` for `rowsecurity = false`
 
@@ -313,7 +315,6 @@
 - [ ] `admin-role-assignment`
 - [ ] `send-notification`
 - [ ] `generate-document`
-- [ ] `ai-assist`
 - [ ] `scheduled-maintenance`
 - [ ] Secrets configured via `supabase secrets set` (never in the frontend)
 

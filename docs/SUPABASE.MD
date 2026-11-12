@@ -406,6 +406,8 @@ The root Proxy should use the same request-scoped session refresh pattern and mu
 | PostgreSQL Functions | snake_case | `create_admission` |
 | Enums | snake_case | `appointment_status` |
 
+The implementation in `supabase/schema.sql` promotes every fixed-value state column to a PostgreSQL enum type. Enum values are part of the API contract; append values with `ALTER TYPE ... ADD VALUE` in a new migration instead of editing an applied migration.
+
 ## 5.2 Common Column Standards
 
 Most application tables should use:
@@ -418,7 +420,7 @@ updated_at timestamptz not null default now()
 
 Use `updated_at` only when the record is mutable.
 
-Use `created_by` and `updated_by` where accountability is required.
+Use `created_by` and `updated_by` where accountability is required. The `set_updated_at()` trigger stamps `updated_by` from `auth.uid()` when the column exists, and preserves the previous value for migrations, seeds, and privileged maintenance jobs.
 
 Use `timestamptz` for dates and timestamps that represent actual moments in time.
 
@@ -532,6 +534,13 @@ SYSTEM ACCOUNTABILITY
 ```
 
 All relationships must be enforced using actual PostgreSQL foreign keys wherever possible.
+
+### Foreign Key Delete Policy
+
+- `on delete cascade` is limited to authentication identity rows, role join rows, staff-department assignment history, and notifications.
+- Every patient, clinical, diagnostic, pharmacy, inventory, billing, and audit relationship uses `on delete restrict`.
+- Patient and clinical records are never deleted as a side effect of deleting a parent row. Use status transitions and archive workflows instead.
+- A direct `delete from public.patients` must fail while any dependent record exists.
 
 ---
 
@@ -829,7 +838,7 @@ Do not generate unique medical record numbers solely through frontend timestamps
 create table public.emergency_contacts (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id) on delete cascade,
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
   full_name text not null,
   relationship text,
@@ -849,7 +858,7 @@ create table public.emergency_contacts (
 create table public.patient_allergies (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id) on delete cascade,
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
   allergen text not null,
   reaction text,
@@ -870,7 +879,7 @@ create table public.patient_allergies (
 create table public.medical_histories (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id) on delete cascade,
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
   history_type text not null,
   description text not null,
@@ -1305,7 +1314,7 @@ create table public.laboratory_orders (
 create table public.laboratory_order_items (
   id uuid primary key default gen_random_uuid(),
 
-  order_id uuid not null references public.laboratory_orders(id) on delete cascade,
+  order_id uuid not null references public.laboratory_orders(id) on delete restrict,
 
   test_id uuid not null references public.laboratory_tests(id),
 
@@ -1519,7 +1528,7 @@ create table public.prescriptions (
 create table public.prescription_items (
   id uuid primary key default gen_random_uuid(),
 
-  prescription_id uuid not null references public.prescriptions(id) on delete cascade,
+  prescription_id uuid not null references public.prescriptions(id) on delete restrict,
 
   medication_id uuid not null references public.medications(id),
 
@@ -1729,7 +1738,7 @@ create table public.invoices (
 create table public.invoice_items (
   id uuid primary key default gen_random_uuid(),
 
-  invoice_id uuid not null references public.invoices(id) on delete cascade,
+  invoice_id uuid not null references public.invoices(id) on delete restrict,
 
   description text not null,
 
@@ -1970,6 +1979,8 @@ This is not a separate REST backend.
 | `adjust_inventory` | Record controlled stock adjustment |
 | `generate_reference_number` | Generate controlled unique identifiers |
 
+`generate_reference_number(p_prefix text)` returns `PREFIX-YYYY-NNNN` (for example `MRN-2026-0001`). It uses the `Asia/Manila` year and an atomic per-prefix counter in `public.reference_sequences`. Supported prefixes include `MRN`, `APT`, `ADM`, `ENC`, `LAB`, `RAD`, `RX`, `INV`, and `PAY`. Callers must not generate identifiers from frontend timestamps or random strings.
+
 ## 21.2 Function Requirements
 
 Every transactional function must:
@@ -2040,7 +2051,7 @@ begin
     received_by
   )
   values (
-    'PAY-' || gen_random_uuid()::text,
+    public.generate_reference_number('PAY'),
     p_invoice_id,
     p_amount,
     p_payment_method,

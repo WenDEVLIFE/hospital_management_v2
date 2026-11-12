@@ -8,11 +8,19 @@
 --   Supabase Dashboard -> SQL Editor -> paste this file -> Run
 --   or: npx supabase db execute --file supabase/schema.sql
 --
+-- EXISTING DATABASE
+--   Do not re-run this file. It fails on the first existing table by design.
+--   Apply supabase/migrations/20261112000000_schema_hardening.sql instead.
+--
 -- SCOPE
 --   [x] Application tables (domains: identity, reference, patient, clinical,
 --       laboratory, radiology, pharmacy, inventory, billing, system)
+--   [x] PostgreSQL enum types for fixed-value state columns
+--   [x] created_by / updated_by accountability columns
+--   [x] Explicit on-delete rules for every foreign key
 --   [x] updated_at triggers + auth user -> profile bootstrap trigger
 --   [x] RBAC helper functions (has_role / is_admin / has_permission)
+--   [x] generate_reference_number() controlled identifier generator
 --   [x] Indexes and reporting views
 --   [x] Reference seed data (roles, permissions, departments)
 --   [ ] Row Level Security policies  -> separate migration
@@ -24,24 +32,135 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 1. HOSPITAL REFERENCE TABLES
+-- 0. ENUMERATED TYPES
 -- ----------------------------------------------------------------------------
+-- Fixed-value state columns use PostgreSQL enum types instead of text + check
+-- (SUPABASE.MD section 5.1). Enum values are part of the API surface: append
+-- new values with ALTER TYPE ... ADD VALUE in a migration, never edit history.
 
-create table public.departments (
-  id uuid primary key default gen_random_uuid(),
-
-  code text not null unique,
-  name text not null unique,
-  description text,
-
-  is_active boolean not null default true,
-
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+create type public.bed_status as enum (
+  'available',
+  'occupied',
+  'maintenance',
+  'reserved'
 );
 
+create type public.patient_registration_status as enum (
+  'active',
+  'inactive',
+  'archived'
+);
+
+create type public.appointment_status as enum (
+  'scheduled',
+  'confirmed',
+  'waiting',
+  'in_consultation',
+  'completed',
+  'cancelled',
+  'no_show'
+);
+
+create type public.admission_status as enum (
+  'admitted',
+  'transferred',
+  'discharged',
+  'cancelled'
+);
+
+create type public.encounter_status as enum (
+  'open',
+  'in_progress',
+  'completed',
+  'cancelled'
+);
+
+create type public.clinical_note_status as enum (
+  'draft',
+  'finalized',
+  'amended'
+);
+
+create type public.laboratory_priority as enum (
+  'routine',
+  'urgent',
+  'stat'
+);
+
+create type public.laboratory_order_status as enum (
+  'pending',
+  'collection',
+  'processing',
+  'completed',
+  'cancelled'
+);
+
+create type public.laboratory_specimen_status as enum (
+  'pending',
+  'collected',
+  'rejected'
+);
+
+create type public.laboratory_verification_status as enum (
+  'pending',
+  'verified',
+  'rejected'
+);
+
+create type public.radiology_order_status as enum (
+  'pending',
+  'scheduled',
+  'in_progress',
+  'completed',
+  'cancelled'
+);
+
+create type public.radiology_report_status as enum (
+  'draft',
+  'verified',
+  'amended'
+);
+
+create type public.prescription_status as enum (
+  'pending',
+  'partially_dispensed',
+  'dispensed',
+  'cancelled'
+);
+
+create type public.stock_transaction_type as enum (
+  'stock_in',
+  'stock_out',
+  'adjustment',
+  'transfer',
+  'dispensing'
+);
+
+create type public.invoice_status as enum (
+  'unpaid',
+  'partially_paid',
+  'paid',
+  'cancelled',
+  'refunded'
+);
+
+create type public.payment_status as enum (
+  'pending',
+  'completed',
+  'failed',
+  'refunded',
+  'cancelled'
+);
+
+-- FOREIGN KEY DELETE POLICY
+--   cascade  -> identity, role join rows, and notifications only. These rows
+--               have no independent clinical or financial meaning.
+--   restrict -> every patient, clinical, diagnostic, pharmacy, inventory,
+--               billing, and audit relationship. Clinical records are never
+--               removed as a side effect of deleting a parent row.
+
 -- ----------------------------------------------------------------------------
--- 2. AUTHENTICATION, PROFILES & ROLE-BASED ACCESS CONTROL
+-- 1. AUTHENTICATION, PROFILES & ROLE-BASED ACCESS CONTROL
 -- ----------------------------------------------------------------------------
 
 create table public.profiles (
@@ -91,11 +210,31 @@ create table public.user_roles (
   user_id uuid not null references public.profiles(id) on delete cascade,
   role_id uuid not null references public.roles(id) on delete cascade,
 
-  granted_by uuid references public.profiles(id),
+  granted_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
 
   primary key (user_id, role_id)
+);
+
+-- ----------------------------------------------------------------------------
+-- 2. HOSPITAL REFERENCE TABLES
+-- ----------------------------------------------------------------------------
+
+create table public.departments (
+  id uuid primary key default gen_random_uuid(),
+
+  code text not null unique,
+  name text not null unique,
+  description text,
+
+  is_active boolean not null default true,
+
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 -- ----------------------------------------------------------------------------
@@ -113,12 +252,15 @@ create table public.staff_profiles (
   middle_name text,
   last_name text not null,
 
-  department_id uuid references public.departments(id),
+  department_id uuid references public.departments(id) on delete restrict,
 
   employment_type text,
   professional_license_number text,
 
   is_active boolean not null default true,
+
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -127,12 +269,15 @@ create table public.staff_profiles (
 create table public.physicians (
   id uuid primary key default gen_random_uuid(),
 
-  staff_id uuid not null unique references public.staff_profiles(id),
+  staff_id uuid not null unique references public.staff_profiles(id) on delete restrict,
 
   specialty text,
   license_number text not null unique,
 
   is_available boolean not null default true,
+
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -142,10 +287,12 @@ create table public.staff_department_assignments (
   id uuid primary key default gen_random_uuid(),
 
   staff_id uuid not null references public.staff_profiles(id) on delete cascade,
-  department_id uuid not null references public.departments(id),
+  department_id uuid not null references public.departments(id) on delete restrict,
 
   assigned_at timestamptz not null default now(),
   ended_at timestamptz,
+
+  created_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now()
 );
@@ -158,12 +305,15 @@ create table public.rooms (
   id uuid primary key default gen_random_uuid(),
 
   room_number text not null,
-  department_id uuid not null references public.departments(id),
+  department_id uuid not null references public.departments(id) on delete restrict,
 
   room_type text,
   floor_number text,
 
   is_active boolean not null default true,
+
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -174,12 +324,14 @@ create table public.rooms (
 create table public.beds (
   id uuid primary key default gen_random_uuid(),
 
-  room_id uuid not null references public.rooms(id),
+  room_id uuid not null references public.rooms(id) on delete restrict,
 
   bed_number text not null,
 
-  status text not null default 'available'
-    check (status in ('available', 'occupied', 'maintenance', 'reserved')),
+  status public.bed_status not null default 'available',
+
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -218,19 +370,22 @@ create table public.patients (
 
   registration_date timestamptz not null default now(),
 
-  registration_status text not null default 'active'
-    check (registration_status in ('active', 'inactive', 'archived')),
+  registration_status public.patient_registration_status not null default 'active',
 
-  created_by uuid not null references public.profiles(id),
+  created_by uuid not null references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+-- Patient records are retained permanently. Registration status is the
+-- supported lifecycle mechanism; deleting a patient is deliberately blocked by
+-- RESTRICT on every child relationship below.
 create table public.emergency_contacts (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id) on delete cascade,
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
   full_name text not null,
   relationship text,
@@ -239,6 +394,9 @@ create table public.emergency_contacts (
 
   is_primary boolean not null default false,
 
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -246,7 +404,7 @@ create table public.emergency_contacts (
 create table public.patient_allergies (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id) on delete cascade,
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
   allergen text not null,
   reaction text,
@@ -254,7 +412,8 @@ create table public.patient_allergies (
 
   notes text,
 
-  recorded_by uuid not null references public.profiles(id),
+  recorded_by uuid not null references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -263,12 +422,12 @@ create table public.patient_allergies (
 create table public.medical_histories (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id) on delete cascade,
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
   history_type text not null,
   description text not null,
 
-  recorded_by uuid not null references public.profiles(id),
+  recorded_by uuid not null references public.profiles(id) on delete restrict,
 
   recorded_at timestamptz not null default now(),
 
@@ -279,12 +438,12 @@ create table public.medical_histories (
 create table public.patient_care_assignments (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id),
-  staff_id uuid not null references public.staff_profiles(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
+  staff_id uuid not null references public.staff_profiles(id) on delete restrict,
 
   assignment_type text not null,
 
-  assigned_by uuid not null references public.profiles(id),
+  assigned_by uuid not null references public.profiles(id) on delete restrict,
 
   assigned_at timestamptz not null default now(),
   ended_at timestamptz
@@ -299,11 +458,11 @@ create table public.appointments (
 
   appointment_number text not null unique,
 
-  patient_id uuid not null references public.patients(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
-  department_id uuid not null references public.departments(id),
+  department_id uuid not null references public.departments(id) on delete restrict,
 
-  physician_id uuid references public.physicians(id),
+  physician_id uuid references public.physicians(id) on delete restrict,
 
   scheduled_at timestamptz not null,
   duration_minutes integer not null default 30
@@ -312,22 +471,12 @@ create table public.appointments (
   appointment_type text,
   reason_for_visit text,
 
-  status text not null default 'scheduled'
-    check (
-      status in (
-        'scheduled',
-        'confirmed',
-        'waiting',
-        'in_consultation',
-        'completed',
-        'cancelled',
-        'no_show'
-      )
-    ),
+  status public.appointment_status not null default 'scheduled',
 
   notes text,
 
-  created_by uuid not null references public.profiles(id),
+  created_by uuid not null references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -342,32 +491,25 @@ create table public.admissions (
 
   admission_number text not null unique,
 
-  patient_id uuid not null references public.patients(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
-  attending_physician_id uuid references public.physicians(id),
+  attending_physician_id uuid references public.physicians(id) on delete restrict,
 
-  department_id uuid not null references public.departments(id),
+  department_id uuid not null references public.departments(id) on delete restrict,
 
   admission_date timestamptz not null default now(),
   discharge_date timestamptz,
 
   admission_type text,
 
-  status text not null default 'admitted'
-    check (
-      status in (
-        'admitted',
-        'transferred',
-        'discharged',
-        'cancelled'
-      )
-    ),
+  status public.admission_status not null default 'admitted',
 
   admission_notes text,
   discharge_notes text,
 
-  admitted_by uuid not null references public.profiles(id),
-  discharged_by uuid references public.profiles(id),
+  admitted_by uuid not null references public.profiles(id) on delete restrict,
+  discharged_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -376,14 +518,14 @@ create table public.admissions (
 create table public.admission_bed_assignments (
   id uuid primary key default gen_random_uuid(),
 
-  admission_id uuid not null references public.admissions(id),
+  admission_id uuid not null references public.admissions(id) on delete restrict,
 
-  bed_id uuid not null references public.beds(id),
+  bed_id uuid not null references public.beds(id) on delete restrict,
 
   assigned_at timestamptz not null default now(),
   released_at timestamptz,
 
-  assigned_by uuid not null references public.profiles(id),
+  assigned_by uuid not null references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now()
 );
@@ -391,14 +533,14 @@ create table public.admission_bed_assignments (
 create table public.patient_transfers (
   id uuid primary key default gen_random_uuid(),
 
-  admission_id uuid not null references public.admissions(id),
+  admission_id uuid not null references public.admissions(id) on delete restrict,
 
-  from_bed_id uuid references public.beds(id),
-  to_bed_id uuid not null references public.beds(id),
+  from_bed_id uuid references public.beds(id) on delete restrict,
+  to_bed_id uuid not null references public.beds(id) on delete restrict,
 
   transfer_reason text,
 
-  transferred_by uuid not null references public.profiles(id),
+  transferred_by uuid not null references public.profiles(id) on delete restrict,
 
   transferred_at timestamptz not null default now(),
 
@@ -414,33 +556,26 @@ create table public.encounters (
 
   encounter_number text not null unique,
 
-  patient_id uuid not null references public.patients(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
-  appointment_id uuid references public.appointments(id),
-  admission_id uuid references public.admissions(id),
+  appointment_id uuid references public.appointments(id) on delete restrict,
+  admission_id uuid references public.admissions(id) on delete restrict,
 
-  physician_id uuid references public.physicians(id),
+  physician_id uuid references public.physicians(id) on delete restrict,
 
-  department_id uuid not null references public.departments(id),
+  department_id uuid not null references public.departments(id) on delete restrict,
 
   encounter_type text not null,
 
   chief_complaint text,
 
-  clinical_status text not null default 'open'
-    check (
-      clinical_status in (
-        'open',
-        'in_progress',
-        'completed',
-        'cancelled'
-      )
-    ),
+  clinical_status public.encounter_status not null default 'open',
 
   started_at timestamptz not null default now(),
   completed_at timestamptz,
 
-  created_by uuid not null references public.profiles(id),
+  created_by uuid not null references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -449,8 +584,8 @@ create table public.encounters (
 create table public.vital_signs (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id),
-  encounter_id uuid not null references public.encounters(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
+  encounter_id uuid not null references public.encounters(id) on delete restrict,
 
   systolic_bp numeric,
   diastolic_bp numeric,
@@ -464,7 +599,7 @@ create table public.vital_signs (
   weight_kg numeric,
   height_cm numeric,
 
-  recorded_by uuid not null references public.profiles(id),
+  recorded_by uuid not null references public.profiles(id) on delete restrict,
 
   recorded_at timestamptz not null default now(),
 
@@ -474,8 +609,8 @@ create table public.vital_signs (
 create table public.diagnoses (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id),
-  encounter_id uuid not null references public.encounters(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
+  encounter_id uuid not null references public.encounters(id) on delete restrict,
 
   diagnosis_code text,
   diagnosis_name text not null,
@@ -485,7 +620,7 @@ create table public.diagnoses (
 
   is_primary boolean not null default false,
 
-  recorded_by uuid not null references public.profiles(id),
+  recorded_by uuid not null references public.profiles(id) on delete restrict,
 
   recorded_at timestamptz not null default now(),
 
@@ -495,16 +630,16 @@ create table public.diagnoses (
 create table public.clinical_notes (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id),
-  encounter_id uuid not null references public.encounters(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
+  encounter_id uuid not null references public.encounters(id) on delete restrict,
 
   note_type text not null,
   content text not null,
 
-  status text not null default 'draft'
-    check (status in ('draft', 'finalized', 'amended')),
+  status public.clinical_note_status not null default 'draft',
 
-  authored_by uuid not null references public.profiles(id),
+  authored_by uuid not null references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   finalized_at timestamptz,
 
@@ -519,15 +654,15 @@ create table public.clinical_notes (
 create table public.nursing_assessments (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id),
-  encounter_id uuid not null references public.encounters(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
+  encounter_id uuid not null references public.encounters(id) on delete restrict,
 
   assessment_type text not null,
   assessment_data jsonb not null default '{}'::jsonb,
 
   notes text,
 
-  assessed_by uuid not null references public.profiles(id),
+  assessed_by uuid not null references public.profiles(id) on delete restrict,
 
   assessed_at timestamptz not null default now(),
 
@@ -537,12 +672,12 @@ create table public.nursing_assessments (
 create table public.nursing_notes (
   id uuid primary key default gen_random_uuid(),
 
-  patient_id uuid not null references public.patients(id),
-  encounter_id uuid not null references public.encounters(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
+  encounter_id uuid not null references public.encounters(id) on delete restrict,
 
   note text not null,
 
-  recorded_by uuid not null references public.profiles(id),
+  recorded_by uuid not null references public.profiles(id) on delete restrict,
 
   recorded_at timestamptz not null default now(),
 
@@ -566,6 +701,9 @@ create table public.laboratory_tests (
 
   is_active boolean not null default true,
 
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -575,24 +713,15 @@ create table public.laboratory_orders (
 
   order_number text not null unique,
 
-  patient_id uuid not null references public.patients(id),
-  encounter_id uuid not null references public.encounters(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
+  encounter_id uuid not null references public.encounters(id) on delete restrict,
 
-  ordered_by uuid not null references public.profiles(id),
+  ordered_by uuid not null references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
-  priority text not null default 'routine'
-    check (priority in ('routine', 'urgent', 'stat')),
+  priority public.laboratory_priority not null default 'routine',
 
-  status text not null default 'pending'
-    check (
-      status in (
-        'pending',
-        'collection',
-        'processing',
-        'completed',
-        'cancelled'
-      )
-    ),
+  status public.laboratory_order_status not null default 'pending',
 
   ordered_at timestamptz not null default now(),
 
@@ -603,10 +732,12 @@ create table public.laboratory_orders (
 create table public.laboratory_order_items (
   id uuid primary key default gen_random_uuid(),
 
-  order_id uuid not null references public.laboratory_orders(id) on delete cascade,
+  order_id uuid not null references public.laboratory_orders(id) on delete restrict,
 
-  test_id uuid not null references public.laboratory_tests(id),
+  test_id uuid not null references public.laboratory_tests(id) on delete restrict,
 
+  -- The specification does not define an allowed value set for this column,
+  -- so it intentionally remains text until the laboratory workflow is agreed.
   status text not null default 'pending',
 
   created_at timestamptz not null default now()
@@ -615,20 +746,13 @@ create table public.laboratory_order_items (
 create table public.laboratory_specimens (
   id uuid primary key default gen_random_uuid(),
 
-  order_id uuid not null references public.laboratory_orders(id),
+  order_id uuid not null references public.laboratory_orders(id) on delete restrict,
 
   specimen_type text not null,
 
-  collection_status text not null default 'pending'
-    check (
-      collection_status in (
-        'pending',
-        'collected',
-        'rejected'
-      )
-    ),
+  collection_status public.laboratory_specimen_status not null default 'pending',
 
-  collected_by uuid references public.profiles(id),
+  collected_by uuid references public.profiles(id) on delete restrict,
 
   collected_at timestamptz,
 
@@ -640,7 +764,7 @@ create table public.laboratory_specimens (
 create table public.laboratory_results (
   id uuid primary key default gen_random_uuid(),
 
-  order_item_id uuid not null references public.laboratory_order_items(id),
+  order_item_id uuid not null references public.laboratory_order_items(id) on delete restrict,
 
   result_value text,
   result_unit text,
@@ -648,17 +772,11 @@ create table public.laboratory_results (
 
   interpretation text,
 
-  verification_status text not null default 'pending'
-    check (
-      verification_status in (
-        'pending',
-        'verified',
-        'rejected'
-      )
-    ),
+  verification_status public.laboratory_verification_status not null default 'pending',
 
-  performed_by uuid references public.profiles(id),
-  verified_by uuid references public.profiles(id),
+  performed_by uuid references public.profiles(id) on delete restrict,
+  verified_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   performed_at timestamptz,
   verified_at timestamptz,
@@ -676,26 +794,18 @@ create table public.radiology_orders (
 
   order_number text not null unique,
 
-  patient_id uuid not null references public.patients(id),
-  encounter_id uuid not null references public.encounters(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
+  encounter_id uuid not null references public.encounters(id) on delete restrict,
 
   examination_type text not null,
   body_part text,
 
-  ordered_by uuid not null references public.profiles(id),
+  ordered_by uuid not null references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   scheduled_at timestamptz,
 
-  status text not null default 'pending'
-    check (
-      status in (
-        'pending',
-        'scheduled',
-        'in_progress',
-        'completed',
-        'cancelled'
-      )
-    ),
+  status public.radiology_order_status not null default 'pending',
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -704,21 +814,15 @@ create table public.radiology_orders (
 create table public.radiology_reports (
   id uuid primary key default gen_random_uuid(),
 
-  order_id uuid not null references public.radiology_orders(id),
+  order_id uuid not null references public.radiology_orders(id) on delete restrict,
 
   report_content text,
 
-  report_status text not null default 'draft'
-    check (
-      report_status in (
-        'draft',
-        'verified',
-        'amended'
-      )
-    ),
+  report_status public.radiology_report_status not null default 'draft',
 
-  reported_by uuid references public.profiles(id),
-  verified_by uuid references public.profiles(id),
+  reported_by uuid references public.profiles(id) on delete restrict,
+  verified_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   reported_at timestamptz,
   verified_at timestamptz,
@@ -748,6 +852,9 @@ create table public.medications (
 
   is_active boolean not null default true,
 
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -757,22 +864,15 @@ create table public.prescriptions (
 
   prescription_number text not null unique,
 
-  patient_id uuid not null references public.patients(id),
-  encounter_id uuid not null references public.encounters(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
+  encounter_id uuid not null references public.encounters(id) on delete restrict,
 
-  prescribed_by uuid not null references public.profiles(id),
+  prescribed_by uuid not null references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   prescription_date timestamptz not null default now(),
 
-  status text not null default 'pending'
-    check (
-      status in (
-        'pending',
-        'partially_dispensed',
-        'dispensed',
-        'cancelled'
-      )
-    ),
+  status public.prescription_status not null default 'pending',
 
   notes text,
 
@@ -783,9 +883,9 @@ create table public.prescriptions (
 create table public.prescription_items (
   id uuid primary key default gen_random_uuid(),
 
-  prescription_id uuid not null references public.prescriptions(id) on delete cascade,
+  prescription_id uuid not null references public.prescriptions(id) on delete restrict,
 
-  medication_id uuid not null references public.medications(id),
+  medication_id uuid not null references public.medications(id) on delete restrict,
 
   dosage text not null,
   frequency text not null,
@@ -801,11 +901,11 @@ create table public.prescription_items (
 create table public.medication_dispenses (
   id uuid primary key default gen_random_uuid(),
 
-  prescription_item_id uuid not null references public.prescription_items(id),
+  prescription_item_id uuid not null references public.prescription_items(id) on delete restrict,
 
   quantity_dispensed numeric not null check (quantity_dispensed > 0),
 
-  dispensed_by uuid not null references public.profiles(id),
+  dispensed_by uuid not null references public.profiles(id) on delete restrict,
 
   dispensed_at timestamptz not null default now(),
 
@@ -824,7 +924,11 @@ create table public.inventory_categories (
   name text not null unique,
   description text,
 
-  created_at timestamptz not null default now()
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table public.inventory_items (
@@ -835,13 +939,16 @@ create table public.inventory_items (
   name text not null,
   description text,
 
-  category_id uuid references public.inventory_categories(id),
+  category_id uuid references public.inventory_categories(id) on delete restrict,
 
   unit text not null,
 
   reorder_level numeric not null default 0,
 
   is_active boolean not null default true,
+
+  created_by uuid references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -850,7 +957,7 @@ create table public.inventory_items (
 create table public.inventory_batches (
   id uuid primary key default gen_random_uuid(),
 
-  item_id uuid not null references public.inventory_items(id),
+  item_id uuid not null references public.inventory_items(id) on delete restrict,
 
   batch_number text,
 
@@ -863,6 +970,8 @@ create table public.inventory_batches (
 
   received_at timestamptz not null default now(),
 
+  created_by uuid references public.profiles(id) on delete restrict,
+
   created_at timestamptz not null default now(),
 
   check (quantity_received >= 0),
@@ -873,20 +982,11 @@ create table public.inventory_batches (
 create table public.stock_transactions (
   id uuid primary key default gen_random_uuid(),
 
-  item_id uuid not null references public.inventory_items(id),
+  item_id uuid not null references public.inventory_items(id) on delete restrict,
 
-  batch_id uuid references public.inventory_batches(id),
+  batch_id uuid references public.inventory_batches(id) on delete restrict,
 
-  transaction_type text not null
-    check (
-      transaction_type in (
-        'stock_in',
-        'stock_out',
-        'adjustment',
-        'transfer',
-        'dispensing'
-      )
-    ),
+  transaction_type public.stock_transaction_type not null,
 
   quantity numeric not null check (quantity > 0),
 
@@ -895,7 +995,7 @@ create table public.stock_transactions (
 
   reason text,
 
-  performed_by uuid not null references public.profiles(id),
+  performed_by uuid not null references public.profiles(id) on delete restrict,
 
   performed_at timestamptz not null default now(),
 
@@ -911,10 +1011,10 @@ create table public.invoices (
 
   invoice_number text not null unique,
 
-  patient_id uuid not null references public.patients(id),
+  patient_id uuid not null references public.patients(id) on delete restrict,
 
-  admission_id uuid references public.admissions(id),
-  encounter_id uuid references public.encounters(id),
+  admission_id uuid references public.admissions(id) on delete restrict,
+  encounter_id uuid references public.encounters(id) on delete restrict,
 
   invoice_date timestamptz not null default now(),
 
@@ -925,18 +1025,10 @@ create table public.invoices (
   amount_paid numeric(12,2) not null default 0,
   balance numeric(12,2) not null default 0,
 
-  status text not null default 'unpaid'
-    check (
-      status in (
-        'unpaid',
-        'partially_paid',
-        'paid',
-        'cancelled',
-        'refunded'
-      )
-    ),
+  status public.invoice_status not null default 'unpaid',
 
-  created_by uuid not null references public.profiles(id),
+  created_by uuid not null references public.profiles(id) on delete restrict,
+  updated_by uuid references public.profiles(id) on delete restrict,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -951,7 +1043,7 @@ create table public.invoices (
 create table public.invoice_items (
   id uuid primary key default gen_random_uuid(),
 
-  invoice_id uuid not null references public.invoices(id) on delete cascade,
+  invoice_id uuid not null references public.invoices(id) on delete restrict,
 
   description text not null,
 
@@ -969,24 +1061,15 @@ create table public.payments (
 
   payment_reference text not null unique,
 
-  invoice_id uuid not null references public.invoices(id),
+  invoice_id uuid not null references public.invoices(id) on delete restrict,
 
   amount numeric(12,2) not null check (amount > 0),
 
   payment_method text not null,
 
-  payment_status text not null default 'completed'
-    check (
-      payment_status in (
-        'pending',
-        'completed',
-        'failed',
-        'refunded',
-        'cancelled'
-      )
-    ),
+  payment_status public.payment_status not null default 'completed',
 
-  received_by uuid not null references public.profiles(id),
+  received_by uuid not null references public.profiles(id) on delete restrict,
 
   received_at timestamptz not null default now(),
 
@@ -996,7 +1079,7 @@ create table public.payments (
 );
 
 -- ----------------------------------------------------------------------------
--- 15. NOTIFICATIONS & AUDIT LOGS
+-- 15. NOTIFICATIONS, AUDIT LOGS & REFERENCE SEQUENCES
 -- ----------------------------------------------------------------------------
 
 create table public.notifications (
@@ -1021,7 +1104,7 @@ create table public.notifications (
 create table public.audit_logs (
   id bigint generated always as identity primary key,
 
-  actor_id uuid references public.profiles(id),
+  actor_id uuid references public.profiles(id) on delete restrict,
 
   action text not null,
 
@@ -1037,17 +1120,39 @@ create table public.audit_logs (
   created_at timestamptz not null default now()
 );
 
+-- Monotonic counters backing generate_reference_number(). One row per prefix
+-- (MRN, APT, ADM, ENC, LAB, RAD, RX, INV, PAY). Row-level locking through
+-- INSERT ... ON CONFLICT DO UPDATE makes concurrent generation safe.
+create table public.reference_sequences (
+  prefix text primary key,
+
+  last_value bigint not null default 0
+    check (last_value >= 0),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- ----------------------------------------------------------------------------
 -- 16. FUNCTIONS
 -- ----------------------------------------------------------------------------
 
--- 16.1 Automatic updated_at maintenance
+-- 16.1 Automatic updated_at / updated_by maintenance
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
 as $$
 begin
   new.updated_at = now();
+
+  -- Tables with accountability columns pass 'updated_by' as a trigger argument,
+  -- so this function never touches a column that does not exist. Preserve the
+  -- previous value when no authenticated user is present (migrations, seeds,
+  -- and privileged maintenance jobs).
+  if tg_nargs > 0 and tg_argv[0] = 'updated_by' then
+    new.updated_by = coalesce(auth.uid(), new.updated_by);
+  end if;
+
   return new;
 end;
 $$;
@@ -1152,6 +1257,45 @@ as $$
     );
 $$;
 
+-- 16.4 Controlled reference number generation
+-- Produces PREFIX-YYYY-NNNN values (for example MRN-2026-0001). The counter is
+-- stored per prefix and incremented atomically, so registration and order
+-- creation cannot produce duplicate identifiers.
+create or replace function public.generate_reference_number(p_prefix text)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_prefix text;
+  v_next bigint;
+  v_year text;
+begin
+  v_prefix := upper(btrim(coalesce(p_prefix, '')));
+
+  if v_prefix !~ '^[A-Z0-9]{2,8}$' then
+    raise exception 'Invalid reference prefix: %', p_prefix
+      using errcode = '22023';
+  end if;
+
+  insert into public.reference_sequences as seq (prefix, last_value)
+  values (v_prefix, 1)
+  on conflict (prefix) do update
+    set last_value = seq.last_value + 1,
+        updated_at = now()
+  returning last_value into v_next;
+
+  v_year := to_char(now() at time zone 'Asia/Manila', 'YYYY');
+
+  return format('%s-%s-%s', v_prefix, v_year, lpad(v_next::text, 4, '0'));
+end;
+$$;
+
+revoke all on function public.generate_reference_number(text) from public;
+grant execute on function public.generate_reference_number(text)
+  to authenticated, service_role;
+
 -- ----------------------------------------------------------------------------
 -- 17. TRIGGERS
 -- ----------------------------------------------------------------------------
@@ -1160,6 +1304,7 @@ $$;
 do $$
 declare
   t text;
+  v_has_updated_by boolean;
 begin
   foreach t in array array[
     'public.profiles',
@@ -1182,15 +1327,33 @@ begin
     'public.radiology_reports',
     'public.medications',
     'public.prescriptions',
+    'public.inventory_categories',
     'public.inventory_items',
     'public.invoices'
   ]
   loop
+    select exists (
+      select 1
+      from pg_attribute a
+      join pg_class c on c.oid = a.attrelid
+      join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public'
+        and c.relname = split_part(t, '.', 2)
+        and a.attname = 'updated_by'
+        and a.attnum > 0
+        and not a.attisdropped
+    )
+    into v_has_updated_by;
+
     execute format('drop trigger if exists set_updated_at on %s', t);
     execute format(
       'create trigger set_updated_at before update on %s
-         for each row execute function public.set_updated_at()',
-      t
+         for each row execute function public.set_updated_at(%s)',
+      t,
+      case
+        when v_has_updated_by then quote_literal('updated_by')
+        else ''
+      end
     );
   end loop;
 end;
