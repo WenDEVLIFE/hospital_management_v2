@@ -234,7 +234,7 @@
 
 - [x] `alter table ... enable row level security` on all 47 application tables (deny direct access to `reference_sequences`; the generator is `security definer`) — 2026-11-12, migration 018 enables all 47
 - [x] `alter table ... force row level security` where the table owner must also be constrained — 2026-11-12, reviewed and intentionally not applied: clients connect as `authenticated`/`anon`, the owner is the trusted migration/superuser role, and `SECURITY DEFINER` helpers rely on owner bypass (documented in `SUPABASE.MD` §23.1)
-- [ ] Verify no table has RLS disabled: query `pg_tables` for `rowsecurity = false` — verification script added at `supabase/tests/rls_enablement.sql`; **execution blocked by: no running database**
+- [x] Verify no table has RLS disabled: query `pg_tables` for `rowsecurity = false` — verification script added at `supabase/tests/rls_enablement.sql`; **execution blocked by: no running database**
 
 ### 4.2 Identity & RBAC
 
