@@ -66,6 +66,9 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   partially_approved: { variant: "pending", label: "Partially Approved" },
   deferred: { variant: "pending", label: "Deferred" },
   on_break: { variant: "pending", label: "On Break" },
+  on_hold: { variant: "pending", label: "On Hold" },
+  adjusted: { variant: "pending", label: "Adjusted" },
+  repair: { variant: "pending", label: "Repair" },
   terminal: { variant: "pending", label: "Terminal" },
   mild: { variant: "pending", label: "Mild" },
 
@@ -91,6 +94,9 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   patient_transport: { variant: "info", label: "Patient Transport" },
   mobile_icu: { variant: "info", label: "Mobile ICU" },
   discharge: { variant: "info", label: "Discharge" },
+  preventive: { variant: "info", label: "Preventive" },
+  calibration: { variant: "info", label: "Calibration" },
+  inspection: { variant: "info", label: "Inspection" },
   breakfast: { variant: "info", label: "Breakfast" },
   lunch: { variant: "info", label: "Lunch" },
   dinner: { variant: "info", label: "Dinner" },
@@ -125,6 +131,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   incompatible: { variant: "critical", label: "Incompatible" },
   spill: { variant: "critical", label: "Spill" },
   isolation: { variant: "critical", label: "Isolation" },
+  overdue: { variant: "critical", label: "Overdue" },
   positive: { variant: "critical", label: "Positive" },
   severe: { variant: "critical", label: "Severe" },
 
@@ -146,6 +153,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   out_of_service: { variant: "inactive", label: "Out of Service" },
   discontinued: { variant: "inactive", label: "Discontinued" },
   off_duty: { variant: "inactive", label: "Off Duty" },
+  retired: { variant: "inactive", label: "Retired" },
   elective: { variant: "inactive", label: "Elective" },
 };
 

@@ -131,6 +131,11 @@ export const navigation: NavSection[] = [
         href: "/housekeeping",
         icon: BroomIcon,
       },
+      {
+        label: "Equipment & Maintenance",
+        href: "/equipment",
+        icon: MedicalKitIcon,
+      },
     ],
   },
   {

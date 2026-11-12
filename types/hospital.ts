@@ -1776,6 +1776,159 @@ export type HousekeepingStats = {
   staffOnDuty: number;
 };
 
+export type EquipmentStatus =
+  | "available"
+  | "in_use"
+  | "maintenance"
+  | "out_of_service"
+  | "retired";
+
+export type WorkOrderStatus =
+  | "requested"
+  | "scheduled"
+  | "in_progress"
+  | "on_hold"
+  | "completed"
+  | "cancelled";
+
+export type WorkOrderPriority = "routine" | "urgent" | "emergency";
+
+export type MaintenanceType =
+  | "preventive"
+  | "calibration"
+  | "inspection"
+  | "repair";
+
+export type MaintenanceScheduleStatus =
+  | "scheduled"
+  | "completed"
+  | "overdue"
+  | "cancelled";
+
+export type CalibrationResult = "passed" | "failed" | "adjusted";
+
+export type EquipmentCategory = {
+  id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+};
+
+export type MedicalEquipment = {
+  id: string;
+  asset_number: string;
+  name: string;
+  category_id: string;
+  manufacturer: string;
+  model: string;
+  serial_number: string;
+  department_name: string;
+  location: string;
+  status: EquipmentStatus;
+  purchase_date: string;
+  warranty_expiry: string;
+  next_maintenance_due: string | null;
+  next_calibration_due: string | null;
+  notes: string | null;
+  is_active: boolean;
+};
+
+export type EquipmentWorkOrder = {
+  id: string;
+  work_order_number: string;
+  equipment_id: string;
+  issue_description: string;
+  priority: WorkOrderPriority;
+  status: WorkOrderStatus;
+  requested_by_name: string;
+  assigned_technician_name: string | null;
+  requested_at: string;
+  scheduled_for: string | null;
+  completed_at: string | null;
+  resolution_notes: string | null;
+  parts_used: string | null;
+  cost: number;
+  notes: string | null;
+};
+
+export type EquipmentMaintenanceSchedule = {
+  id: string;
+  equipment_id: string;
+  maintenance_type: MaintenanceType;
+  scheduled_date: string;
+  status: MaintenanceScheduleStatus;
+  assigned_to_name: string | null;
+  notes: string | null;
+};
+
+export type CalibrationRecord = {
+  id: string;
+  equipment_id: string;
+  calibration_type: string;
+  performed_at: string;
+  performed_by_name: string;
+  result: CalibrationResult;
+  next_due_date: string | null;
+  certificate_number: string;
+  notes: string | null;
+};
+
+export type EquipmentMaintenanceHistory = {
+  id: string;
+  equipment_id: string;
+  event_type: MaintenanceType;
+  performed_at: string;
+  performed_by_name: string;
+  summary: string;
+  cost: number;
+};
+
+export type EquipmentListRow = MedicalEquipment & {
+  category_name: string;
+  open_work_orders: number;
+  next_due: string | null;
+};
+
+export type WorkOrderListRow = EquipmentWorkOrder & {
+  equipment_name: string;
+  asset_number: string;
+  department_name: string;
+};
+
+export type MaintenanceScheduleListRow = EquipmentMaintenanceSchedule & {
+  equipment_name: string;
+  asset_number: string;
+  department_name: string;
+};
+
+export type CalibrationListRow = CalibrationRecord & {
+  equipment_name: string;
+  asset_number: string;
+};
+
+export type MaintenanceHistoryListRow = EquipmentMaintenanceHistory & {
+  equipment_name: string;
+  asset_number: string;
+};
+
+export type EquipmentDetail = {
+  equipment: MedicalEquipment;
+  category: EquipmentCategory;
+  workOrders: WorkOrderListRow[];
+  schedules: MaintenanceScheduleListRow[];
+  calibrations: CalibrationListRow[];
+  history: MaintenanceHistoryListRow[];
+};
+
+export type EquipmentStats = {
+  totalEquipment: number;
+  available: number;
+  underMaintenance: number;
+  openWorkOrders: number;
+  calibrationsDue: number;
+  overdueMaintenance: number;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;
