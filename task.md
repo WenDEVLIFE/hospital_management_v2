@@ -20,14 +20,14 @@
 | 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
 | 1 | Database schema | 24 / 29 | In progress (live apply pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
-| 3 | UI modules | 35 / 47 | In progress (ER added; 10 modules remain) |
+| 3 | UI modules | 36 / 48 | In progress (ER + account settings added; 10 modules remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 0 / 54 | Not started |
+| 6 | Frontend ↔ backend integration | 0 / 55 | Not started |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **121 / 282** | |
+| **Total** | | **122 / 284** | |
 
 ---
 
@@ -188,6 +188,7 @@
 - [x] `/reports` — 9 report categories (`THEME.MD` §8.13)
 - [x] `/settings` — settings index, backend status, theme facts
 - [x] `/settings/users` — user list + role panel (`THEME.MD` §8.14)
+- [x] `/settings/account` — signed-in account details + password change form (preview validation; write pending Phase 6)
 - [x] `/audit-logs` — read-only audit table (`THEME.MD` §8.15)
 - [x] `/login` — sign-in form
 - [x] `/forgot-password` — reset request + success state
@@ -347,6 +348,7 @@
 - [ ] Login → `supabase.auth.signInWithPassword`
 - [ ] Forgot password → `supabase.auth.resetPasswordForEmail`
 - [ ] Password reset completion route
+- [ ] Wire `/settings/account` password change to `supabase.auth.updateUser`
 - [ ] Sign out clears the real session
 - [ ] Profile bootstrap verified on first sign-in
 - [ ] Disabled accounts (`profiles.is_active = false`) blocked at sign-in

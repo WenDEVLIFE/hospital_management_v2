@@ -4,6 +4,7 @@ import {
   HistoryIcon,
   PaletteIcon,
   ServerIcon,
+  UserCircleIcon,
   UsersGroupTwoRoundedIcon,
 } from "@solar-icons/react/linear";
 
@@ -18,6 +19,15 @@ import { StatusBadge } from "@/components/ui/status-badge";
 export const metadata = {
   title: "Settings",
 };
+
+const ACCOUNT_LINKS: SettingsLink[] = [
+  {
+    href: "/settings/account",
+    title: "Account Details",
+    description: "Your profile information and password.",
+    icon: UserCircleIcon,
+  },
+];
 
 const ADMINISTRATION_LINKS: SettingsLink[] = [
   {
@@ -56,6 +66,13 @@ export default function SettingsPage() {
         title="Settings"
         description="System configuration and administration."
       />
+
+      <PageSection
+        title="My account"
+        description="Your profile details and sign-in security."
+      >
+        <SettingsLinkList items={ACCOUNT_LINKS} />
+      </PageSection>
 
       <PageSection
         title="Administration"

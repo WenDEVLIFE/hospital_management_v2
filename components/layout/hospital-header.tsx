@@ -16,6 +16,7 @@ import {
 } from "@solar-icons/react/linear";
 import { cn } from "@/lib/utils";
 import { isNavItemActive, navigation } from "@/lib/navigation";
+import { usePreviewSessionEmail } from "@/lib/use-preview-session";
 import { useSidebar } from "./sidebar-provider";
 
 const SESSION_KEY = "spmc_auth_session";
@@ -35,10 +36,13 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
   const { mobileOpen, toggleMobile, collapsed, toggleCollapsed } = useSidebar();
 
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const sessionEmail = usePreviewSessionEmail();
   const userMenuRef = React.useRef<HTMLDivElement>(null);
   const userMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
   const mobileTriggerRef = React.useRef<HTMLButtonElement>(null);
   const wasMobileOpen = React.useRef(false);
+
+  const accountEmail = sessionEmail ?? profile?.email;
 
   const currentItem = React.useMemo(() => {
     const items = navigation.flatMap((section) => section.items);
@@ -193,14 +197,14 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
               className="absolute right-0 top-full z-50 mt-2 w-56 rounded-md border border-hospital-border bg-white shadow-lg"
             >
               <div className="border-b border-hospital-border-subtle px-3 py-2">
-                {profile ? (
+                {accountEmail || profile?.role ? (
                   <>
-                    {profile.email ? (
+                    {accountEmail ? (
                       <p className="truncate text-xs font-medium text-hospital-text">
-                        {profile.email}
+                        {accountEmail}
                       </p>
                     ) : null}
-                    {profile.role ? (
+                    {profile?.role ? (
                       <p className="mt-1 text-[11px] text-hospital-text-muted">
                         {profile.role}
                       </p>
@@ -215,7 +219,7 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
 
               <div className="p-1">
                 <Link
-                  href="/settings"
+                  href="/settings/account"
                   role="menuitem"
                   onClick={() => closeMenu(false)}
                   className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-hospital-text transition-colors hover:bg-hospital-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
