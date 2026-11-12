@@ -20,14 +20,14 @@
 | 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
 | 1 | Database schema | 24 / 29 | In progress (live apply pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
-| 3 | UI modules | 34 / 47 | Complete (verification in Phase 7) |
+| 3 | UI modules | 35 / 47 | In progress (ER added; 10 modules remain) |
 | 4 | Row Level Security | 21 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
 | 6 | Frontend ↔ backend integration | 0 / 54 | Not started |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **119 / 282** | |
+| **Total** | | **120 / 282** | |
 
 ---
 
@@ -208,7 +208,7 @@
 
 ### 3.3 Modules in `PROJECT.MD` without a route yet
 
-- [ ] Emergency Room Management (`PROJECT.MD` §14)
+- [x] Emergency Room Management (`PROJECT.MD` §14) — 2026-11-12, `/emergency` queue + triage board, visit detail, vitals/orders/notes/monitoring, honest disposition actions; `npm run build` + runtime 200
 - [ ] Surgery & Operating Room (`PROJECT.MD` §20)
 - [ ] Human Resources & Payroll (`PROJECT.MD` §21)
 - [ ] Insurance & PhilHealth (`PROJECT.MD` §22)
