@@ -18,7 +18,7 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { usePreviewSessionEmail } from "@/lib/use-preview-session";
@@ -298,8 +298,7 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
             required
             error={errors.current}
           >
-            <Input
-              type="password"
+            <PasswordInput
               name="current-password"
               autoComplete="current-password"
               required
@@ -324,8 +323,7 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
             required
             error={errors.next}
           >
-            <Input
-              type="password"
+            <PasswordInput
               name="new-password"
               autoComplete="new-password"
               required
@@ -347,8 +345,7 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
             required
             error={errors.confirm}
           >
-            <Input
-              type="password"
+            <PasswordInput
               name="confirm-password"
               autoComplete="new-password"
               required

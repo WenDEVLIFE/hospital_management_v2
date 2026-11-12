@@ -119,7 +119,7 @@ All styling must be centralized through semantic CSS variables in `app/globals.c
 
 | Token | Hex Value | Semantic Usage |
 |---|---|---|
-| `--hospital-green` | #007A55 | Primary action buttons, active navigation, selected controls |
+| `--hospital-green` | #007A55 | Primary action buttons, navigation surface, active navigation, selected controls |
 | `--hospital-green-hover` | #006345 | Primary button hover |
 | `--hospital-green-dark` | #064E3B | Page headings, emphasized labels |
 | `--hospital-green-light` | #F0FDF4 | Selected rows, active navigation backgrounds |
@@ -710,16 +710,19 @@ Recommended component:
 **Height and Position**
 
 ```tsx
-"sticky top-0 z-40 h-16 w-full border-b border-hospital-border bg-white px-6"
+"sticky top-0 z-40 h-16 w-full border-b border-hospital-green-hover bg-hospital-green px-6"
 ```
 
 **Brand Identity**
 
-- Green brand mark.
-- Hospital name: Southern Philippines Medical Center.
+- White brand tile with the green hospital mark.
+- Hospital name in white.
+- Supporting line in white/90.
 - Compact logo and name presentation.
 - Do not fabricate or imitate an official government seal.
 - Use an authorized logo asset only when available.
+
+The header and sidebar share the primary healthcare green surface. Header controls use white/80 icons and white/10 hover fills; the account menu remains a white dropdown for readability.
 
 **Header Elements**
 
@@ -748,26 +751,28 @@ Recommended component:
 **Width**
 
 ```tsx
-"w-64 shrink-0 border-r border-hospital-border bg-white flex flex-col h-[calc(100vh-4rem)]"
+"w-64 shrink-0 border-r border-hospital-green-hover bg-hospital-green flex flex-col h-[calc(100vh-4rem)]"
 ```
 
 **Section Headers**
 
 ```tsx
-"px-3 text-[11px] font-bold uppercase tracking-wider text-hospital-text-muted"
+"px-3 text-[11px] font-bold uppercase tracking-wider text-white/90"
 ```
 
 **Navigation Item — Default**
 
 ```tsx
-"px-3 py-2 text-xs font-medium text-hospital-text hover:bg-hospital-surface-muted rounded-md transition-colors"
+"px-3 py-2 text-xs font-medium text-white/90 hover:bg-white/10 hover:text-white rounded-md transition-colors"
 ```
 
 **Navigation Item — Active**
 
 ```tsx
-"bg-hospital-green-light text-hospital-green-dark font-semibold border-l-2 border-hospital-green"
+"bg-hospital-green-light text-hospital-green-dark font-semibold border-l-2 border-white"
 ```
+
+The sidebar uses the primary healthcare green surface. Active items keep the light-green token and a white left marker for contrast against the green panel.
 
 **Navigation Structure**
 

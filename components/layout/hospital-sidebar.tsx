@@ -26,10 +26,10 @@ function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
           {collapsed ? (
             <div
               aria-hidden="true"
-              className="mx-auto mb-2 h-px w-8 bg-hospital-border"
+              className="mx-auto mb-2 h-px w-8 bg-white/20"
             />
           ) : (
-            <h2 className="mb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-hospital-text-muted">
+            <h2 className="mb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-white/90">
               {section.title}
             </h2>
           )}
@@ -48,17 +48,17 @@ function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
                   aria-label={collapsed ? item.label : undefined}
                   title={collapsed ? item.label : undefined}
                   className={cn(
-                    "flex cursor-pointer items-center gap-2 rounded-md py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1",
+                    "group flex cursor-pointer items-center gap-2 rounded-md py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-hospital-green",
                     collapsed
                       ? isActive
-                        ? "justify-center border-l-2 border-hospital-green pl-[10px] pr-2"
+                        ? "justify-center border-l-2 border-white pl-[10px] pr-2"
                         : "justify-center px-2"
                       : isActive
-                        ? "border-l-2 border-hospital-green pl-[10px] pr-3"
+                        ? "border-l-2 border-white pl-[10px] pr-3"
                         : "px-3",
                     isActive
                       ? "bg-hospital-green-light font-semibold text-hospital-green-dark"
-                      : "text-hospital-text hover:bg-hospital-surface-muted"
+                      : "text-white/90 hover:bg-white/10 hover:text-white"
                   )}
                 >
                   <Icon
@@ -66,7 +66,7 @@ function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
                       "size-4 shrink-0",
                       isActive
                         ? "text-hospital-green"
-                        : "text-hospital-text-muted"
+                        : "text-white/80 group-hover:text-white"
                     )}
                   />
                   {collapsed ? null : (
@@ -86,18 +86,16 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
   return (
     <div
       className={cn(
-        "shrink-0 border-t border-hospital-border px-3 py-3",
+        "shrink-0 border-t border-white/10 px-3 py-3",
         collapsed && "px-2 text-center"
       )}
     >
       {collapsed ? (
-        <p className="text-[11px] text-hospital-text-muted">v0.1.0</p>
+        <p className="text-[11px] text-white/90">v0.1.0</p>
       ) : (
         <>
-          <p className="text-[11px] font-semibold text-hospital-text-muted">
-            SPMC HMS
-          </p>
-          <p className="text-[11px] text-hospital-text-muted">v0.1.0</p>
+          <p className="text-[11px] font-semibold text-white/90">SPMC HMS</p>
+          <p className="text-[11px] text-white/90">v0.1.0</p>
         </>
       )}
     </div>
@@ -112,7 +110,7 @@ export function HospitalSidebar() {
       <aside
         aria-label="Main navigation"
         className={cn(
-          "hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-hospital-border bg-white sm:flex",
+          "hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-hospital-green-hover bg-hospital-green sm:flex",
           collapsed ? "w-[72px]" : "w-64"
         )}
       >
@@ -143,12 +141,12 @@ export function HospitalSidebar() {
           aria-modal="true"
           aria-label="Main navigation"
           className={cn(
-            "absolute inset-y-0 left-0 flex w-64 flex-col border-r border-hospital-border bg-white shadow-lg transition-transform duration-200 ease-out",
+            "absolute inset-y-0 left-0 flex w-64 flex-col border-r border-hospital-green-hover bg-hospital-green shadow-lg transition-transform duration-200 ease-out",
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
-          <div className="flex h-16 shrink-0 items-center justify-between border-b border-hospital-border px-3">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-hospital-text-muted">
+          <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-3">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-white/90">
               SPMC HMS
             </span>
 
@@ -156,7 +154,7 @@ export function HospitalSidebar() {
               type="button"
               onClick={closeMobile}
               aria-label="Close navigation"
-              className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-hospital-text-muted transition-colors hover:bg-hospital-surface-muted hover:text-hospital-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
+              className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-hospital-green"
             >
               <CloseIcon className="size-5" />
             </button>

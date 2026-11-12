@@ -188,7 +188,7 @@
 - [x] `/reports` — 9 report categories (`THEME.MD` §8.13)
 - [x] `/settings` — settings index, backend status, theme facts
 - [x] `/settings/users` — user list + role panel (`THEME.MD` §8.14)
-- [x] `/settings/account` — signed-in account details + password change form (preview validation; write pending Phase 6)
+- [x] `/settings/account` — signed-in account details + password change form with show/hide password toggles (preview validation; write pending Phase 6)
 - [x] `/audit-logs` — read-only audit table (`THEME.MD` §8.15)
 - [x] `/login` — sign-in form
 - [x] `/forgot-password` — reset request + success state

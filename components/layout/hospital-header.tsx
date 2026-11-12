@@ -109,7 +109,7 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 w-full shrink-0 items-center justify-between gap-4 border-b border-hospital-border bg-white px-6">
+    <header className="sticky top-0 z-40 flex h-16 w-full shrink-0 items-center justify-between gap-4 border-b border-hospital-green-hover bg-hospital-green px-6">
       <div className="flex min-w-0 items-center gap-3">
         <button
           ref={mobileTriggerRef}
@@ -118,28 +118,28 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
           aria-label="Open navigation"
           aria-expanded={mobileOpen}
           aria-controls="hospital-sidebar"
-          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-hospital-text-muted transition-colors hover:bg-hospital-surface-muted hover:text-hospital-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1 sm:hidden"
+          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-hospital-green sm:hidden"
         >
           <HamburgerMenuIcon className="size-5" />
         </button>
 
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-hospital-green text-white">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white text-hospital-green">
             <HospitalIcon className="size-5" />
           </span>
 
           <span className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-semibold text-hospital-green-dark">
+            <span className="truncate text-sm font-semibold text-white">
               Southern Philippines Medical Center
             </span>
-            <span className="truncate text-[11px] text-hospital-text-muted">
+            <span className="truncate text-[11px] text-white/90">
               Hospital Management System
             </span>
           </span>
         </div>
 
         {currentItem ? (
-          <span className="hidden min-w-0 truncate border-l border-hospital-border pl-3 text-xs text-hospital-text-muted sm:block">
+          <span className="hidden min-w-0 truncate border-l border-white/20 pl-3 text-xs text-white/90 sm:block">
             {currentItem.label}
           </span>
         ) : null}
@@ -149,7 +149,7 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
           onClick={toggleCollapsed}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-pressed={collapsed}
-          className="hidden size-9 cursor-pointer items-center justify-center rounded-md text-hospital-text-muted transition-colors hover:bg-hospital-surface-muted hover:text-hospital-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1 sm:inline-flex"
+          className="hidden size-9 cursor-pointer items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-hospital-green sm:inline-flex"
         >
           {collapsed ? (
             <PanelLeftOpenIcon className="size-5" />
@@ -163,7 +163,7 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
         <button
           type="button"
           aria-label="Notifications"
-          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-hospital-text-muted transition-colors hover:bg-hospital-surface-muted hover:text-hospital-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
+          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-hospital-green"
         >
           <BellIcon className="size-5" />
         </button>
@@ -176,14 +176,14 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             aria-controls="account-menu"
-            className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-hospital-border bg-white px-3 text-xs font-medium text-hospital-text transition-colors hover:bg-hospital-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
+            className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-white/30 bg-white/10 px-3 text-xs font-medium text-white transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-hospital-green"
           >
-            <UserCircleIcon className="size-4 text-hospital-text-muted" />
+            <UserCircleIcon className="size-4 text-white/80" />
             <span>Account</span>
             <AltArrowDownIcon
               aria-hidden="true"
               className={cn(
-                "size-3 text-hospital-text-muted transition-transform duration-150 ease-out",
+                "size-3 text-white/70 transition-transform duration-150 ease-out",
                 menuOpen && "rotate-180"
               )}
             />

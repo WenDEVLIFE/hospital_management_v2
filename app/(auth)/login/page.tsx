@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -128,8 +129,7 @@ export default function LoginPage() {
           required
           error={errors.password}
         >
-          <Input
-            type="password"
+          <PasswordInput
             name="password"
             autoComplete="current-password"
             required
