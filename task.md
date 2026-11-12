@@ -1,173 +1,502 @@
-# HMS Build Status — Task Tracker
+# HMS Build Tracker — Implementation Phases
 
 **Project:** SPMC Hospital Management System (`hospital_management_v2`)
 **Stack:** Next.js 16.4.3 · React 19 · Tailwind CSS 4 · TypeScript 5 · Supabase (planned)
 **Last updated:** 2026-11-11
 
-**Legend:** ✅ done · 🟡 partial / scaffolding only · ⬜ not started · ⚠️ debt to pay down
+**Specs (authority order):** `docs/PROJECT.MD` (functionality) → `docs/THEME.MD` (visual) → `docs/SUPABASE.MD` (backend)
 
-**Authoritative specs:** `docs/PROJECT.MD` (functionality) · `docs/THEME.MD` (visual system) · `docs/SUPABASE.MD` (backend)
+## How to use this file
 
----
+- Phases run in order. Do not start a phase until the previous phase's **Definition of Done** is met.
+- Check an item only when it is verifiable — not when it is "mostly there".
+- Add a date and a short evidence note (command, file, screenshot) when you check an item.
+- If an item is blocked, leave it unchecked and add `— blocked by: <reason>`.
 
-## 1. Specification & Schema
+## Progress
 
-| Status | Item | Notes |
-|---|---|---|
-| ✅ | PROJECT.MD rewritten to HMS (46 sections, 30+ modules) | Source of truth for functionality |
-| ✅ | THEME.MD rewritten to SPMC green/white design system (14 sections) | Source of truth for UI |
-| ✅ | SUPABASE.MD backend spec | Source of truth for backend |
-| ✅ | Core database schema written | `supabase/schema.sql` — 46 tables, 4 helper functions, 2 trigger sets, 24+ indexes, 8 views |
-| ✅ | Reference seed data | 8 departments, 10 roles, 73 permissions |
-| 🟡 | Schema applied to a live Supabase project | DDL is written but never executed against a real project |
-| ⬜ | `supabase/migrations/` layout | No `config.toml`, no timestamped migrations; only the single `schema.sql` |
-| ⬜ | `role_permissions` mapping | Deliberately unseeded — SUPABASE.MD §22.2 requires stakeholder approval |
-| ⬜ | Enum types (`appointment_status`, etc.) | Currently `text` + `check` constraints; SUPABASE.MD §5.1 lists enums as the convention |
-
----
-
-## 2. UI Foundation — ✅ COMPLETE
-
-| Status | Item | Location |
-|---|---|---|
-| ✅ | Design tokens (THEME §12.1 verbatim) | `app/globals.css` |
-| ✅ | Reduced-motion guard + slim scrollbar | `app/globals.css` |
-| ✅ | Plus Jakarta Sans via `next/font` | `app/layout.tsx` |
-| ✅ | Solar Icons migration (lucide removed) | `package.json`, 75 imports across `app/` + `components/` |
-| ✅ | Root redirect → `/dashboard` (server) | `app/page.tsx` |
-| ✅ | Navigation IA (THEME §7.2) | `lib/navigation.ts` |
-| ✅ | Formatters (en-PH, Asia/Manila, PHP) | `lib/format.ts` |
-| ✅ | 22 UI primitives + barrel | `components/ui/*`, `components/ui/index.ts` |
-| ✅ | App shell, header, sidebar, breadcrumbs, page header/section | `components/layout/*` |
-| ✅ | Preview-mode disclosure bar | `components/layout/preview-notice.tsx` |
-| ✅ | Shared module primitives (stat card, record table, error state, unavailable action) | `components/module/*` |
-| ✅ | Auth screens (login, forgot password, brand panel) | `app/(auth)/*`, `components/auth/*` |
-| ✅ | Old doc-generation UI removed | 24 route files deleted |
-| ✅ | Zero `lucide`, zero non-`/linear` solar imports, zero `transition-all`, zero banned fonts | Verified by sweep |
-
----
-
-## 3. UI Modules — ✅ COMPLETE (26 routes)
-
-Every route renders real component structure with loading/empty/error/success handling. Data comes from `lib/data/*` (synthetic preview or empty).
-
-| Status | Route | Module | Spec |
+| Phase | Scope | Done | Status |
 |---|---|---|---|
-| ✅ | `/dashboard` | KPIs, admission trend, appointment breakdown, recent registrations, pending activities | THEME §8.1 |
-| ✅ | `/patients` | Patient list, search, status filter | THEME §8.2 |
-| ✅ | `/patients/new` | 5-section registration form with validation | THEME §8.2 |
-| ✅ | `/patients/[id]` | Profile with 9 tabs (overview, history, allergies, appointments, admissions, encounters, labs, prescriptions, billing) | THEME §8.2 |
-| ✅ | `/appointments` | List / daily schedule / calendar views | THEME §8.3 |
-| ✅ | `/admissions` | KPIs, bed board, admission list | THEME §8.4 |
-| ✅ | `/discharges` | Discharge records | THEME §8.4 |
-| ✅ | `/medical-records` | Encounter list + clinical detail dialog (vitals with units, diagnoses, notes) | THEME §8.5 |
-| ✅ | `/nursing` | Assigned-patient workspace, latest vitals | THEME §8.7 |
-| ✅ | `/staff` | Staff list, detail dialog, employment vs auth separation | THEME §8.6 |
-| ✅ | `/laboratory` | Workflow strip, specimen vs result status, request detail | THEME §8.8 |
-| ✅ | `/radiology` | Request list, draft-vs-verified report dialog | THEME §8.9 |
-| ✅ | `/pharmacy` | Prescription queue + medication inventory tabs | THEME §8.10 |
-| ✅ | `/prescriptions` | Prescription list + detail | THEME §8.10 |
-| ✅ | `/billing` | Invoice list, invoice detail with totals, outstanding balance emphasis | THEME §8.11 |
-| ✅ | `/payments` | Payment list, receipt dialog | THEME §8.11 |
-| ✅ | `/inventory` | Items + stock history tabs, stock status multi-cue | THEME §8.12 |
-| ✅ | `/departments` | Department list with accent identity | THEME §3.6 |
-| ✅ | `/rooms-beds` | Rooms table + bed availability board | THEME §8.4 |
-| ✅ | `/reports` | 9 report categories, range controls | THEME §8.13 |
-| ✅ | `/settings` | Settings index, backend status, theme facts | THEME §7.2 |
-| ✅ | `/settings/users` | User list, role panel | THEME §8.14 |
-| ✅ | `/audit-logs` | Read-only audit table | THEME §8.15 |
-| ✅ | `/login`, `/forgot-password` | Auth screens | THEME §7.1 |
-
-**Data-access layer:** `lib/data/*` — 20 modules, 42 typed async accessors returning `DataResult` / `PagedResult`.
-**Domain types:** `types/hospital.ts` — 41 schema row types + 16 view models, mirroring `supabase/schema.sql`.
+| 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
+| 1 | Database schema | 15 / 29 | In progress (live apply pending) |
+| 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
+| 3 | UI modules | 34 / 47 | Complete (verification in Phase 7) |
+| 4 | Row Level Security | 0 / 25 | Not started |
+| 5 | Backend services | 0 / 29 | Not started |
+| 6 | Frontend ↔ backend integration | 0 / 54 | Not started |
+| 7 | QA & security verification | 5 / 40 | Partial |
+| 8 | Cleanup & debt | 0 / 10 | Not started |
+| 9 | Deployment | 0 / 7 | Not started |
+| **Total** | | **89 / 282** | |
 
 ---
 
-## 4. Backend — Supabase — 🟡 PARTIAL
+## Phase 0 — Specification & Design Authority
 
-| Status | Item | Notes |
-|---|---|---|
-| ⬜ | Install `@supabase/supabase-js`, `@supabase/ssr`, `zod` | `package.json` has none of them |
-| ⬜ | `.env.local` with project URL + publishable key | `.env.example` exists with placeholders |
-| ⚠️ | `.env.example` is git-ignored | `.gitignore` line 34 `.env*` swallows it — needs an exception |
-| ✅ | Table DDL (46 tables) | `supabase/schema.sql` |
-| ✅ | RBAC helper functions (`has_role`, `is_admin`, `has_permission`, `can_access_patient`) | `supabase/schema.sql` |
-| ✅ | `updated_at` triggers + `handle_new_user` profile bootstrap | `supabase/schema.sql` |
-| ✅ | Reporting views (8) with `security_invoker = true` | `supabase/schema.sql` |
-| ⬜ | **Row Level Security — enabled on 0 of 46 tables** | Highest-risk gap; see §6 |
-| ⬜ | RLS policies per table | Blocked by role→permission matrix approval |
-| ⬜ | Storage buckets (8 private) + storage policies | SUPABASE.MD §24 |
-| ⬜ | Realtime publication (9 tables) | SUPABASE.MD §25 |
-| ⬜ | Transactional RPC functions (12) | `register_patient`, `create_appointment`, `create_admission`, `transfer_patient`, `discharge_patient`, `finalize_clinical_note`, `verify_laboratory_result`, `dispense_prescription`, `record_payment`, `refund_payment`, `adjust_inventory`, `generate_reference_number` |
-| ⬜ | Supabase Edge Functions | `admin-users`, `admin-role-assignment`, `send-notification`, `generate-document`, `ai-assist`, `scheduled-maintenance` |
-| ⬜ | Generated TypeScript database types | `npx supabase gen types` → `types/supabase.ts` |
-| ⬜ | Initial administrator provisioning | SUPABASE.MD §34 |
+**Goal:** One agreed source of truth for product, visuals, and backend before code diverges again.
+**Depends on:** nothing.
+**Definition of done:** all three docs describe the same product, and the provisional decisions are approved.
+
+- [x] `docs/PROJECT.MD` rewritten as the Hospital Management System spec (46 sections, 30+ modules)
+- [x] `docs/THEME.MD` rewritten as the SPMC green/white design system (14 sections)
+- [x] `docs/SUPABASE.MD` aligned as the backend implementation spec
+- [x] Repo skills reviewed and applied: `.agents/skills/anti-ai-slop`, `.agents/skills/ui-design-principles`
+- [x] `AGENTS.md` Next.js version rule documented and followed (read `node_modules/next/dist/docs/` before coding)
+- [ ] Stakeholder approval: role → permission matrix (`SUPABASE.MD` §22.2, `THEME.MD` §8.14) — **blocked by: hospital stakeholders**
+- [ ] Stakeholder approval: provisional visual decisions (`THEME.MD` §11 — primary green, sidebar width, table density, dark mode, dashboard layout)
+- [ ] Approval: official hospital logo asset (currently a generic mark, per `THEME.MD` §7.1 "do not fabricate a seal")
 
 ---
 
-## 5. UI ↔ Backend Integration — ⬜ NOT STARTED
+## Phase 1 — Database Schema
 
-| Status | Item | Notes |
-|---|---|---|
-| 🟡 | Data layer exists | 42 accessors, each with a `// TODO(supabase)` marker at the query boundary |
-| 🟡 | Preview data mode | `NEXT_PUBLIC_UI_PREVIEW` (default on). Synthetic rows, clearly labelled. Set `false` for pure empty states |
-| ⬜ | Replace accessor bodies with `supabase.from(...)` calls | The swap point is already isolated |
-| ⬜ | Supabase browser + server clients | `src/lib/supabase/{client,server,proxy}.ts` per SUPABASE.MD §4 |
-| ⬜ | Session refresh proxy | SUPABASE.MD §4.4 |
-| ⬜ | **Real authentication** | Currently a `localStorage` stub (`spmc_auth_session`); no real session, no password reset, no MFA |
-| ⬜ | Role-based navigation filtering | `NavItem.permission` exists but is unset; all nav items visible to everyone |
-| ⬜ | Zod validation on mutations | PROJECT.MD §2 requires it; no `zod` installed |
-| ⬜ | File uploads to Storage + signed URLs | No upload UI yet |
-| ⬜ | Realtime subscriptions | No subscription hooks yet |
-| ⬜ | Toast provider mounted | `components/ui/toast.tsx` exists but no `<ToastProvider>` in the tree |
-| ⬜ | Remove the "unavailable action" dialogs | `components/module/unavailable-action.tsx` is a deliberate placeholder; delete call sites as real mutations land |
-| ⬜ | Delete preview fixtures | `lib/fixtures/*` once real data flows |
+**Goal:** A complete, lint-clean PostgreSQL schema applied to a Supabase project and exported as TypeScript types.
+**Depends on:** Phase 0.
+**Definition of done:** `supabase db lint` clean on a live project, migrations are timestamped and replayable, generated types compile.
 
----
+### 1.1 Schema authoring
 
-## 6. QA, Security & Verification
+- [x] `supabase/schema.sql` created — 46 application tables
+- [x] Common column standards applied (`uuid` PK `gen_random_uuid()`, `created_at`/`updated_at timestamptz`)
+- [x] Naming conventions applied (plural snake_case tables, `_id` FKs, `is_`/`has_` booleans)
+- [x] Foreign keys declared for every relationship in `SUPABASE.MD` §6
+- [x] Check constraints for all status columns (appointments, admissions, lab, radiology, prescriptions, invoices, payments, stock)
+- [x] Money columns as `numeric(12,2)` (never float)
+- [x] Indexes created (24+ including `idx_patients_mrn`, `idx_appointments_physician_schedule`, partial unique index on active bed assignments)
+- [x] 8 reporting views with `security_invoker = true`
+- [x] `set_updated_at()` trigger applied to 22 mutable tables
+- [x] `handle_new_user()` profile bootstrap trigger on `auth.users`
+- [x] RBAC helpers: `has_role`, `is_admin`, `has_permission`, `can_access_patient`
+- [x] `patient_care_assignments` table for patient-level access control
 
-| Status | Item | Notes |
-|---|---|---|
-| ✅ | `npm run lint` | Exit 0 |
-| ✅ | `npx tsc --noEmit` | Exit 0 |
-| ✅ | `npm run build` | 29/29 routes generated |
-| ✅ | Runtime render check | `next start -p 3100` → HTTP 200 on all 23 app routes + `/login` + `/forgot-password` |
-| ✅ | Static sweep | 0 `lucide`, 0 non-`/linear` solar, 0 `transition-all`, 0 banned fonts |
-| ⬜ | **Browser visual QA** | No viewport (640 / 1024 / 1440), hover, focus-visible, keyboard, or reduced-motion inspection was performed |
-| ⬜ | Automated tests | No test runner, no test files, no `test` script |
-| ⬜ | RLS security tests | SUPABASE.MD §33.3 — anonymous access, role isolation, ID tampering |
-| ⬜ | Clinical integrity tests | SUPABASE.MD §33.4 — concurrent bed allocation, duplicate payment, dispense/inventory atomicity |
-| ⬜ | Storage access tests | SUPABASE.MD §33.5 |
-| ⬜ | Real-device responsive check | Not done |
-| ⬜ | Accessibility audit | Focus order and ARIA implemented by construction, never verified with a screen reader |
+### 1.2 Reference data
 
----
+- [x] Seed 8 departments (ER, OPD, IPD, LAB, RAD, PHARM, BILL, ADMIN)
+- [x] Seed 10 system roles
+- [x] Seed 73 permissions across 12 modules
+- [ ] Seed `role_permissions` — **blocked by: Phase 0 approval**
+- [ ] Seed laboratory test catalog (`laboratory_tests`)
+- [ ] Seed medication catalog (`medications`)
+- [ ] Seed inventory categories
 
-## 7. Known Debt / Follow-ups
+### 1.3 Schema hardening
 
-1. **RLS is the top risk.** 46 tables are exposed to the publishable key with no row-level policies. Do not point a production frontend at this schema until §4 RLS is complete.
-2. **Auth is fake.** `components/layout/auth-guard.tsx` only checks a `localStorage` key. Anyone can set it manually.
-3. **`export const instant = false`** on `app/(workspace)/layout.tsx` — Next 16 Cache Components opt-out because `usePathname()` runs outside `<Suspense>` in the sidebar/breadcrumbs. Remove once those consumers are wrapped.
-4. **`.env.example` is untracked** because `.gitignore` has `.env*`. Add `!.env.example`.
-5. **Two raw `<table>` elements** outside the shared primitives: `components/billing/invoice-detail-dialog.tsx`, `components/dashboard/admission-trend-chart.tsx` (the latter is a chart data fallback).
-6. **One hardcoded hex** in UI code: `app/(workspace)/settings/page.tsx` renders `#007A55` as display text describing the theme token. Intentional, but worth moving to a token read.
-7. **`supabase/.temp/` and `cli-latest`** are present from CLI runs and are not git-ignored.
-8. **Report category labels** come from fixtures and differ slightly from THEME §8.13 wording (`Appointment Activity` vs `Appointment Reports`).
-9. **Missing fields surfaced by the UI**: `EncounterDetail` has no prescriptions, `VitalSigns` has no verification flag, `InvoiceListRow` has no line items, `StaffListRow` has no work schedule. Each renders an explicit "not included" note rather than fabricated data — extend the data layer when the schema grows.
-10. **`MedicationStockRow` is synthesized** — there is no medication stock table in `schema.sql` (stock lives in `inventory_batches`/`stock_transactions`).
+- [ ] Convert status `text + check` columns to PostgreSQL enum types (`SUPABASE.MD` §5.1)
+- [ ] Add `created_by` / `updated_by` accountability columns where `SUPABASE.MD` §5.2 requires them
+- [ ] Add medical record number generator function (`generate_reference_number`)
+- [ ] Review every FK for an `on delete` rule (currently `restrict` by default — confirm clinical records must never cascade)
+
+### 1.4 Migration workflow
+
+- [ ] `npx supabase init` → create `supabase/config.toml`
+- [ ] Split `schema.sql` into the 22 timestamped migrations listed in `SUPABASE.MD` §31.3
+- [ ] Apply to a live project and run `npx supabase db lint`
+- [ ] Run `npx supabase db reset` on a clean local database
+- [ ] Generate types: `npx supabase gen types typescript --schema public > types/supabase.ts`
+- [ ] Replace hand-written `types/hospital.ts` usage with the generated `Database` types (keep view models on top)
 
 ---
 
-## 8. Recommended Next Order
+## Phase 2 — UI Foundation
 
-1. **Apply the schema** to a Supabase project and confirm `db lint` is clean.
-2. **Enable RLS + policies** for identity/RBAC tables first (`profiles`, `roles`, `permissions`, `user_roles`), then patient and clinical tables.
-3. **Approve the role→permission matrix**, seed `role_permissions`.
-4. **Wire Supabase clients + real auth**, replace the `localStorage` guard.
-5. **Swap `lib/data/*` accessors** to real queries, module by module, starting with Patients.
-6. **Add the 12 transactional RPC functions** and delete the corresponding "unavailable action" dialogs.
-7. **Storage buckets + policies**, then file upload UI.
-8. **Realtime** for the queues named in SUPABASE.MD §25.1.
-9. **Tests**: RLS security suite, clinical integrity suite, then a browser QA pass.
-10. **Cleanup**: remove `instant = false`, delete `lib/fixtures/*`, remove preview notice.
+**Goal:** One design system, one icon family, one shell — every module builds on it.
+**Depends on:** Phase 0.
+**Definition of done:** tokens, typography, icons, shell, and primitives exist and no module invents its own.
+
+### 2.1 Design tokens & typography
+
+- [x] `app/globals.css` rewritten with `THEME.MD` §12.1 tokens verbatim
+- [x] `@theme inline` mapping for all color, radius, and font tokens
+- [x] Plus Jakarta Sans loaded via `next/font` (weights 400/500/600/700)
+- [x] Base body 13px / 1.5, 4px spacing grid, 6px radius
+- [x] `prefers-reduced-motion` global guard
+- [x] Token-based slim scrollbar
+- [x] Banned fonts absent (no Inter / Geist / Poppins / Space Grotesk)
+
+### 2.2 Icons
+
+- [x] `@solar-icons/react@2.3.5` installed
+- [x] `lucide-react` removed from `package.json`, lockfile, and all source
+- [x] All 75 icon imports use `@solar-icons/react/linear` only
+- [x] Substitutions documented: `SearchIcon` → `MagnifierIcon`, `MenuIcon` → `HamburgerMenuIcon`, no radiology icon → `Scanner2Icon`
+
+### 2.3 Shell & navigation
+
+- [x] `lib/navigation.ts` — `THEME.MD` §7.2 IA with 8 sections and 21 items
+- [x] `lib/format.ts` — en-PH / Asia/Manila date, currency, identifier, name formatters
+- [x] `components/layout/app-shell.tsx` — 64px header, 256px sidebar, `p-6` main, no double scroll
+- [x] `components/layout/hospital-header.tsx` — brand, module context, notifications, account menu
+- [x] `components/layout/hospital-sidebar.tsx` — sections, active state, 72px collapsed mode
+- [x] Mobile off-canvas drawer with overlay, Escape, focus return
+- [x] `components/layout/breadcrumbs.tsx` — pathname-derived, hidden on dashboard
+- [x] `components/layout/page-header.tsx` — title, description, actions, secondary row
+- [x] `components/layout/page-section.tsx` — titled card surface
+- [x] `components/layout/preview-notice.tsx` — global synthetic-data disclosure
+- [x] `components/layout/auth-guard.tsx` — temporary localStorage guard (see Phase 6)
+
+### 2.4 Primitives
+
+- [x] 22 primitives in `components/ui/` + barrel `index.ts`: button, input, textarea, select, label, form-field, card, table, badge, status-badge, modal, alert, dropdown-menu, tabs, pagination, skeleton, empty-state, confirmation-dialog, search-input, checkbox, radio-group, toast
+- [x] Multi-cue `StatusBadge` (icon + text + color, humanizes unknown statuses)
+- [x] Accessible `Modal` (focus trap, Escape, scroll lock, focus restore)
+- [x] Keyboard-navigable `DropdownMenu` and `Tabs`
+- [x] `components/module/stat-card.tsx`, `record-table.tsx`, `error-state.tsx`, `unavailable-action.tsx`
+- [ ] Mount `<ToastProvider>` in the workspace tree — **deferred to Phase 6** (no mutation to notify yet)
+
+### 2.5 Removal of the old product
+
+- [x] Deleted 24 doc-generation route files (projects, models, generator, diagrams, traceability, reviews, portal, documents, admin)
+- [x] Deleted `lib/mock-data/*`, `lib/context/*`, `components/engineering/*`
+- [x] `app/page.tsx` is a server redirect to `/dashboard`
+
+### 2.6 Follow-ups
+
+- [ ] Remove `export const instant = false` from `app/(workspace)/layout.tsx` — **blocked by: wrapping `usePathname()` consumers in `<Suspense>`**
+- [ ] Verify the collapsed sidebar and drawer against `THEME.MD` §5.3 breakpoints in a real browser
+
+---
+
+## Phase 3 — UI Modules
+
+**Goal:** Every module in `PROJECT.MD` has a working interface with real states.
+**Depends on:** Phase 2.
+**Definition of done:** each route renders loading, empty, error, and success states, and no module hardcodes records.
+
+### 3.1 Route coverage
+
+- [x] `/dashboard` — KPIs, admission trend, appointment breakdown, recent registrations, pending activities (`THEME.MD` §8.1)
+- [x] `/patients` — list, search, status filter (`THEME.MD` §8.2)
+- [x] `/patients/new` — 5-section registration form with validation
+- [x] `/patients/[id]` — 9-tab profile
+- [x] `/appointments` — list / daily schedule / calendar (`THEME.MD` §8.3)
+- [x] `/admissions` — KPIs, bed board, admission list (`THEME.MD` §8.4)
+- [x] `/discharges` — discharge records
+- [x] `/medical-records` — encounter list + clinical detail (`THEME.MD` §8.5)
+- [x] `/nursing` — assigned-patient workspace, latest vitals (`THEME.MD` §8.7)
+- [x] `/staff` — list + detail (`THEME.MD` §8.6)
+- [x] `/laboratory` — workflow strip, specimen vs result status (`THEME.MD` §8.8)
+- [x] `/radiology` — request list, draft-vs-verified report (`THEME.MD` §8.9)
+- [x] `/pharmacy` — prescription queue + medication inventory (`THEME.MD` §8.10)
+- [x] `/prescriptions` — prescription list + detail
+- [x] `/billing` — invoice list + invoice detail (`THEME.MD` §8.11)
+- [x] `/payments` — payment list + receipt
+- [x] `/inventory` — items + stock history (`THEME.MD` §8.12)
+- [x] `/departments` — list with accent identity (`THEME.MD` §3.6)
+- [x] `/rooms-beds` — rooms table + bed availability board
+- [x] `/reports` — 9 report categories (`THEME.MD` §8.13)
+- [x] `/settings` — settings index, backend status, theme facts
+- [x] `/settings/users` — user list + role panel (`THEME.MD` §8.14)
+- [x] `/audit-logs` — read-only audit table (`THEME.MD` §8.15)
+- [x] `/login` — sign-in form
+- [x] `/forgot-password` — reset request + success state
+
+### 3.2 Cross-module behaviour
+
+- [x] Loading, empty, error, and success states per `THEME.MD` §9
+- [x] Multi-cue status everywhere (never color-only)
+- [x] Clinical values carry units, timestamps, and recording staff (`THEME.MD` §10.3)
+- [x] Draft clinical/radiology results never presented as verified
+- [x] Money right-aligned, `tabular-nums`, PHP formatted
+- [x] Bed availability strictly from `status`, never inferred
+- [x] Patient identity (name + MRN) persistent in clinical workspaces
+- [x] Read-only audit history — no edit/delete controls anywhere
+- [x] Responsive breakpoints implemented at 640 / 1024 / 1440 (verification pending — Phase 7)
+- [ ] Role-based navigation filtering — `NavItem.permission` exists but is unset — **blocked by: Phase 4 policies**
+- [ ] Role-based action visibility (hide actions the user cannot perform)
+
+### 3.3 Modules in `PROJECT.MD` without a route yet
+
+- [ ] Emergency Room Management (`PROJECT.MD` §14)
+- [ ] Surgery & Operating Room (`PROJECT.MD` §20)
+- [ ] Human Resources & Payroll (`PROJECT.MD` §21)
+- [ ] Insurance & PhilHealth (`PROJECT.MD` §22)
+- [ ] Blood Bank (`PROJECT.MD` §23)
+- [ ] Ambulance (`PROJECT.MD` §24)
+- [ ] Dietary (`PROJECT.MD` §25)
+- [ ] Housekeeping (`PROJECT.MD` §26)
+- [ ] Equipment & Maintenance (`PROJECT.MD` §27)
+- [ ] Mortuary (`PROJECT.MD` §28)
+- [ ] Notifications & Communication (`PROJECT.MD` §29)
+
+---
+
+## Phase 4 — Row Level Security
+
+**Goal:** The database, not the UI, becomes the authorization boundary.
+**Depends on:** Phase 1 applied; Phase 0 role matrix approved.
+**Definition of done:** every `public` table has RLS enabled and a documented policy; anonymous access is denied; role isolation tests pass.
+**⚠ Risk if skipped:** all 46 tables are reachable with the publishable key. Do not expose a production frontend before this phase.
+
+### 4.1 Enablement
+
+- [ ] `alter table ... enable row level security` on all 46 application tables
+- [ ] `alter table ... force row level security` where the table owner must also be constrained
+- [ ] Verify no table has RLS disabled: query `pg_tables` for `rowsecurity = false`
+
+### 4.2 Identity & RBAC
+
+- [ ] `profiles` — self read/update, admin manage
+- [ ] `roles`, `permissions`, `role_permissions` — read for authenticated, write admin-only
+- [ ] `user_roles` — users cannot grant themselves roles (critical escalation test)
+- [ ] `staff_profiles`, `physicians`, `staff_department_assignments` — admin write, department-scoped read
+
+### 4.3 Patient & clinical
+
+- [ ] `patients` — `patient.view` to read, `patient.create`/`update` to write, `created_by = auth.uid()` on insert
+- [ ] `emergency_contacts`, `patient_allergies`, `medical_histories` — inherit patient access
+- [ ] `patient_care_assignments` — admin/physician only
+- [ ] `encounters`, `vital_signs`, `diagnoses`, `clinical_notes` — permission + `can_access_patient(patient_id)`
+- [ ] Finalized clinical notes immutable without `medical_record.amend`
+- [ ] `nursing_assessments`, `nursing_notes` — nursing permission + assignment scope
+
+### 4.4 Diagnostics, pharmacy, inventory
+
+- [ ] `laboratory_*` — order permission vs result verification permission split
+- [ ] `radiology_*` — report write vs verify split
+- [ ] `medications`, `prescriptions`, `prescription_items`, `medication_dispenses` — pharmacist dispensing scope
+- [ ] `inventory_*`, `stock_transactions` — append-only history, no update/delete policy
+
+### 4.5 Financial, ADT, system
+
+- [ ] `invoices`, `invoice_items`, `payments` — billing permission; no delete; refund path only
+- [ ] `appointments`, `admissions`, `admission_bed_assignments`, `patient_transfers`, `rooms`, `beds` — scheduling/ADT permissions
+- [ ] `notifications` — owner read/update only
+- [ ] `audit_logs` — `audit.view` to read, no update/delete policy for anyone
+- [ ] `departments` — authenticated read, admin write
+
+### 4.6 Helper hardening
+
+- [ ] Confirm every `security definer` helper has a fixed `search_path` and explicit `grant execute`
+- [ ] Test privilege escalation through `has_permission` / `can_access_patient`
+- [ ] Add `SECURITY INVOKER` views verified against RLS (all 8 views)
+
+---
+
+## Phase 5 — Backend Services
+
+**Goal:** Everything the UI needs beyond plain table reads.
+**Depends on:** Phase 4.
+**Definition of done:** each service is tested with a real authenticated token.
+
+### 5.1 Storage (`SUPABASE.MD` §24)
+
+- [ ] Create 8 private buckets: `avatars`, `patient-documents`, `medical-record-files`, `laboratory-files`, `radiology-files`, `prescription-files`, `billing-documents`, `hospital-documents`
+- [ ] Storage RLS policies per bucket (path scoped to patient / user id)
+- [ ] File size + MIME restrictions per bucket
+- [ ] Signed URL flow verified (short expiry)
+
+### 5.2 Realtime (`SUPABASE.MD` §25)
+
+- [ ] Add to `supabase_realtime` publication: `appointments`, `admissions`, `beds`, `laboratory_orders`, `laboratory_results`, `prescriptions`, `notifications`, `payments`, `stock_transactions`
+- [ ] Verify RLS is enforced on subscription payloads
+
+### 5.3 Transactional RPC functions (`SUPABASE.MD` §21.1)
+
+- [ ] `generate_reference_number`
+- [ ] `register_patient`
+- [ ] `create_appointment`
+- [ ] `create_admission`
+- [ ] `transfer_patient`
+- [ ] `discharge_patient`
+- [ ] `finalize_clinical_note`
+- [ ] `verify_laboratory_result`
+- [ ] `dispense_prescription`
+- [ ] `record_payment`
+- [ ] `refund_payment`
+- [ ] `adjust_inventory`
+- [ ] Each function: `auth.uid()` check, permission check, row lock, single transaction, audit write, typed result
+- [ ] Concurrency tests: two simultaneous bed allocations must not double-book
+
+### 5.4 Edge Functions (`SUPABASE.MD` §26)
+
+- [ ] `admin-users`
+- [ ] `admin-role-assignment`
+- [ ] `send-notification`
+- [ ] `generate-document`
+- [ ] `ai-assist`
+- [ ] `scheduled-maintenance`
+- [ ] Secrets configured via `supabase secrets set` (never in the frontend)
+
+### 5.5 Provisioning
+
+- [ ] Initial administrator created through a documented, non-public process
+- [ ] Signup flow does not grant any privileged role
+
+---
+
+## Phase 6 — Frontend ↔ Backend Integration
+
+**Goal:** The UI reads and writes real data through Supabase, with the same components.
+**Depends on:** Phases 4 and 5.
+**Definition of done:** preview mode is off, no fixture is reachable, and every mutation goes through RLS or an RPC.
+
+### 6.1 Client setup
+
+- [ ] Install `@supabase/supabase-js`, `@supabase/ssr`, `zod`
+- [ ] `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- [ ] Fix `.gitignore` so `.env.example` is tracked (`!.env.example`)
+- [ ] `lib/supabase/client.ts` — singleton browser client with `Database` types
+- [ ] `lib/supabase/server.ts` — cookie-based server client
+- [ ] `lib/supabase/proxy.ts` + root proxy — session refresh
+- [ ] `lib/supabase/storage.ts`, `lib/supabase/realtime.ts`
+
+### 6.2 Authentication
+
+- [ ] Replace `components/layout/auth-guard.tsx` localStorage stub with real session checks
+- [ ] Login → `supabase.auth.signInWithPassword`
+- [ ] Forgot password → `supabase.auth.resetPasswordForEmail`
+- [ ] Password reset completion route
+- [ ] Sign out clears the real session
+- [ ] Profile bootstrap verified on first sign-in
+- [ ] Disabled accounts (`profiles.is_active = false`) blocked at sign-in
+- [ ] Remove the "authentication is not yet connected" notices from `app/(auth)/*`
+
+### 6.3 Data layer swap (`lib/data/*`, 20 modules)
+
+- [ ] `patients.ts` → `supabase.from("patients")`
+- [ ] `appointments.ts`
+- [ ] `admissions.ts`
+- [ ] `medical-records.ts`
+- [ ] `nursing.ts`
+- [ ] `staff.ts`
+- [ ] `laboratory.ts`
+- [ ] `radiology.ts`
+- [ ] `pharmacy.ts`
+- [ ] `billing.ts`
+- [ ] `inventory.ts`
+- [ ] `departments.ts`
+- [ ] `rooms.ts`
+- [ ] `reports.ts`
+- [ ] `users.ts`
+- [ ] `audit.ts`
+- [ ] `dashboard.ts` (aggregates; may need RPC or views)
+- [ ] Keep the `DataResult` / `PagedResult` contract so components do not change
+- [ ] Map PostgreSQL error codes to `THEME.MD` §9.4 messages
+
+### 6.4 Mutations
+
+- [ ] Zod schemas in `lib/validations/*` for every form
+- [ ] Patient registration → `register_patient` RPC
+- [ ] Appointment creation → `create_appointment` RPC
+- [ ] Admission / transfer / discharge → RPCs
+- [ ] Clinical note finalize → `finalize_clinical_note`
+- [ ] Lab result verify → `verify_laboratory_result`
+- [ ] Dispensing → `dispense_prescription`
+- [ ] Payment / refund → `record_payment` / `refund_payment`
+- [ ] Stock movements → `adjust_inventory`
+- [ ] Delete every `UnavailableAction` call site and `components/module/unavailable-action.tsx`
+- [ ] Mount `<ToastProvider>` and replace success alerts with toasts
+
+### 6.5 Files, realtime, roles
+
+- [ ] Upload UI for patient documents, lab attachments, radiology files
+- [ ] Signed URL viewer
+- [ ] Realtime hooks for the 9 published tables
+- [ ] Set `NavItem.permission` and filter navigation by `has_permission`
+- [ ] Hide actions the user cannot perform (never rely on hiding alone — RLS still enforces)
+
+### 6.6 Decommission preview mode
+
+- [ ] Delete `lib/fixtures/*`
+- [ ] Delete `lib/data/config.ts` preview flag
+- [ ] Delete `components/layout/preview-notice.tsx`
+- [ ] Set `NEXT_PUBLIC_UI_PREVIEW` out of the codebase entirely
+
+---
+
+## Phase 7 — QA & Security Verification
+
+**Goal:** Prove the system behaves correctly and denies correctly.
+**Depends on:** Phase 6.
+**Definition of done:** the suite below runs in CI and passes.
+
+### 7.1 Already verified
+
+- [x] `npm run lint` → exit 0
+- [x] `npx tsc --noEmit` → exit 0
+- [x] `npm run build` → 29/29 routes generated
+- [x] Runtime render → `next start -p 3100` returned HTTP 200 on all 23 app routes + `/login` + `/forgot-password`
+- [x] Static sweep → 0 `lucide`, 0 non-`/linear` solar imports, 0 `transition-all`, 0 banned fonts
+
+### 7.2 Browser & accessibility
+
+- [ ] Visual QA at 640 / 1024 / 1440 for all 26 routes
+- [ ] Hover, focus-visible, active, disabled, loading states inspected
+- [ ] Keyboard-only pass: tab order, modal trap, dropdown, tabs, calendar, table sort
+- [ ] `prefers-reduced-motion` verified
+- [ ] Screen reader pass on the patient profile and clinical encounter dialog
+- [ ] Contrast check against WCAG AA for every token pair
+
+### 7.3 Automated tests
+
+- [ ] Add a test runner (none exists today; no `test` script)
+- [ ] Unit tests for `lib/format.ts`, `StatusBadge` mapping, `RecordTable` filter/sort/pagination
+- [ ] Component tests for forms (validation, preserved values, duplicate-submit guard)
+
+### 7.4 Security tests (`SUPABASE.MD` §33.3)
+
+- [ ] Anonymous user cannot read patient records
+- [ ] Receptionist cannot read restricted clinical notes
+- [ ] Physician cannot access administrative functions
+- [ ] Nurse cannot modify finalized physician documentation
+- [ ] Laboratory staff cannot access billing administration
+- [ ] Pharmacist cannot assign administrator roles
+- [ ] Billing staff cannot modify clinical diagnoses
+- [ ] Inventory staff cannot read unrestricted medical records
+- [ ] Ordinary users cannot read audit logs
+- [ ] Users cannot change their own roles
+- [ ] Users cannot bypass authorization by changing record IDs
+
+### 7.5 Clinical integrity tests (`SUPABASE.MD` §33.4)
+
+- [ ] Duplicate patient registration rejected
+- [ ] Invalid appointment scheduling rejected
+- [ ] Concurrent bed allocation cannot double-book
+- [ ] Discharge releases the bed exactly once
+- [ ] Patient transfer closes the previous assignment
+- [ ] Clinical note finalization is irreversible without amendment
+- [ ] Laboratory result verification is permission-gated
+- [ ] Prescription dispensing decrements inventory atomically
+- [ ] Inventory cannot go negative
+- [ ] Duplicate payment submission rejected
+- [ ] Refund preserves the original payment record
+
+### 7.6 Storage & realtime tests (`SUPABASE.MD` §33.5)
+
+- [ ] Private buckets are not publicly reachable
+- [ ] Unauthorized uploads and deletes are rejected
+- [ ] Signed URLs expire
+- [ ] Realtime payloads respect RLS
+
+---
+
+## Phase 8 — Cleanup & Debt
+
+**Goal:** Leave no misleading code behind.
+**Depends on:** can run in parallel with Phases 4–7.
+
+- [ ] Add `!.env.example` to `.gitignore`
+- [ ] Ignore `supabase/.temp/` and `supabase/cli-latest`
+- [ ] Replace the 2 raw `<table>` elements with shared primitives: `components/billing/invoice-detail-dialog.tsx`, `components/dashboard/admission-trend-chart.tsx` (chart data fallback)
+- [ ] Move the hardcoded `#007A55` display value in `app/(workspace)/settings/page.tsx` to a token read
+- [ ] Align report category labels with `THEME.MD` §8.13 wording
+- [ ] Extend data types for fields the UI currently reports as missing: `EncounterDetail.prescriptions`, `VitalSigns.verification_status`, `InvoiceListRow.line_items`, `StaffListRow.work_schedule`
+- [ ] Add a medication stock table (currently synthesized from `inventory_batches` / `stock_transactions`)
+- [ ] Remove `export const instant = false` from `app/(workspace)/layout.tsx` once pathname consumers are wrapped in `<Suspense>`
+- [ ] Remove the localStorage session key `spmc_auth_session` and `spmc_password_reset_request` remnants after Phase 6
+- [ ] Add `turbopack.root` to `next.config.ts` to silence the `package-lock.json outside Git repository` warning
+
+---
+
+## Phase 9 — Deployment
+
+**Goal:** Ship repeatably.
+**Depends on:** Phase 7.
+
+- [ ] Environment variables configured per environment (no service-role key in the frontend)
+- [ ] Migrations applied through CI, never by hand
+- [ ] Type generation in CI, drift check fails the build
+- [ ] `npm run lint` + `tsc` + `build` gates on pull requests
+- [ ] Preview deployment tested against a staging Supabase project
+- [ ] Backup and restore procedure documented
+- [ ] Audit log retention policy defined
