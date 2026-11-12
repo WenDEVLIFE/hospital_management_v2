@@ -81,6 +81,10 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   paternity: { variant: "info", label: "Paternity" },
   regular: { variant: "info", label: "Regular" },
   consultant: { variant: "info", label: "Consultant" },
+  basic_life_support: { variant: "info", label: "Basic Life Support" },
+  advanced_life_support: { variant: "info", label: "Advanced Life Support" },
+  patient_transport: { variant: "info", label: "Patient Transport" },
+  mobile_icu: { variant: "info", label: "Mobile ICU" },
   prepared: { variant: "processing", label: "Prepared" },
   submitted: { variant: "processing", label: "Submitted" },
   in_review: { variant: "processing", label: "In Review" },
@@ -89,6 +93,12 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   moderate: { variant: "processing", label: "Moderate" },
   collected: { variant: "processing", label: "Collected" },
   tested: { variant: "processing", label: "Tested" },
+  dispatched: { variant: "processing", label: "Dispatched" },
+  on_trip: { variant: "processing", label: "On Trip" },
+  assigned: { variant: "processing", label: "Assigned" },
+  en_route: { variant: "processing", label: "En Route" },
+  on_scene: { variant: "processing", label: "On Scene" },
+  transporting: { variant: "processing", label: "Transporting" },
 
   cancelled: { variant: "critical", label: "Cancelled" },
   no_show: { variant: "critical", label: "No Show" },
@@ -120,6 +130,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   not_connected: { variant: "inactive", label: "Not connected" },
   discarded: { variant: "inactive", label: "Discarded" },
   routine: { variant: "inactive", label: "Routine" },
+  out_of_service: { variant: "inactive", label: "Out of Service" },
   elective: { variant: "inactive", label: "Elective" },
 };
 

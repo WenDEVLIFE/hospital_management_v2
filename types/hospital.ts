@@ -1471,6 +1471,125 @@ export type BloodBankStats = {
   issuedToday: number;
 };
 
+export type AmbulanceStatus =
+  | "available"
+  | "dispatched"
+  | "on_trip"
+  | "maintenance"
+  | "out_of_service";
+
+export type AmbulanceType =
+  | "basic_life_support"
+  | "advanced_life_support"
+  | "patient_transport"
+  | "mobile_icu";
+
+export type DispatchStatus =
+  | "requested"
+  | "assigned"
+  | "en_route"
+  | "on_scene"
+  | "transporting"
+  | "completed"
+  | "cancelled";
+
+export type DispatchPriority = "routine" | "urgent" | "emergency";
+
+export type AmbulanceVehicle = {
+  id: string;
+  vehicle_number: string;
+  plate_number: string;
+  type: AmbulanceType;
+  status: AmbulanceStatus;
+  driver_name: string | null;
+  crew_names: string[];
+  location: string;
+  fuel_level: number;
+  odometer_km: number;
+  last_service_date: string;
+  next_service_due: string;
+  notes: string | null;
+};
+
+export type AmbulanceTrip = {
+  id: string;
+  trip_number: string;
+  patient_id: string;
+  vehicle_id: string | null;
+  status: DispatchStatus;
+  priority: DispatchPriority;
+  pickup_location: string;
+  destination: string;
+  requested_at: string;
+  dispatched_at: string | null;
+  arrived_pickup_at: string | null;
+  departed_pickup_at: string | null;
+  arrived_destination_at: string | null;
+  completed_at: string | null;
+  requested_by_name: string;
+  crew_names: string[];
+  notes: string | null;
+};
+
+export type AmbulanceMaintenance = {
+  id: string;
+  vehicle_id: string;
+  maintenance_type: string;
+  performed_at: string;
+  performed_by_name: string;
+  cost: number;
+  notes: string | null;
+  next_due_date: string | null;
+};
+
+export type FuelRecord = {
+  id: string;
+  vehicle_id: string;
+  fueled_at: string;
+  liters: number;
+  cost: number;
+  odometer_km: number;
+  recorded_by_name: string;
+};
+
+export type AmbulanceVehicleListRow = AmbulanceVehicle & {
+  active_trip_number: string | null;
+  active_trip_status: DispatchStatus | null;
+};
+
+export type AmbulanceTripListRow = AmbulanceTrip & {
+  patient_name: string;
+  patient_mrn: string;
+  vehicle_number: string | null;
+  vehicle_type: AmbulanceType | null;
+};
+
+export type AmbulanceVehicleDetail = {
+  vehicle: AmbulanceVehicle;
+  trips: AmbulanceTripListRow[];
+  maintenance: AmbulanceMaintenance[];
+  fuel: FuelRecord[];
+};
+
+export type AmbulanceTripDetail = {
+  trip: AmbulanceTrip;
+  patient: Patient;
+  vehicle: AmbulanceVehicle | null;
+};
+
+export type AmbulanceStats = {
+  fleetSize: number;
+  available: number;
+  activeDispatches: number;
+  requested: number;
+  enRoute: number;
+  transporting: number;
+  maintenance: number;
+  tripsToday: number;
+  completedTrips: number;
+  averageResponseMinutes: number;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;

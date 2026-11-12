@@ -28,6 +28,15 @@ import { patientMrnById, patientNameById, patients } from "./patients";
 const labTechnologistName =
   profileNameById.get(profileIds.labTech) ?? "Test Lab Staff A";
 
+function manilaDate(value: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value));
+}
+
 export const bloodDonors: BloodDonor[] = [
   {
     id: previewUuid(100, 1),
@@ -689,6 +698,6 @@ export const bloodBankStats: BloodBankStats = {
     (crossmatch) => crossmatch.result === "pending"
   ).length,
   issuedToday: bloodIssues.filter(
-    (issue) => issue.issued_at.slice(0, 10) === isoDate(0)
+    (issue) => manilaDate(issue.issued_at) === manilaDate(PREVIEW_NOW)
   ).length,
 };

@@ -16,4 +16,5 @@ export * from "./surgery";
 export * from "./hr";
 export * from "./insurance";
 export * from "./blood-bank";
+export * from "./ambulance";
 export * from "./system";

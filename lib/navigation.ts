@@ -4,6 +4,7 @@ import {
   BillListIcon,
   BoxIcon,
   Buildings2Icon,
+  BusIcon,
   CalendarMarkIcon,
   CaseIcon,
   Chart2Icon,
@@ -112,6 +113,7 @@ export const navigation: NavSection[] = [
       { label: "Inventory", href: "/inventory", icon: BoxIcon },
       { label: "Departments", href: "/departments", icon: Buildings2Icon },
       { label: "Rooms & Beds", href: "/rooms-beds", icon: BedIcon },
+      { label: "Ambulance", href: "/ambulance", icon: BusIcon },
     ],
   },
   {
