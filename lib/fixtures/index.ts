@@ -11,4 +11,5 @@ export * from "./pharmacy";
 export * from "./inventory";
 export * from "./billing";
 export * from "./nursing";
+export * from "./emergency";
 export * from "./system";
