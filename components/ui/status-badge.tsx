@@ -27,6 +27,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   available: { variant: "success", label: "Available" },
   finalized: { variant: "success", label: "Finalized" },
   confirmed: { variant: "success", label: "Confirmed" },
+  non_urgent: { variant: "success", label: "Non-urgent" },
 
   pending: { variant: "pending", label: "Pending" },
   waiting: { variant: "pending", label: "Waiting" },
@@ -36,6 +37,8 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   collection: { variant: "pending", label: "Collection" },
   partially_paid: { variant: "pending", label: "Partially Paid" },
   partially_dispensed: { variant: "pending", label: "Partially Dispensed" },
+  emergent: { variant: "pending", label: "Emergent" },
+  observation: { variant: "pending", label: "Observation" },
 
   in_progress: { variant: "processing", label: "In Progress" },
   processing: { variant: "processing", label: "Processing" },
@@ -43,6 +46,9 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   open: { variant: "processing", label: "Open" },
   transferred: { variant: "processing", label: "Transferred" },
   scheduled: { variant: "processing", label: "Scheduled" },
+  urgent: { variant: "processing", label: "Urgent" },
+  triage: { variant: "processing", label: "In Triage" },
+  in_treatment: { variant: "processing", label: "In Treatment" },
 
   cancelled: { variant: "critical", label: "Cancelled" },
   no_show: { variant: "critical", label: "No Show" },
@@ -58,6 +64,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   discharged: { variant: "inactive", label: "Discharged" },
   maintenance: { variant: "inactive", label: "Maintenance" },
   low_stock: { variant: "inactive", label: "Low Stock" },
+  less_urgent: { variant: "inactive", label: "Less urgent" },
 };
 
 function StatusIcon({ variant }: { variant: BadgeVariant }) {

@@ -650,6 +650,115 @@ export type EncounterDetail = {
   clinical_notes: ClinicalNote[];
 };
 
+export type EmergencyTriageLevel =
+  | "critical"
+  | "emergent"
+  | "urgent"
+  | "less_urgent"
+  | "non_urgent";
+
+export type EmergencyVisitStatus =
+  | "waiting"
+  | "triage"
+  | "in_treatment"
+  | "observation"
+  | "admitted"
+  | "transferred"
+  | "discharged";
+
+export type EmergencyArrivalMode = "walk_in" | "ambulance" | "referral";
+
+export type EmergencyDisposition = "admit" | "transfer" | "discharge" | null;
+
+export type EmergencyVisit = {
+  id: string;
+  visit_number: string;
+  encounter_id: string;
+  patient_id: string;
+  arrival_at: string;
+  arrival_mode: EmergencyArrivalMode;
+  triage_level: EmergencyTriageLevel;
+  triage_note: string | null;
+  chief_complaint: string;
+  status: EmergencyVisitStatus;
+  attending_physician_id: string | null;
+  triage_nurse_id: string | null;
+  treatment_area: string | null;
+  disposition: EmergencyDisposition;
+  disposition_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EmergencyVisitListRow = {
+  id: string;
+  visit_number: string;
+  encounter_id: string;
+  patient_id: string;
+  patient_name: string;
+  patient_mrn: string;
+  arrival_at: string;
+  arrival_mode: EmergencyArrivalMode;
+  triage_level: EmergencyTriageLevel;
+  chief_complaint: string;
+  status: EmergencyVisitStatus;
+  attending_physician_id: string | null;
+  attending_physician_name: string | null;
+  triage_nurse_name: string | null;
+  treatment_area: string | null;
+  wait_minutes: number;
+  latest_vitals: VitalSigns | null;
+  disposition: EmergencyDisposition;
+};
+
+export type EmergencyOrderSummary = {
+  id: string;
+  kind: "laboratory" | "radiology";
+  label: string;
+  status: string;
+  ordered_at: string;
+  ordered_by_name: string;
+};
+
+export type EmergencyMonitoringEntry = {
+  recorded_at: string;
+  note: string;
+  recorded_by_name: string;
+};
+
+export type EmergencyNoteSummary = ClinicalNote & {
+  author_name: string;
+  author_role: string;
+};
+
+export type EmergencyVisitDetail = {
+  visit: EmergencyVisit;
+  patient: Patient;
+  encounter: Encounter;
+  attending_physician_name: string | null;
+  triage_nurse_name: string | null;
+  vitals: VitalSigns[];
+  notes: EmergencyNoteSummary[];
+  diagnoses: Diagnosis[];
+  orders: EmergencyOrderSummary[];
+  procedures: string[];
+  monitoring: EmergencyMonitoringEntry[];
+};
+
+export type EmergencyStats = {
+  total: number;
+  waiting: number;
+  triage: number;
+  inTreatment: number;
+  observation: number;
+  critical: number;
+  admitted: number;
+  transferred: number;
+  discharged: number;
+  averageWaitMinutes: number;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;

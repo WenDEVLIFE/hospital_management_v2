@@ -16,6 +16,7 @@ import {
   Pills2Icon,
   Scanner2Icon,
   SettingsIcon,
+  SirenRoundedIcon,
   StethoscopeIcon,
   TestTubeIcon,
   UserRoundedIcon,
@@ -52,6 +53,7 @@ export const navigation: NavSection[] = [
     items: [
       { label: "Patients", href: "/patients", icon: UserRoundedIcon },
       { label: "Appointments", href: "/appointments", icon: CalendarMarkIcon },
+      { label: "Emergency Room", href: "/emergency", icon: SirenRoundedIcon },
       { label: "Admissions", href: "/admissions", icon: LoginIcon },
       { label: "Discharges", href: "/discharges", icon: LogoutIcon },
     ],
