@@ -25,6 +25,7 @@ import {
   UserRoundedIcon,
   UsersGroupTwoRoundedIcon,
   WalletMoneyIcon,
+  WaterdropIcon,
 } from "@solar-icons/react/linear";
 
 export type IconComponent = ComponentType<{
@@ -79,6 +80,7 @@ export const navigation: NavSection[] = [
     items: [
       { label: "Laboratory", href: "/laboratory", icon: TestTubeIcon },
       { label: "Radiology", href: "/radiology", icon: Scanner2Icon },
+      { label: "Blood Bank", href: "/blood-bank", icon: WaterdropIcon },
     ],
   },
   {

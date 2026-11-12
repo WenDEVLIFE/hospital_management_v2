@@ -23,6 +23,12 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   present: { variant: "success", label: "Present" },
   valid: { variant: "success", label: "Valid" },
   connected: { variant: "success", label: "Connected" },
+  eligible: { variant: "success", label: "Eligible" },
+  compatible: { variant: "success", label: "Compatible" },
+  negative: { variant: "success", label: "Negative" },
+  passed: { variant: "success", label: "Passed" },
+  none: { variant: "success", label: "No reaction" },
+  released: { variant: "success", label: "Released" },
   admitted: { variant: "success", label: "Admitted" },
   completed: { variant: "success", label: "Completed" },
   verified: { variant: "success", label: "Verified" },
@@ -55,6 +61,8 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   manual: { variant: "pending", label: "Manual only" },
   unverified: { variant: "pending", label: "Unverified" },
   partially_approved: { variant: "pending", label: "Partially Approved" },
+  deferred: { variant: "pending", label: "Deferred" },
+  mild: { variant: "pending", label: "Mild" },
 
   in_progress: { variant: "processing", label: "In Progress" },
   processing: { variant: "processing", label: "Processing" },
@@ -76,6 +84,11 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   prepared: { variant: "processing", label: "Prepared" },
   submitted: { variant: "processing", label: "Submitted" },
   in_review: { variant: "processing", label: "In Review" },
+  crossmatched: { variant: "processing", label: "Crossmatched" },
+  issued: { variant: "processing", label: "Issued" },
+  moderate: { variant: "processing", label: "Moderate" },
+  collected: { variant: "processing", label: "Collected" },
+  tested: { variant: "processing", label: "Tested" },
 
   cancelled: { variant: "critical", label: "Cancelled" },
   no_show: { variant: "critical", label: "No Show" },
@@ -88,6 +101,9 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   emergency: { variant: "critical", label: "Emergency" },
   absent: { variant: "critical", label: "Absent" },
   denied: { variant: "critical", label: "Denied" },
+  incompatible: { variant: "critical", label: "Incompatible" },
+  positive: { variant: "critical", label: "Positive" },
+  severe: { variant: "critical", label: "Severe" },
 
   inactive: { variant: "inactive", label: "Inactive" },
   archived: { variant: "inactive", label: "Archived" },
@@ -102,6 +118,8 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   part_time: { variant: "inactive", label: "Part-time" },
   holiday: { variant: "inactive", label: "Holiday" },
   not_connected: { variant: "inactive", label: "Not connected" },
+  discarded: { variant: "inactive", label: "Discarded" },
+  routine: { variant: "inactive", label: "Routine" },
   elective: { variant: "inactive", label: "Elective" },
 };
 

@@ -1259,6 +1259,218 @@ export type InsuranceStats = {
   outstandingClaimAmount: number;
 };
 
+export type BloodType =
+  | "A+"
+  | "A-"
+  | "B+"
+  | "B-"
+  | "AB+"
+  | "AB-"
+  | "O+"
+  | "O-";
+
+export type BloodComponent =
+  | "whole_blood"
+  | "packed_rbc"
+  | "plasma"
+  | "platelets"
+  | "cryoprecipitate";
+
+export type BloodUnitStatus =
+  | "available"
+  | "reserved"
+  | "crossmatched"
+  | "issued"
+  | "discarded"
+  | "expired";
+
+export type BloodDonorStatus = "eligible" | "deferred" | "inactive";
+
+export type BloodRequestStatus =
+  | "pending"
+  | "reserved"
+  | "crossmatched"
+  | "issued"
+  | "completed"
+  | "cancelled";
+
+export type BloodRequestPriority = "routine" | "urgent" | "emergency";
+
+export type CrossmatchResult = "pending" | "compatible" | "incompatible";
+
+export type ScreeningResult = "pending" | "negative" | "positive";
+
+export type TransfusionReactionSeverity =
+  | "none"
+  | "mild"
+  | "moderate"
+  | "severe";
+
+export type BloodDonor = {
+  id: string;
+  donor_number: string;
+  full_name: string;
+  date_of_birth: string;
+  sex: string;
+  blood_type: BloodType;
+  contact_number: string | null;
+  address: string | null;
+  eligibility_status: BloodDonorStatus;
+  last_donation_date: string | null;
+  total_donations: number;
+  notes: string | null;
+};
+
+export type BloodDonation = {
+  id: string;
+  donation_number: string;
+  donor_id: string;
+  donation_date: string;
+  blood_type: BloodType;
+  units_collected: number;
+  collection_site: string;
+  status: "collected" | "tested" | "released" | "discarded";
+  notes: string | null;
+};
+
+export type BloodUnit = {
+  id: string;
+  unit_number: string;
+  donation_id: string;
+  donor_id: string;
+  blood_type: BloodType;
+  component: BloodComponent;
+  collection_date: string;
+  expiry_date: string;
+  status: BloodUnitStatus;
+  storage_location: string;
+  screening_status: "pending" | "passed" | "failed";
+  notes: string | null;
+};
+
+export type BloodScreening = {
+  id: string;
+  unit_id: string;
+  test_name: string;
+  result: ScreeningResult;
+  tested_at: string | null;
+  tested_by_name: string | null;
+  notes: string | null;
+};
+
+export type BloodRequest = {
+  id: string;
+  request_number: string;
+  patient_id: string;
+  blood_type: BloodType;
+  component: BloodComponent;
+  units_requested: number;
+  units_fulfilled: number;
+  priority: BloodRequestPriority;
+  status: BloodRequestStatus;
+  requested_by_name: string;
+  department_name: string;
+  requested_at: string;
+  required_by: string;
+  notes: string | null;
+};
+
+export type BloodCrossmatch = {
+  id: string;
+  request_id: string;
+  unit_id: string;
+  result: CrossmatchResult;
+  crossmatched_at: string | null;
+  crossmatched_by_name: string | null;
+  notes: string | null;
+};
+
+export type BloodIssue = {
+  id: string;
+  request_id: string;
+  unit_id: string;
+  issued_at: string;
+  issued_by_name: string;
+  received_by_name: string;
+  notes: string | null;
+};
+
+export type TransfusionRecord = {
+  id: string;
+  request_id: string;
+  unit_id: string;
+  transfused_at: string;
+  transfused_by_name: string;
+  reaction_severity: TransfusionReactionSeverity;
+  reaction_notes: string | null;
+};
+
+export type BloodUnitListRow = BloodUnit & {
+  donor_name: string;
+  request_number: string | null;
+  days_to_expiry: number;
+};
+
+export type BloodRequestListRow = BloodRequest & {
+  patient_name: string;
+  patient_mrn: string;
+  crossmatch_status: CrossmatchResult | null;
+  issued_units: number;
+};
+
+export type BloodDonorListRow = BloodDonor & {
+  donations_this_year: number;
+};
+
+export type BloodUnitDetail = {
+  unit: BloodUnit;
+  donor: BloodDonor;
+  donation: BloodDonation;
+  screenings: BloodScreening[];
+  request: BloodRequestListRow | null;
+  issue: BloodIssue | null;
+  transfusion: TransfusionRecord | null;
+};
+
+export type BloodRequestDetail = {
+  request: BloodRequest;
+  patient: Patient;
+  crossmatches: Array<
+    BloodCrossmatch & {
+      unit_number: string;
+      blood_type: BloodType;
+      component: BloodComponent;
+    }
+  >;
+  issues: Array<
+    BloodIssue & {
+      unit_number: string;
+      blood_type: BloodType;
+      component: BloodComponent;
+    }
+  >;
+  transfusions: Array<
+    TransfusionRecord & {
+      unit_number: string;
+    }
+  >;
+};
+
+export type BloodDonorDetail = {
+  donor: BloodDonor;
+  donations: BloodDonation[];
+  units: BloodUnitListRow[];
+};
+
+export type BloodBankStats = {
+  unitsInStock: number;
+  availableUnits: number;
+  expiringSoon: number;
+  pendingRequests: number;
+  crossmatchesPending: number;
+  issuedToday: number;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;
