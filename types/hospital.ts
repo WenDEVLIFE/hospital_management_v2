@@ -1690,6 +1690,92 @@ export type DietaryStats = {
   therapeuticDiets: number;
 };
 
+export type CleaningLocationType =
+  | "room"
+  | "bed"
+  | "common_area"
+  | "isolation_room";
+
+export type CleaningRequestType =
+  | "routine"
+  | "discharge"
+  | "terminal"
+  | "spill"
+  | "isolation";
+
+export type CleaningPriority = "routine" | "urgent" | "emergency";
+
+export type CleaningStatus =
+  | "requested"
+  | "assigned"
+  | "in_progress"
+  | "completed"
+  | "verified"
+  | "cancelled";
+
+export type HousekeepingStaffStatus = "on_duty" | "off_duty" | "on_break";
+
+export type HousekeepingStaff = {
+  id: string;
+  name: string;
+  role: string;
+  status: HousekeepingStaffStatus;
+  contact_number: string | null;
+  current_assignment: string | null;
+  completed_today: number;
+};
+
+export type CleaningRequest = {
+  id: string;
+  request_number: string;
+  location_type: CleaningLocationType;
+  location_label: string;
+  department_name: string;
+  request_type: CleaningRequestType;
+  priority: CleaningPriority;
+  status: CleaningStatus;
+  requested_at: string;
+  due_at: string;
+  scheduled_for: string;
+  assigned_staff_id: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  verified_at: string | null;
+  verified_by_name: string | null;
+  disinfection_used: string | null;
+  notes: string | null;
+};
+
+export type CleaningRequestListRow = CleaningRequest & {
+  assigned_staff_name: string | null;
+};
+
+export type DisinfectionRecord = {
+  id: string;
+  request_id: string;
+  method: string;
+  chemical: string;
+  contact_time_minutes: number;
+  performed_by_name: string;
+  performed_at: string;
+  notes: string | null;
+};
+
+export type CleaningRequestDetail = {
+  request: CleaningRequest;
+  staff: HousekeepingStaff | null;
+  disinfection: DisinfectionRecord | null;
+};
+
+export type HousekeepingStats = {
+  openRequests: number;
+  inProgress: number;
+  completedToday: number;
+  overdue: number;
+  roomsWaiting: number;
+  staffOnDuty: number;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;

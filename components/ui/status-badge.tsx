@@ -24,6 +24,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   valid: { variant: "success", label: "Valid" },
   connected: { variant: "success", label: "Connected" },
   eligible: { variant: "success", label: "Eligible" },
+  on_duty: { variant: "success", label: "On Duty" },
   compatible: { variant: "success", label: "Compatible" },
   negative: { variant: "success", label: "Negative" },
   passed: { variant: "success", label: "Passed" },
@@ -64,6 +65,8 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   unverified: { variant: "pending", label: "Unverified" },
   partially_approved: { variant: "pending", label: "Partially Approved" },
   deferred: { variant: "pending", label: "Deferred" },
+  on_break: { variant: "pending", label: "On Break" },
+  terminal: { variant: "pending", label: "Terminal" },
   mild: { variant: "pending", label: "Mild" },
 
   in_progress: { variant: "processing", label: "In Progress" },
@@ -87,6 +90,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   advanced_life_support: { variant: "info", label: "Advanced Life Support" },
   patient_transport: { variant: "info", label: "Patient Transport" },
   mobile_icu: { variant: "info", label: "Mobile ICU" },
+  discharge: { variant: "info", label: "Discharge" },
   breakfast: { variant: "info", label: "Breakfast" },
   lunch: { variant: "info", label: "Lunch" },
   dinner: { variant: "info", label: "Dinner" },
@@ -119,6 +123,8 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   absent: { variant: "critical", label: "Absent" },
   denied: { variant: "critical", label: "Denied" },
   incompatible: { variant: "critical", label: "Incompatible" },
+  spill: { variant: "critical", label: "Spill" },
+  isolation: { variant: "critical", label: "Isolation" },
   positive: { variant: "critical", label: "Positive" },
   severe: { variant: "critical", label: "Severe" },
 
@@ -139,6 +145,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   routine: { variant: "inactive", label: "Routine" },
   out_of_service: { variant: "inactive", label: "Out of Service" },
   discontinued: { variant: "inactive", label: "Discontinued" },
+  off_duty: { variant: "inactive", label: "Off Duty" },
   elective: { variant: "inactive", label: "Elective" },
 };
 
