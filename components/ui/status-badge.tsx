@@ -28,6 +28,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   finalized: { variant: "success", label: "Finalized" },
   confirmed: { variant: "success", label: "Confirmed" },
   non_urgent: { variant: "success", label: "Non-urgent" },
+  billed: { variant: "success", label: "Billed" },
 
   pending: { variant: "pending", label: "Pending" },
   waiting: { variant: "pending", label: "Waiting" },
@@ -39,6 +40,9 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   partially_dispensed: { variant: "pending", label: "Partially Dispensed" },
   emergent: { variant: "pending", label: "Emergent" },
   observation: { variant: "pending", label: "Observation" },
+  requested: { variant: "pending", label: "Requested" },
+  pre_op: { variant: "pending", label: "Pre-op" },
+  cleaning: { variant: "pending", label: "Cleaning" },
 
   in_progress: { variant: "processing", label: "In Progress" },
   processing: { variant: "processing", label: "Processing" },
@@ -49,6 +53,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   urgent: { variant: "processing", label: "Urgent" },
   triage: { variant: "processing", label: "In Triage" },
   in_treatment: { variant: "processing", label: "In Treatment" },
+  in_use: { variant: "processing", label: "In Use" },
 
   cancelled: { variant: "critical", label: "Cancelled" },
   no_show: { variant: "critical", label: "No Show" },
@@ -58,6 +63,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   refunded: { variant: "critical", label: "Refunded" },
   out_of_stock: { variant: "critical", label: "Out of Stock" },
   expired: { variant: "critical", label: "Expired" },
+  emergency: { variant: "critical", label: "Emergency" },
 
   inactive: { variant: "inactive", label: "Inactive" },
   archived: { variant: "inactive", label: "Archived" },
@@ -65,6 +71,9 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   maintenance: { variant: "inactive", label: "Maintenance" },
   low_stock: { variant: "inactive", label: "Low Stock" },
   less_urgent: { variant: "inactive", label: "Less urgent" },
+  recovery: { variant: "info", label: "Recovery" },
+  not_billed: { variant: "inactive", label: "Not billed" },
+  elective: { variant: "inactive", label: "Elective" },
 };
 
 function StatusIcon({ variant }: { variant: BadgeVariant }) {

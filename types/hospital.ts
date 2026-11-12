@@ -759,6 +759,154 @@ export type EmergencyStats = {
   averageWaitMinutes: number;
 };
 
+export type SurgeryStatus =
+  | "requested"
+  | "scheduled"
+  | "pre_op"
+  | "in_progress"
+  | "recovery"
+  | "completed"
+  | "cancelled";
+
+export type SurgeryPriority = "elective" | "urgent" | "emergency";
+
+export type OperatingRoomStatus =
+  | "available"
+  | "in_use"
+  | "cleaning"
+  | "maintenance";
+
+export type AnesthesiaType =
+  | "general"
+  | "regional"
+  | "local"
+  | "sedation"
+  | null;
+
+export type OperatingRoom = {
+  id: string;
+  room_name: string;
+  status: OperatingRoomStatus;
+  department_id: string;
+  utilization_today: number;
+  notes: string | null;
+};
+
+export type SurgeryCase = {
+  id: string;
+  case_number: string;
+  patient_id: string;
+  procedure_code: string;
+  procedure_name: string;
+  room_id: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  actual_start: string | null;
+  actual_end: string | null;
+  status: SurgeryStatus;
+  priority: SurgeryPriority;
+  surgeon_id: string;
+  anesthesiologist_id: string | null;
+  scrub_nurse_id: string | null;
+  circulating_nurse_id: string | null;
+  anesthesia_type: AnesthesiaType;
+  pre_op_completed: boolean;
+  consent_signed: boolean;
+  safety_checklist_completed: boolean;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SurgeryListRow = {
+  id: string;
+  case_number: string;
+  patient_id: string;
+  patient_name: string;
+  patient_mrn: string;
+  procedure_name: string;
+  procedure_code: string;
+  room_id: string;
+  room_name: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  status: SurgeryStatus;
+  priority: SurgeryPriority;
+  surgeon_id: string;
+  surgeon_name: string;
+  anesthesiologist_name: string | null;
+  team_summary: string;
+  pre_op_ready: boolean;
+  recovery_status: string | null;
+};
+
+export type SurgeryChecklistItem = {
+  key: string;
+  label: string;
+  completed: boolean;
+  note: string | null;
+};
+
+export type SurgerySupplyUsage = {
+  name: string;
+  quantity: string;
+  category: "instrument" | "supply" | "medication";
+};
+
+export type SurgeryNote = {
+  id: string;
+  note_type: string;
+  content: string;
+  author_name: string;
+  recorded_at: string;
+};
+
+export type SurgeryMonitoringEntry = {
+  recorded_at: string;
+  note: string;
+  recorded_by_name: string;
+};
+
+export type SurgeryBillingSummary = {
+  or_fee: number;
+  professional_fee: number;
+  supplies_total: number;
+  estimated_total: number;
+  invoice_status: "not_billed" | "draft" | "billed";
+};
+
+export type SurgeryDetail = {
+  surgery: SurgeryCase;
+  patient: Patient;
+  room: OperatingRoom;
+  checklist: SurgeryChecklistItem[];
+  notes: SurgeryNote[];
+  supplies: SurgerySupplyUsage[];
+  anesthesia_record: string | null;
+  intra_op_notes: string | null;
+  post_op_monitoring: SurgeryMonitoringEntry[];
+  billing: SurgeryBillingSummary;
+};
+
+export type OperatingRoomBoardRow = OperatingRoom & {
+  current_case: SurgeryListRow | null;
+  next_case: SurgeryListRow | null;
+};
+
+export type SurgeryStats = {
+  total: number;
+  requested: number;
+  scheduled: number;
+  preOp: number;
+  inProgress: number;
+  recovery: number;
+  completed: number;
+  cancelled: number;
+  today: number;
+  orUtilization: number;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;
