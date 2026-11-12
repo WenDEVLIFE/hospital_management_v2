@@ -2,7 +2,7 @@
 
 **Project:** SPMC Hospital Management System (`hospital_management_v2`)
 **Stack:** Next.js 16.4.3 · React 19 · Tailwind CSS 4 · TypeScript 5 · Supabase (planned)
-**Last updated:** 2026-11-11
+**Last updated:** 2026-11-12
 
 **Specs (authority order):** `docs/PROJECT.MD` (functionality) → `docs/THEME.MD` (visual) → `docs/SUPABASE.MD` (backend)
 
@@ -18,7 +18,7 @@
 | Phase | Scope | Done | Status |
 |---|---|---|---|
 | 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
-| 1 | Database schema | 19 / 29 | In progress (live apply pending) |
+| 1 | Database schema | 24 / 29 | In progress (live apply pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 34 / 47 | Complete (verification in Phase 7) |
 | 4 | Row Level Security | 0 / 25 | Not started |
@@ -27,7 +27,7 @@
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **93 / 282** | |
+| **Total** | | **98 / 282** | |
 
 ---
 
@@ -75,9 +75,9 @@
 - [x] Seed 10 system roles
 - [x] Seed 73 permissions across 12 modules
 - [ ] Seed `role_permissions` — **blocked by: Phase 0 approval**
-- [ ] Seed laboratory test catalog (`laboratory_tests`)
-- [ ] Seed medication catalog (`medications`)
-- [ ] Seed inventory categories
+- [x] Seed laboratory test catalog (`laboratory_tests`) — 2026-11-12, 8 tests from PROJECT.MD §16 in migration 022
+- [x] Seed medication catalog (`medications`) — 2026-11-12, 12 starter medications in migration 022 (pharmacy review required before production)
+- [x] Seed inventory categories — 2026-11-12, 5 categories in migration 022
 
 ### 1.3 Schema hardening
 
@@ -88,14 +88,14 @@
 
 ### 1.4 Migration workflow
 
-> Transitional migration exists: `supabase/migrations/20261112000000_schema_hardening.sql` upgrades an already-created database in place. Fold it into the timestamped migration split below when `npx supabase init` is done.
+> Transitional upgrade exists: `supabase/upgrade/20261112000000_schema_hardening.sql` upgrades an already-created database in place. It is outside `supabase/migrations/` so a clean `db reset` uses only the 22 ordered migrations.
 
-- [ ] `npx supabase init` → create `supabase/config.toml`
-- [ ] Split `schema.sql` into the 22 timestamped migrations listed in `SUPABASE.MD` §31.3
-- [ ] Apply to a live project and run `npx supabase db lint`
-- [ ] Run `npx supabase db reset` on a clean local database
-- [ ] Generate types: `npx supabase gen types typescript --schema public > types/supabase.ts`
-- [ ] Replace hand-written `types/hospital.ts` usage with the generated `Database` types (keep view models on top)
+- [x] `npx supabase init` → create `supabase/config.toml` — 2026-11-12, `supabase/config.toml` + `supabase/.gitignore`
+- [x] Split `schema.sql` into the 22 timestamped migrations listed in `SUPABASE.MD` §31.3 — 2026-11-12, `supabase/migrations/20261110000100` … `20261110002200`; 47 tables and 16 enums verified in dependency order
+- [ ] Apply to a live project and run `npx supabase db lint` — **blocked by: no linked Supabase project or credentials**
+- [ ] Run `npx supabase db reset` on a clean local database — **blocked by: Docker/PostgreSQL not installed**
+- [ ] Generate types: `npx supabase gen types typescript --schema public > types/supabase.ts` — **blocked by: requires a running database**
+- [ ] Replace hand-written `types/hospital.ts` usage with the generated `Database` types (keep view models on top) — **blocked by: generated types above**
 
 ---
 

@@ -13,7 +13,7 @@
 --
 -- HOW TO RUN
 --   Supabase Dashboard -> SQL Editor -> paste this file -> Run
---   or: npx supabase db execute --file supabase/migrations/20261112000000_schema_hardening.sql
+--   or: npx supabase db execute --file supabase/upgrade/20261112000000_schema_hardening.sql
 --
 -- DO NOT run this on an empty database. For a fresh database, run
 -- supabase/schema.sql instead.

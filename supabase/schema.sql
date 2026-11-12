@@ -5,12 +5,17 @@
 -- Target: fresh Supabase PostgreSQL project (PG 15+)
 --
 -- HOW TO RUN
---   Supabase Dashboard -> SQL Editor -> paste this file -> Run
+--   Preferred: npx supabase db reset -> runs the 22 ordered migrations
+--   One-shot reference: Supabase Dashboard -> SQL Editor -> paste this file
 --   or: npx supabase db execute --file supabase/schema.sql
+--
+-- MIGRATIONS
+--   supabase/migrations/20261110000100 ... 20261110002200 are the canonical
+--   reset path. This file is a consolidated reference; keep both in sync.
 --
 -- EXISTING DATABASE
 --   Do not re-run this file. It fails on the first existing table by design.
---   Apply supabase/migrations/20261112000000_schema_hardening.sql instead.
+--   Apply supabase/upgrade/20261112000000_schema_hardening.sql instead.
 --
 -- SCOPE
 --   [x] Application tables (domains: identity, reference, patient, clinical,
@@ -1743,6 +1748,61 @@ from unnest(array[
   'reports.laboratory.view'
 ]) as slug
 on conflict (slug) do nothing;
+
+-- Starter laboratory catalog from PROJECT.MD section 16.
+insert into public.laboratory_tests (
+  test_code,
+  test_name,
+  category,
+  description,
+  specimen_type
+)
+values
+  ('CBC',   'Complete Blood Count', 'Hematology',          'Complete blood count with differential.',                     'Whole blood'),
+  ('UA',    'Urinalysis',           'Clinical Microscopy',  'Macroscopic and microscopic urine examination.',              'Urine'),
+  ('FEC',   'Fecalysis',            'Clinical Microscopy',  'Fecal examination for parasites and occult blood.',           'Stool'),
+  ('CHEM',  'Blood Chemistry',      'Clinical Chemistry',   'Serum chemistry panel.',                                      'Serum'),
+  ('LIPID', 'Lipid Profile',        'Clinical Chemistry',   'Total cholesterol, HDL, LDL, and triglycerides.',             'Serum'),
+  ('FBS',   'Blood Glucose',        'Clinical Chemistry',   'Fasting or random blood glucose.',                            'Blood'),
+  ('PT',    'Pregnancy Test',       'Clinical Microscopy',  'Urine hCG pregnancy test.',                                   'Urine'),
+  ('HBA1C', 'Hemoglobin A1c',       'Clinical Chemistry',   'Glycated hemoglobin.',                                        'Whole blood')
+on conflict (test_code) do nothing;
+
+-- Starter medication catalog. Pharmacy must review and extend this list before
+-- production use; it mirrors the reference data used by the UI preview.
+insert into public.medications (
+  medication_code,
+  generic_name,
+  brand_name,
+  strength,
+  dosage_form,
+  unit
+)
+values
+  ('MED-0001', 'Paracetamol',      'Biogesic',   '500 mg',     'Tablet',  'tablet'),
+  ('MED-0002', 'Amoxicillin',      'Amoxil',     '500 mg',     'Capsule', 'capsule'),
+  ('MED-0003', 'Losartan',         'Cozaar',     '50 mg',      'Tablet',  'tablet'),
+  ('MED-0004', 'Metformin',        'Glucophage', '500 mg',     'Tablet',  'tablet'),
+  ('MED-0005', 'Salbutamol',       'Ventolin',   '2.5 mg',     'Nebule',  'nebule'),
+  ('MED-0006', 'Omeprazole',       'Losec',      '20 mg',      'Capsule', 'capsule'),
+  ('MED-0007', 'Cetirizine',       'Zyrtec',     '10 mg',      'Tablet',  'tablet'),
+  ('MED-0008', 'Amlodipine',       'Norvasc',    '5 mg',       'Tablet',  'tablet'),
+  ('MED-0009', 'Ceftriaxone',      'Rocephin',   '1 g',        'Vial',    'vial'),
+  ('MED-0010', 'Insulin (Human)',  'Humulin',    '100 IU/mL',  'Vial',    'vial'),
+  ('MED-0011', 'Ibuprofen',        'Advil',      '200 mg',     'Tablet',  'tablet'),
+  ('MED-0012', 'Tranexamic Acid',  'Cyklokapron','500 mg',     'Tablet',  'tablet')
+on conflict (medication_code) do nothing;
+
+-- Starter inventory categories. Departments may add more through the
+-- inventory administration workflow.
+insert into public.inventory_categories (name, description)
+values
+  ('Medical Supplies',    'General medical consumables.'),
+  ('Surgical Supplies',   'Operating and procedure supplies.'),
+  ('Laboratory Supplies', 'Laboratory collection and testing supplies.'),
+  ('PPE',                 'Personal protective equipment.'),
+  ('Housekeeping',        'Cleaning and housekeeping supplies.')
+on conflict (name) do nothing;
 
 -- Role -> permission mapping is intentionally NOT seeded.
 -- SUPABASE.MD section 22.2 states the matrix is an initial proposal that must

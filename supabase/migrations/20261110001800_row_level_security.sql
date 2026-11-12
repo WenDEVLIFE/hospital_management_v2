@@ -1,0 +1,12 @@
+-- ============================================================================
+-- SPMC HMS — row level security
+-- Migration 018 of 22. Mirrors supabase/schema.sql; keep both in sync.
+-- ============================================================================
+
+-- Reserved for Phase 4 (Row Level Security).
+--
+-- This migration is intentionally empty until the role -> permission matrix is
+-- approved and every public table has an RLS policy. See task.md Phase 4.
+--
+-- Do not deploy a production frontend while this file is empty: the public
+-- tables are reachable with the publishable key.
