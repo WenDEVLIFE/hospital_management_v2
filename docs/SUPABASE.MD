@@ -2266,6 +2266,12 @@ Clinical access must also consider the hospital's authorized patient-care relati
 9. Do not rely on frontend route guards.
 10. Test policies using actual authenticated user tokens.
 
+### Owner Bypass and FORCE RLS
+
+Supabase clients connect as `anon` or `authenticated`; they never connect as the table owner. Enabling RLS is therefore the client security boundary.
+
+`FORCE ROW LEVEL SECURITY` is intentionally not enabled while the table owner is the trusted migration/superuser role. It only constrains owner sessions, and it would break `SECURITY DEFINER` helpers unless those functions are owned by a role with `BYPASSRLS`. Revisit this decision only if the table owner becomes a non-superuser application role.
+
 ## 23.2 Permission Helper Functions
 
 ### Check User Role

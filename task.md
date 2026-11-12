@@ -21,13 +21,13 @@
 | 1 | Database schema | 24 / 29 | In progress (live apply pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 35 / 47 | In progress (ER added; 10 modules remain) |
-| 4 | Row Level Security | 21 / 25 | Implemented, runtime verification pending |
+| 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
 | 6 | Frontend ↔ backend integration | 0 / 54 | Not started |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **120 / 282** | |
+| **Total** | | **121 / 282** | |
 
 ---
 
@@ -232,8 +232,8 @@
 ### 4.1 Enablement
 
 - [x] `alter table ... enable row level security` on all 47 application tables (deny direct access to `reference_sequences`; the generator is `security definer`) — 2026-11-12, migration 018 enables all 47
-- [ ] `alter table ... force row level security` where the table owner must also be constrained — intentionally not applied: `SECURITY DEFINER` helpers and migrations need owner bypass
-- [ ] Verify no table has RLS disabled: query `pg_tables` for `rowsecurity = false` — **blocked by: no running database**
+- [x] `alter table ... force row level security` where the table owner must also be constrained — 2026-11-12, reviewed and intentionally not applied: clients connect as `authenticated`/`anon`, the owner is the trusted migration/superuser role, and `SECURITY DEFINER` helpers rely on owner bypass (documented in `SUPABASE.MD` §23.1)
+- [ ] Verify no table has RLS disabled: query `pg_tables` for `rowsecurity = false` — verification script added at `supabase/tests/rls_enablement.sql`; **execution blocked by: no running database**
 
 ### 4.2 Identity & RBAC
 
