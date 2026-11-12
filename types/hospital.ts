@@ -907,6 +907,171 @@ export type SurgeryStats = {
   orUtilization: number;
 };
 
+export type EmployeeStatus =
+  | "active"
+  | "on_leave"
+  | "inactive"
+  | "separated";
+
+export type EmploymentType =
+  | "regular"
+  | "probationary"
+  | "contractual"
+  | "part_time"
+  | "consultant";
+
+export type CredentialStatus = "valid" | "expiring" | "expired";
+
+export type AttendanceStatus =
+  | "present"
+  | "late"
+  | "absent"
+  | "leave"
+  | "holiday";
+
+export type ShiftType = "morning" | "afternoon" | "night" | "off";
+
+export type LeaveType =
+  | "vacation"
+  | "sick"
+  | "maternity"
+  | "paternity"
+  | "emergency"
+  | "study";
+
+export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
+
+export type PayrollStatus = "draft" | "processing" | "approved" | "paid";
+
+export type Employee = {
+  id: string;
+  employee_number: string;
+  user_id: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  full_name: string;
+  email: string;
+  contact_number: string | null;
+  department_id: string | null;
+  department_name: string | null;
+  position: string;
+  employment_type: EmploymentType;
+  status: EmployeeStatus;
+  hire_date: string;
+  license_number: string | null;
+  license_expiry: string | null;
+  license_status: "valid" | "expiring" | "expired" | "none";
+  is_active: boolean;
+  created_at: string;
+};
+
+export type EmployeeListRow = Employee & {
+  current_shift: string | null;
+  attendance_rate: number;
+  leave_balance: number;
+};
+
+export type Credential = {
+  id: string;
+  employee_id: string;
+  credential_type: string;
+  credential_number: string;
+  issued_at: string;
+  expires_at: string | null;
+  status: CredentialStatus;
+};
+
+export type AttendanceEntry = {
+  id: string;
+  employee_id: string;
+  date: string;
+  time_in: string | null;
+  time_out: string | null;
+  status: AttendanceStatus;
+  overtime_minutes: number;
+  note: string | null;
+};
+
+export type AttendanceListRow = AttendanceEntry & {
+  employee_name: string;
+  employee_number: string;
+  department_name: string | null;
+  position: string;
+  shift_label: string;
+};
+
+export type Shift = {
+  id: string;
+  employee_id: string;
+  date: string;
+  shift_type: ShiftType;
+  start_time: string;
+  end_time: string;
+  department_name: string | null;
+  role: string;
+};
+
+export type LeaveRequest = {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  leave_type: LeaveType;
+  start_date: string;
+  end_date: string;
+  days: number;
+  status: LeaveStatus;
+  reason: string;
+  requested_at: string;
+  reviewed_by_name: string | null;
+};
+
+export type PayrollPeriod = {
+  id: string;
+  period_start: string;
+  period_end: string;
+  pay_date: string;
+  status: PayrollStatus;
+  employee_count: number;
+  gross_pay: number;
+  total_deductions: number;
+  net_pay: number;
+};
+
+export type PayrollEntry = {
+  id: string;
+  payroll_period_id: string;
+  employee_id: string;
+  employee_name: string;
+  position: string;
+  basic_pay: number;
+  allowances: number;
+  overtime_pay: number;
+  gross_pay: number;
+  deductions: number;
+  net_pay: number;
+  status: PayrollStatus;
+};
+
+export type EmployeeDetail = {
+  employee: Employee;
+  credentials: Credential[];
+  attendance: AttendanceEntry[];
+  shifts: Shift[];
+  leave_requests: LeaveRequest[];
+  latest_payslip: PayrollEntry | null;
+};
+
+export type HrStats = {
+  totalEmployees: number;
+  active: number;
+  onLeave: number;
+  expiringLicenses: number;
+  pendingLeave: number;
+  payrollNet: number;
+  payrollStatus: PayrollStatus | null;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;

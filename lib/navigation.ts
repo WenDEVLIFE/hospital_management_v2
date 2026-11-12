@@ -5,6 +5,7 @@ import {
   BoxIcon,
   Buildings2Icon,
   CalendarMarkIcon,
+  CaseIcon,
   Chart2Icon,
   DocumentMedicineIcon,
   DocumentTextIcon,
@@ -108,6 +109,7 @@ export const navigation: NavSection[] = [
   {
     title: "MANAGEMENT",
     items: [
+      { label: "HR & Payroll", href: "/hr", icon: CaseIcon },
       { label: "Reports & Analytics", href: "/reports", icon: Chart2Icon },
       {
         label: "User Management",

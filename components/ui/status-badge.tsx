@@ -19,6 +19,9 @@ type StatusConfig = {
 
 const STATUS_MAP: Record<string, StatusConfig> = {
   active: { variant: "success", label: "Active" },
+  approved: { variant: "success", label: "Approved" },
+  present: { variant: "success", label: "Present" },
+  valid: { variant: "success", label: "Valid" },
   admitted: { variant: "success", label: "Admitted" },
   completed: { variant: "success", label: "Completed" },
   verified: { variant: "success", label: "Verified" },
@@ -43,6 +46,11 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   requested: { variant: "pending", label: "Requested" },
   pre_op: { variant: "pending", label: "Pre-op" },
   cleaning: { variant: "pending", label: "Cleaning" },
+  on_leave: { variant: "pending", label: "On leave" },
+  expiring: { variant: "pending", label: "Expiring" },
+  late: { variant: "pending", label: "Late" },
+  probationary: { variant: "pending", label: "Probationary" },
+  sick: { variant: "pending", label: "Sick" },
 
   in_progress: { variant: "processing", label: "In Progress" },
   processing: { variant: "processing", label: "Processing" },
@@ -54,6 +62,13 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   triage: { variant: "processing", label: "In Triage" },
   in_treatment: { variant: "processing", label: "In Treatment" },
   in_use: { variant: "processing", label: "In Use" },
+  leave: { variant: "processing", label: "On Leave" },
+  study: { variant: "processing", label: "Study" },
+  vacation: { variant: "info", label: "Vacation" },
+  maternity: { variant: "info", label: "Maternity" },
+  paternity: { variant: "info", label: "Paternity" },
+  regular: { variant: "info", label: "Regular" },
+  consultant: { variant: "info", label: "Consultant" },
 
   cancelled: { variant: "critical", label: "Cancelled" },
   no_show: { variant: "critical", label: "No Show" },
@@ -64,6 +79,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   out_of_stock: { variant: "critical", label: "Out of Stock" },
   expired: { variant: "critical", label: "Expired" },
   emergency: { variant: "critical", label: "Emergency" },
+  absent: { variant: "critical", label: "Absent" },
 
   inactive: { variant: "inactive", label: "Inactive" },
   archived: { variant: "inactive", label: "Archived" },
@@ -73,6 +89,10 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   less_urgent: { variant: "inactive", label: "Less urgent" },
   recovery: { variant: "info", label: "Recovery" },
   not_billed: { variant: "inactive", label: "Not billed" },
+  separated: { variant: "inactive", label: "Separated" },
+  contractual: { variant: "inactive", label: "Contractual" },
+  part_time: { variant: "inactive", label: "Part-time" },
+  holiday: { variant: "inactive", label: "Holiday" },
   elective: { variant: "inactive", label: "Elective" },
 };
 

@@ -20,14 +20,14 @@
 | 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
 | 1 | Database schema | 24 / 29 | In progress (live apply pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
-| 3 | UI modules | 37 / 48 | In progress (ER, account settings, surgery added; 9 modules remain) |
+| 3 | UI modules | 38 / 48 | In progress (ER, account settings, surgery, HR added; 8 modules remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
 | 6 | Frontend ↔ backend integration | 0 / 55 | Not started |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **123 / 284** | |
+| **Total** | | **124 / 284** | |
 
 ---
 
@@ -211,7 +211,7 @@
 
 - [x] Emergency Room Management (`PROJECT.MD` §14) — 2026-11-12, `/emergency` queue + triage board, visit detail, vitals/orders/notes/monitoring, honest disposition actions; `npm run build` + runtime 200
 - [x] Surgery & Operating Room (`PROJECT.MD` §20) — 2026-11-12, `/surgery` schedule + OR board, pre-op checklist, anesthesia/intra-op record, instruments/supplies, recovery monitoring, billing context; build + runtime 200
-- [ ] Human Resources & Payroll (`PROJECT.MD` §21)
+- [x] Human Resources & Payroll (`PROJECT.MD` §21) — 2026-11-12, `/hr` employee directory, credentials/license watch, attendance/shift view, leave requests, payroll periods + payslips; build + runtime 200
 - [ ] Insurance & PhilHealth (`PROJECT.MD` §22)
 - [ ] Blood Bank (`PROJECT.MD` §23)
 - [ ] Ambulance (`PROJECT.MD` §24)
