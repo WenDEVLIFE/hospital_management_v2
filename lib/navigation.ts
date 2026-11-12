@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import {
+  ArchiveIcon,
   BedIcon,
   BillListIcon,
   BoxIcon,
@@ -135,6 +136,11 @@ export const navigation: NavSection[] = [
         label: "Equipment & Maintenance",
         href: "/equipment",
         icon: MedicalKitIcon,
+      },
+      {
+        label: "Mortuary",
+        href: "/mortuary",
+        icon: ArchiveIcon,
       },
     ],
   },

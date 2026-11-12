@@ -20,4 +20,5 @@ export * from "./ambulance";
 export * from "./dietary";
 export * from "./housekeeping";
 export * from "./equipment";
+export * from "./mortuary";
 export * from "./system";

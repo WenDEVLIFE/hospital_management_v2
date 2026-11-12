@@ -1929,6 +1929,115 @@ export type EquipmentStats = {
   overdueMaintenance: number;
 };
 
+export type MortuaryStatus =
+  | "admitted"
+  | "identified"
+  | "release_pending"
+  | "released"
+  | "unclaimed";
+
+export type BodyIdentificationStatus = "pending" | "verified" | "discrepancy";
+
+export type StorageUnitStatus =
+  | "available"
+  | "occupied"
+  | "reserved"
+  | "maintenance";
+
+export type MortuaryReleaseStatus =
+  | "pending"
+  | "authorized"
+  | "completed"
+  | "cancelled";
+
+export type MortuaryStorageUnit = {
+  id: string;
+  unit_number: string;
+  location: string;
+  status: StorageUnitStatus;
+  current_record_id: string | null;
+};
+
+export type MortuaryRecord = {
+  id: string;
+  case_number: string;
+  patient_id: string;
+  declared_at: string;
+  place_of_death: string;
+  body_tag_number: string;
+  identification_status: BodyIdentificationStatus;
+  storage_unit_id: string | null;
+  status: MortuaryStatus;
+  next_of_kin_name: string | null;
+  next_of_kin_relationship: string | null;
+  next_of_kin_contact: string | null;
+  next_of_kin_verified: boolean;
+  admitted_at: string;
+  released_at: string | null;
+  released_to_name: string | null;
+  release_authorized_by_name: string | null;
+  release_document_reference: string | null;
+  notes: string | null;
+};
+
+export type MortuaryRelease = {
+  id: string;
+  record_id: string;
+  status: MortuaryReleaseStatus;
+  requested_at: string;
+  authorized_by_name: string | null;
+  authorized_at: string | null;
+  released_to_name: string | null;
+  relationship: string | null;
+  document_reference: string | null;
+  released_at: string | null;
+  notes: string | null;
+};
+
+export type MortuaryAccessLog = {
+  id: string;
+  record_id: string;
+  action: string;
+  actor_name: string;
+  created_at: string;
+  notes: string | null;
+};
+
+export type MortuaryRecordListRow = MortuaryRecord & {
+  patient_name: string;
+  patient_mrn: string;
+  storage_unit_label: string | null;
+};
+
+export type MortuaryReleaseListRow = MortuaryRelease & {
+  case_number: string;
+  patient_name: string;
+  patient_mrn: string;
+};
+
+export type MortuaryStorageUnitListRow = MortuaryStorageUnit & {
+  current_case_number: string | null;
+  current_patient_name: string | null;
+};
+
+export type MortuaryRecordDetail = {
+  record: MortuaryRecord;
+  patient: Patient;
+  storageUnit: MortuaryStorageUnit | null;
+  release: MortuaryRelease | null;
+  accessLog: MortuaryAccessLog[];
+};
+
+export type MortuaryStats = {
+  bodiesInCustody: number;
+  admittedToday: number;
+  releasedToday: number;
+  pendingRelease: number;
+  storageOccupied: number;
+  storageTotal: number;
+  unidentified: number;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;
