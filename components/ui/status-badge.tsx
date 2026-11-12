@@ -29,6 +29,8 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   passed: { variant: "success", label: "Passed" },
   none: { variant: "success", label: "No reaction" },
   released: { variant: "success", label: "Released" },
+  ready: { variant: "success", label: "Ready" },
+  delivered: { variant: "success", label: "Delivered" },
   admitted: { variant: "success", label: "Admitted" },
   completed: { variant: "success", label: "Completed" },
   verified: { variant: "success", label: "Verified" },
@@ -85,6 +87,10 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   advanced_life_support: { variant: "info", label: "Advanced Life Support" },
   patient_transport: { variant: "info", label: "Patient Transport" },
   mobile_icu: { variant: "info", label: "Mobile ICU" },
+  breakfast: { variant: "info", label: "Breakfast" },
+  lunch: { variant: "info", label: "Lunch" },
+  dinner: { variant: "info", label: "Dinner" },
+  snack: { variant: "info", label: "Snack" },
   prepared: { variant: "processing", label: "Prepared" },
   submitted: { variant: "processing", label: "Submitted" },
   in_review: { variant: "processing", label: "In Review" },
@@ -99,6 +105,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   en_route: { variant: "processing", label: "En Route" },
   on_scene: { variant: "processing", label: "On Scene" },
   transporting: { variant: "processing", label: "Transporting" },
+  preparing: { variant: "processing", label: "Preparing" },
 
   cancelled: { variant: "critical", label: "Cancelled" },
   no_show: { variant: "critical", label: "No Show" },
@@ -131,6 +138,7 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   discarded: { variant: "inactive", label: "Discarded" },
   routine: { variant: "inactive", label: "Routine" },
   out_of_service: { variant: "inactive", label: "Out of Service" },
+  discontinued: { variant: "inactive", label: "Discontinued" },
   elective: { variant: "inactive", label: "Elective" },
 };
 

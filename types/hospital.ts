@@ -1590,6 +1590,106 @@ export type AmbulanceStats = {
   averageResponseMinutes: number;
 };
 
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+export type MealStatus =
+  | "scheduled"
+  | "preparing"
+  | "ready"
+  | "delivered"
+  | "cancelled";
+
+export type DietaryOrderStatus = "active" | "discontinued" | "pending";
+
+export type DietCategory = {
+  id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+};
+
+export type TherapeuticDiet = {
+  id: string;
+  category_id: string;
+  name: string;
+  indication: string;
+  restrictions: string;
+  is_active: boolean;
+};
+
+export type DietaryOrder = {
+  id: string;
+  order_number: string;
+  patient_id: string;
+  category_id: string;
+  therapeutic_diet_id: string;
+  allergies: string[];
+  restrictions: string[];
+  assessment_notes: string | null;
+  ordered_by_name: string;
+  assessed_at: string;
+  status: DietaryOrderStatus;
+  meal_schedule: MealType[];
+};
+
+export type MealOrder = {
+  id: string;
+  meal_number: string;
+  dietary_order_id: string;
+  patient_id: string;
+  meal_type: MealType;
+  scheduled_for: string;
+  status: MealStatus;
+  allergens: string[];
+  notes: string | null;
+  prepared_by_name: string | null;
+  delivered_at: string | null;
+  delivered_by_name: string | null;
+  ward: string;
+  room: string;
+  bed: string;
+};
+
+export type DietaryOrderListRow = DietaryOrder & {
+  patient_name: string;
+  patient_mrn: string;
+  category_name: string;
+  diet_name: string;
+  meal_count: number;
+};
+
+export type MealOrderListRow = MealOrder & {
+  patient_name: string;
+  patient_mrn: string;
+  category_name: string;
+  diet_name: string;
+};
+
+export type DietaryOrderDetail = {
+  order: DietaryOrder;
+  patient: Patient;
+  category: DietCategory;
+  therapeuticDiet: TherapeuticDiet;
+  meals: MealOrderListRow[];
+};
+
+export type MealOrderDetail = {
+  meal: MealOrder;
+  patient: Patient;
+  order: DietaryOrder;
+  category: DietCategory;
+  therapeuticDiet: TherapeuticDiet;
+};
+
+export type DietaryStats = {
+  activeOrders: number;
+  mealsToday: number;
+  preparationPending: number;
+  deliveredToday: number;
+  allergyAlerts: number;
+  therapeuticDiets: number;
+};
+
 export type NursingAssignmentRow = {
   patient_id: string;
   patient_name: string;

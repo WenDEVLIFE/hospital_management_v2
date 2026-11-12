@@ -8,6 +8,7 @@ import {
   CalendarMarkIcon,
   CaseIcon,
   Chart2Icon,
+  ChefHatMinimalisticIcon,
   DocumentMedicineIcon,
   DocumentTextIcon,
   HeartPulseIcon,
@@ -114,6 +115,16 @@ export const navigation: NavSection[] = [
       { label: "Departments", href: "/departments", icon: Buildings2Icon },
       { label: "Rooms & Beds", href: "/rooms-beds", icon: BedIcon },
       { label: "Ambulance", href: "/ambulance", icon: BusIcon },
+    ],
+  },
+  {
+    title: "SUPPORT SERVICES",
+    items: [
+      {
+        label: "Dietary",
+        href: "/dietary",
+        icon: ChefHatMinimalisticIcon,
+      },
     ],
   },
   {

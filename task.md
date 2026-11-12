@@ -20,14 +20,14 @@
 | 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
 | 1 | Database schema | 24 / 29 | In progress (live apply pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
-| 3 | UI modules | 41 / 48 | In progress (ER, account settings, surgery, HR, insurance, blood bank, ambulance added; 5 modules remain) |
+| 3 | UI modules | 42 / 48 | In progress (ER, account settings, surgery, HR, insurance, blood bank, ambulance, dietary added; 4 modules remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
 | 6 | Frontend ↔ backend integration | 0 / 55 | Not started |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **127 / 284** | |
+| **Total** | | **128 / 284** | |
 
 ---
 
@@ -215,7 +215,7 @@
 - [x] Insurance & PhilHealth (`PROJECT.MD` §22) — 2026-11-12, `/insurance` policies, coverage verification, authorizations, claims + status history/payment monitoring, provider/benefit catalog, manual-integration notice; build + runtime 200
 - [x] Blood Bank (`PROJECT.MD` §23) — 2026-11-12, `/blood-bank` inventory, requests/crossmatch, donors, screening and transfusion safety, qualified-personnel notice; build + runtime 200
 - [x] Ambulance (`PROJECT.MD` §24) — 2026-11-12, `/ambulance` dispatch board, fleet/availability, trip history, maintenance and fuel records, honest no-write dispatch; build + runtime 200
-- [ ] Dietary (`PROJECT.MD` §25)
+- [x] Dietary (`PROJECT.MD` §25) — 2026-11-12, `/dietary` meal board, diet orders/assessments, allergy and restriction alerts, therapeutic diet catalog, delivery confirmation; build + runtime 200
 - [ ] Housekeeping (`PROJECT.MD` §26)
 - [ ] Equipment & Maintenance (`PROJECT.MD` §27)
 - [ ] Mortuary (`PROJECT.MD` §28)
