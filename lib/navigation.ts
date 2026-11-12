@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import {
   ArchiveIcon,
   BedIcon,
+  BellIcon,
   BillListIcon,
   BoxIcon,
   BroomIcon,
@@ -141,6 +142,11 @@ export const navigation: NavSection[] = [
         label: "Mortuary",
         href: "/mortuary",
         icon: ArchiveIcon,
+      },
+      {
+        label: "Notifications",
+        href: "/notifications",
+        icon: BellIcon,
       },
     ],
   },

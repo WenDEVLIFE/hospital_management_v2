@@ -20,14 +20,14 @@
 | 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
 | 1 | Database schema | 24 / 29 | In progress (live apply pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
-| 3 | UI modules | 45 / 48 | In progress (all modules except Notifications; 1 module remains) |
+| 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
 | 6 | Frontend ↔ backend integration | 0 / 55 | Not started |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **131 / 284** | |
+| **Total** | | **132 / 284** | |
 
 ---
 
@@ -219,7 +219,7 @@
 - [x] Housekeeping (`PROJECT.MD` §26) — 2026-11-12, `/housekeeping` cleaning board, schedule, staff, disinfection and completion verification, supervisor notice; build + runtime 200
 - [x] Equipment & Maintenance (`PROJECT.MD` §27) — 2026-11-12, `/equipment` register, work orders, preventive maintenance schedule, calibration and history, biomedical verification notice; build + runtime 200
 - [x] Mortuary (`PROJECT.MD` §28) — 2026-11-12, `/mortuary` custody board, records, releases, storage units, access history, restricted-access notice; build + runtime 200
-- [ ] Notifications & Communication (`PROJECT.MD` §29)
+- [x] Notifications & Communication (`PROJECT.MD` §29) — 2026-11-12, `/notifications` inbox, delivery log, announcements, preferences, preview-only notice; build + runtime 200
 
 ---
 
