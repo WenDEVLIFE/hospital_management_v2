@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 17 / 55 | In progress (auth, patients, appointments wired; remaining data modules still preview) |
+| 6 | Frontend ↔ backend integration | 18 / 55 | In progress (auth, patients, appointments, admissions wired; remaining data modules still preview) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **149 / 284** | |
+| **Total** | | **150 / 284** | |
 
 ---
 
@@ -358,7 +358,7 @@
 
 - [x] `patients.ts` → `supabase.from("patients")` — 2026-11-13, list/get/summary through the RLS server client; joins for appointments, admissions, prescriptions, invoices, and laboratory results
 - [x] `appointments.ts` — 2026-11-13, list + stats through the RLS server client; patient/department/physician joins, date-range filter, count, and status totals
-- [ ] `admissions.ts`
+- [x] `admissions.ts` — 2026-11-13, admissions list, discharges, bed board, and stats through the RLS server client; patient/department/physician/bed joins
 - [ ] `medical-records.ts`
 - [ ] `nursing.ts`
 - [ ] `staff.ts`

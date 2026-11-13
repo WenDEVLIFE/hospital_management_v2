@@ -8,6 +8,8 @@ import { InfoCircleIcon } from "@solar-icons/react/linear";
 const MIGRATED_PREFIXES = [
   "/patients",
   "/appointments",
+  "/admissions",
+  "/discharges",
   "/settings/account",
 ];
 

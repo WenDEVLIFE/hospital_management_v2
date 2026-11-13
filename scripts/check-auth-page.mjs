@@ -75,6 +75,20 @@ if (path.startsWith("/appointments")) {
   checks.push("APT-2026-0001", "Total appointments", "Daily Schedule");
 }
 
+if (path === "/admissions") {
+  checks.push(
+    "ADM-2026-0001",
+    "Current admissions",
+    "Admission list",
+    "Bed board",
+    "Test Patient Two"
+  );
+}
+
+if (path === "/discharges") {
+  checks.push("ADM-2026-0003", "Discharge records");
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }
