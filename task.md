@@ -92,7 +92,7 @@
 
 - [x] `npx supabase init` → create `supabase/config.toml` — 2026-11-12, `supabase/config.toml` + `supabase/.gitignore`
 - [x] Split `schema.sql` into the 22 timestamped migrations listed in `SUPABASE.MD` §31.3 — 2026-11-12, `supabase/migrations/20261110000100` … `20261110002200`; 47 tables and 16 enums verified in dependency order
-- [ ] Apply to a live project and run `npx supabase db lint` — 2026-11-13: live schema verified (47/47 tables present, all RLS-protected); `db lint` still pending (no access token / linked CLI)
+- [ ] Apply to a live project and run `npx supabase db lint` — 2026-11-13: live schema verified (47/47 tables present, all RLS-protected); demo seed added at `supabase/seed.sql` (12 auth users + all 47 tables); `db lint` still pending (no access token / linked CLI)
 - [ ] Run `npx supabase db reset` on a clean local database — **blocked by: Docker/PostgreSQL not installed**
 - [ ] Generate types: `npx supabase gen types typescript --schema public > types/supabase.ts` — **blocked by: requires a running database**
 - [ ] Replace hand-written `types/hospital.ts` usage with the generated `Database` types (keep view models on top) — **blocked by: generated types above**

@@ -20,6 +20,36 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Database seed (demo)
+
+`supabase/seed.sql` creates synthetic demo data for every public table plus 12
+Supabase Auth users. Apply it after the schema migrations, either from the
+Supabase Dashboard SQL Editor or with `psql`:
+
+```bash
+psql "$DATABASE_URL" -f supabase/seed.sql
+```
+
+All demo accounts share the password `SpmcDemo!2026`:
+
+| Email | Role |
+|---|---|
+| `superadmin@spmc.test` | `super_admin` |
+| `admin@spmc.test` | `hospital_admin` |
+| `reception@spmc.test` | `receptionist` |
+| `physician@spmc.test` | `physician` |
+| `physician2@spmc.test` | `physician` |
+| `nurse@spmc.test` | `nurse` |
+| `nurse2@spmc.test` | `nurse` |
+| `lab@spmc.test` | `laboratory_staff` |
+| `radiology@spmc.test` | `radiology_staff` |
+| `pharmacy@spmc.test` | `pharmacist` |
+| `billing@spmc.test` | `billing_staff` |
+| `inventory@spmc.test` | `inventory_staff` |
+
+The seed is demo-only and must never be run against a production project.
+Sign-in through the app still requires the Supabase Auth wiring in Phase 6.2.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
