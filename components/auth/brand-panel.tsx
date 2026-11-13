@@ -1,4 +1,4 @@
-import { HospitalIcon } from "@solar-icons/react/linear";
+import Image from "next/image";
 
 const capabilityLines = [
   "Patient records",
@@ -11,8 +11,15 @@ export function BrandPanel() {
     <div className="bg-hospital-green px-5 py-4 text-white lg:flex lg:flex-col lg:justify-between lg:p-10">
       <div>
         <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-white/10">
-            <HospitalIcon className="size-6" aria-hidden="true" />
+          <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white">
+            <Image
+              src="/assets/spmc_logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className="size-10 object-contain"
+              priority
+            />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold leading-tight">

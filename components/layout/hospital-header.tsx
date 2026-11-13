@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   AltArrowDownIcon,
   BellIcon,
   HamburgerMenuIcon,
-  HospitalIcon,
   Logout2Icon,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
@@ -150,8 +150,15 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
         </button>
 
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white text-hospital-green">
-            <HospitalIcon className="size-5" />
+          <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white">
+            <Image
+              src="/assets/spmc_logo.png"
+              alt=""
+              width={36}
+              height={36}
+              className="size-9 object-contain"
+              priority
+            />
           </span>
 
           <span className="flex min-w-0 flex-col">

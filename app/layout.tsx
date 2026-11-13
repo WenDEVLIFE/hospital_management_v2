@@ -13,6 +13,22 @@ export const metadata: Metadata = {
   title: "SPMC Hospital Management System",
   description:
     "Hospital management system for Southern Philippines Medical Center (SPMC).",
+  icons: {
+    icon: [
+      {
+        url: "/assets/spmc_logo.png",
+        type: "image/png",
+        sizes: "512x512",
+      },
+    ],
+    apple: [
+      {
+        url: "/assets/spmc_logo.png",
+        type: "image/png",
+        sizes: "512x512",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
