@@ -11,7 +11,7 @@ import { MedicalRecordsView } from "@/components/medical-records/medical-records
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
 import {
-  getEncounter,
+  getEncounterDetails,
   getEncounterStats,
   listEncounters,
 } from "@/lib/data/medical-records";
@@ -27,17 +27,13 @@ export default async function MedicalRecordsPage() {
 
   const rows = listResult.data?.rows ?? [];
 
-  const detailResults = await Promise.all(
-    rows.map((row) => getEncounter(row.id))
-  );
+  const detailsResult =
+    rows.length > 0
+      ? await getEncounterDetails(rows.map((row) => row.id))
+      : { data: {}, error: null };
 
-  const detailsById: Record<string, EncounterDetail> = {};
-
-  for (const result of detailResults) {
-    if (result.data) {
-      detailsById[result.data.encounter.id] = result.data;
-    }
-  }
+  const detailsById: Record<string, EncounterDetail> =
+    detailsResult.data ?? {};
 
   const staffNamesByUserId: Record<string, string> = {};
 

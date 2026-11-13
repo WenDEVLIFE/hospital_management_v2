@@ -89,6 +89,10 @@ if (path === "/discharges") {
   checks.push("ADM-2026-0003", "Discharge records");
 }
 
+if (path === "/medical-records") {
+  checks.push("ENC-2026-0001", "Encounter register", "In Progress");
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }
