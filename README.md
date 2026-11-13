@@ -48,7 +48,11 @@ All demo accounts share the password `SpmcDemo!2026`:
 | `inventory@spmc.test` | `inventory_staff` |
 
 The seed is demo-only and must never be run against a production project.
-Sign-in through the app still requires the Supabase Auth wiring in Phase 6.2.
+
+The app signs in through Supabase Auth. Add `http://localhost:3000/auth/callback`
+and your deployed callback URL to the Supabase Auth redirect allowlist so
+password reset emails return to the app. Password reset delivery also requires
+SMTP to be configured in the Supabase project.
 
 ## Learn More
 

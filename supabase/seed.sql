@@ -351,6 +351,35 @@ values
   )
 on conflict do nothing;
 
+-- GoTrue scans these token columns into non-nullable Go strings. Direct SQL
+-- inserts leave them NULL, which makes sign-in fail with
+-- "Database error querying schema". Normalize them to empty strings.
+update auth.users
+set confirmation_token = coalesce(confirmation_token, ''),
+    recovery_token = coalesce(recovery_token, ''),
+    email_change_token_new = coalesce(email_change_token_new, ''),
+    email_change_token_current = coalesce(email_change_token_current, ''),
+    email_change = coalesce(email_change, ''),
+    phone_change = coalesce(phone_change, ''),
+    phone_change_token = coalesce(phone_change_token, ''),
+    reauthentication_token = coalesce(reauthentication_token, ''),
+    raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb),
+    raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
+where email in (
+  'superadmin@spmc.test',
+  'admin@spmc.test',
+  'reception@spmc.test',
+  'physician@spmc.test',
+  'physician2@spmc.test',
+  'nurse@spmc.test',
+  'nurse2@spmc.test',
+  'lab@spmc.test',
+  'radiology@spmc.test',
+  'pharmacy@spmc.test',
+  'billing@spmc.test',
+  'inventory@spmc.test'
+);
+
 insert into auth.identities (
   provider_id,
   user_id,

@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -47,18 +48,25 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      localStorage.setItem(
-        "spmc_password_reset_request",
-        JSON.stringify({
-          email: email.trim(),
-          requestedAt: new Date().toISOString(),
-        })
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+        }
       );
+
+      if (error) {
+        setFormError(
+          "We could not send the reset link. Try again later or contact hospital administration."
+        );
+        return;
+      }
+
       setSubmitted(true);
     } catch {
       setFormError(
-        "We could not record the reset request in this browser. Check that site storage is enabled and try again."
+        "We could not send the reset link. Check your connection and try again."
       );
     } finally {
       setLoading(false);
@@ -74,8 +82,8 @@ export default function ForgotPasswordPage() {
         </p>
 
         <Alert variant="info" className="mt-4">
-          The reset request was recorded locally. Email delivery is not
-          configured yet.
+          If the address belongs to an account, a reset link has been sent.
+          Check your inbox and spam folder.
         </Alert>
 
         <Link
@@ -97,7 +105,7 @@ export default function ForgotPasswordPage() {
       </p>
 
       {formError ? (
-        <Alert variant="danger" title="Unable to record request" className="mt-4">
+        <Alert variant="danger" title="Unable to send reset link" className="mt-4">
           {formError}
         </Alert>
       ) : null}

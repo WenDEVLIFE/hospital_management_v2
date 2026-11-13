@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 6 / 55 | In progress (client setup connected; data layer still preview) |
+| 6 | Frontend ↔ backend integration | 14 / 55 | In progress (auth wired; data layer still preview) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **138 / 284** | |
+| **Total** | | **146 / 284** | |
 
 ---
 
@@ -344,15 +344,15 @@
 
 ### 6.2 Authentication
 
-- [ ] Replace `components/layout/auth-guard.tsx` localStorage stub with real session checks
-- [ ] Login → `supabase.auth.signInWithPassword`
-- [ ] Forgot password → `supabase.auth.resetPasswordForEmail`
-- [ ] Password reset completion route
-- [ ] Wire `/settings/account` password change to `supabase.auth.updateUser`
-- [ ] Sign out clears the real session
-- [ ] Profile bootstrap verified on first sign-in
-- [ ] Disabled accounts (`profiles.is_active = false`) blocked at sign-in
-- [ ] Remove the "authentication is not yet connected" notices from `app/(auth)/*`
+- [x] Replace `components/layout/auth-guard.tsx` localStorage stub with real session checks — 2026-11-13, server guard checks `auth.getUser()` + `profiles.is_active`
+- [x] Login → `supabase.auth.signInWithPassword` — 2026-11-13, `/login` server wrapper + `LoginForm`
+- [x] Forgot password → `supabase.auth.resetPasswordForEmail` — 2026-11-13, redirects to `/auth/callback?next=/reset-password`
+- [x] Password reset completion route — 2026-11-13, `/auth/callback` exchanges PKCE code or verifies `token_hash`; `/reset-password` calls `updateUser`
+- [x] Wire `/settings/account` password change to `supabase.auth.updateUser` — 2026-11-13, verifies current password first
+- [x] Sign out clears the real session — 2026-11-13, header calls `auth.signOut()` and refreshes
+- [ ] Profile bootstrap verified on first sign-in — trigger exists; verify after re-running the auth-token repair in `supabase/seed.sql`
+- [x] Disabled accounts (`profiles.is_active = false`) blocked at sign-in — 2026-11-13, login flow signs out; server guard redirects with `error=disabled`
+- [x] Remove the "authentication is not yet connected" notices from `app/(auth)/*`
 
 ### 6.3 Data layer swap (`lib/data/*`, 20 modules)
 

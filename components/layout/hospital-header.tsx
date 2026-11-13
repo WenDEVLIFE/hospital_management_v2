@@ -16,10 +16,8 @@ import {
 } from "@solar-icons/react/linear";
 import { cn } from "@/lib/utils";
 import { isNavItemActive, navigation } from "@/lib/navigation";
-import { usePreviewSessionEmail } from "@/lib/use-preview-session";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useSidebar } from "./sidebar-provider";
-
-const SESSION_KEY = "spmc_auth_session";
 
 export type HospitalHeaderProfile = {
   email?: string;
@@ -36,13 +34,33 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
   const { mobileOpen, toggleMobile, collapsed, toggleCollapsed } = useSidebar();
 
   const [menuOpen, setMenuOpen] = React.useState(false);
-  const sessionEmail = usePreviewSessionEmail();
+  const [accountEmail, setAccountEmail] = React.useState<string | undefined>(
+    profile?.email
+  );
+  const [signingOut, setSigningOut] = React.useState(false);
   const userMenuRef = React.useRef<HTMLDivElement>(null);
   const userMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
   const mobileTriggerRef = React.useRef<HTMLButtonElement>(null);
   const wasMobileOpen = React.useRef(false);
 
-  const accountEmail = sessionEmail ?? profile?.email;
+  React.useEffect(() => {
+    let active = true;
+    const supabase = getSupabaseBrowserClient();
+
+    async function loadSession() {
+      const { data } = await supabase.auth.getSession();
+
+      if (active) {
+        setAccountEmail(data.session?.user.email ?? profile?.email);
+      }
+    }
+
+    void loadSession();
+
+    return () => {
+      active = false;
+    };
+  }, [profile?.email]);
 
   const currentItem = React.useMemo(() => {
     const items = navigation.flatMap((section) => section.items);
@@ -97,15 +115,23 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
     }
   };
 
-  const handleSignOut = () => {
-    try {
-      localStorage.removeItem(SESSION_KEY);
-    } catch {
-      // Ignore storage failures and leave the workspace anyway.
+  const handleSignOut = async () => {
+    if (signingOut) {
+      return;
     }
 
-    closeMenu(false);
-    router.replace("/login");
+    setSigningOut(true);
+
+    try {
+      await getSupabaseBrowserClient().auth.signOut();
+    } catch {
+      // Navigate anyway; the proxy will resolve the remaining session state.
+    } finally {
+      setSigningOut(false);
+      closeMenu(false);
+      router.replace("/login");
+      router.refresh();
+    }
   };
 
   return (
@@ -234,7 +260,8 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
                   type="button"
                   role="menuitem"
                   onClick={handleSignOut}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-1"
+                  disabled={signingOut}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Logout2Icon className="size-4" />
                   <span>Sign out</span>

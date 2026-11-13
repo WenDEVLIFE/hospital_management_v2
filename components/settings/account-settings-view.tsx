@@ -21,8 +21,7 @@ import { FormField } from "@/components/ui/form-field";
 import { PasswordInput } from "@/components/ui/password-input";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { usePreviewSessionEmail } from "@/lib/use-preview-session";
-import type { UserListRow } from "@/types/hospital";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type PasswordFieldErrors = {
   current?: string;
@@ -87,38 +86,44 @@ function DetailField({
   );
 }
 
-export interface AccountSettingsViewProps {
-  users: UserListRow[];
+export interface AccountSettingsProfile {
+  full_name: string;
+  email: string;
+  is_active: boolean;
+  role_names: string[];
+  department_name: string | null;
+  contact_number: string | null;
+  last_activity: string | null;
+  created_at: string | null;
 }
 
-export function AccountSettingsView({ users }: AccountSettingsViewProps) {
-  const sessionEmail = usePreviewSessionEmail();
+export interface AccountSettingsViewProps {
+  account: AccountSettingsProfile;
+}
+
+export function AccountSettingsView({ account }: AccountSettingsViewProps) {
   const [currentPassword, setCurrentPassword] = React.useState("");
   const [newPassword, setNewPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [errors, setErrors] = React.useState<PasswordFieldErrors>({});
   const [submitted, setSubmitted] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
 
-  const account = React.useMemo(() => {
-    if (!sessionEmail) {
-      return null;
-    }
-
-    const needle = sessionEmail.toLowerCase();
-
-    return (
-      users.find((user) => user.email.toLowerCase() === needle) ?? null
-    );
-  }, [sessionEmail, users]);
-
-  const displayName = account?.full_name ?? "Hospital staff account";
-  const displayEmail = account?.email ?? sessionEmail ?? "Not available";
+  const displayName = account.full_name;
+  const displayEmail = account.email;
   const initials = getInitials(displayName, displayEmail);
 
   const errorSummary = Object.values(errors).filter(Boolean).join(" ");
 
-  const handlePasswordSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handlePasswordSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
+
+    if (loading) {
+      return;
+    }
 
     const nextErrors = validatePassword(
       currentPassword,
@@ -128,17 +133,55 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
 
     setErrors(nextErrors);
     setSubmitted(false);
+    setFormError(null);
 
     if (Object.keys(nextErrors).length > 0) {
       return;
     }
 
-    // TODO(supabase): await supabase.auth.updateUser({ password: newPassword })
-    // and map auth errors to field-level messages.
-    setSubmitted(true);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    setLoading(true);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+
+      // Verify the current password before changing it. This also refreshes the
+      // session immediately before the sensitive update.
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: account.email,
+        password: currentPassword,
+      });
+
+      if (verifyError) {
+        setErrors({ current: "Current password is incorrect." });
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        if (error.message.toLowerCase().includes("different from the old")) {
+          setErrors({
+            next: "Choose a password different from your current password.",
+          });
+        } else {
+          setFormError("We could not update your password. Try again.");
+        }
+        return;
+      }
+
+      setSubmitted(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch {
+      setFormError(
+        "We could not update your password. Check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -147,17 +190,6 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
         title="Account details"
         description="Your hospital account profile and current status."
       >
-        {!sessionEmail ? (
-          <Alert
-            variant="warning"
-            title="Preview session unavailable"
-            className="mb-4"
-          >
-            No active preview session was found. Sign in again to view your
-            account.
-          </Alert>
-        ) : null}
-
         <div className="flex flex-wrap items-center gap-4 border-b border-hospital-border-subtle pb-4">
           <span
             className="flex size-12 shrink-0 items-center justify-center rounded-full bg-hospital-green-light text-sm font-semibold text-hospital-green"
@@ -175,9 +207,7 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
             </p>
           </div>
 
-          {account ? (
-            <StatusBadge status={account.is_active ? "active" : "inactive"} />
-          ) : null}
+          <StatusBadge status={account.is_active ? "active" : "inactive"} />
         </div>
 
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -185,7 +215,7 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
             label="Full name"
             icon={<UserCircleIcon className="size-3.5" />}
           >
-            {account?.full_name ?? "Not available in preview"}
+            {account.full_name}
           </DetailField>
 
           <DetailField label="Email" icon={<LetterIcon className="size-3.5" />}>
@@ -196,7 +226,7 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
             label="Role(s)"
             icon={<ShieldCheckIcon className="size-3.5" />}
           >
-            {account && account.role_names.length > 0 ? (
+            {account.role_names.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {account.role_names.map((role) => (
                   <Badge key={role} variant="info">
@@ -205,9 +235,7 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
                 ))}
               </div>
             ) : (
-              <span className="text-hospital-text-muted">
-                {account ? "No role assigned" : "Not available in preview"}
-              </span>
+              <span className="text-hospital-text-muted">No role assigned</span>
             )}
           </DetailField>
 
@@ -215,32 +243,28 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
             label="Department"
             icon={<Buildings2Icon className="size-3.5" />}
           >
-            {account?.department_name ?? "Not available in preview"}
+            {account.department_name ?? "Not assigned"}
           </DetailField>
 
           <DetailField
             label="Contact number"
             icon={<PhoneIcon className="size-3.5" />}
           >
-            {account?.contact_number ?? "Not provided"}
+            {account.contact_number ?? "Not provided"}
           </DetailField>
 
           <DetailField
             label="Account status"
             icon={<ShieldCheckIcon className="size-3.5" />}
           >
-            {account ? (
-              <StatusBadge status={account.is_active ? "active" : "inactive"} />
-            ) : (
-              "Not available in preview"
-            )}
+            <StatusBadge status={account.is_active ? "active" : "inactive"} />
           </DetailField>
 
           <DetailField
             label="Last activity"
             icon={<CalendarMinimalisticIcon className="size-3.5" />}
           >
-            {account?.last_activity
+            {account.last_activity
               ? formatDateTime(account.last_activity)
               : "No activity recorded"}
           </DetailField>
@@ -249,37 +273,26 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
             label="Member since"
             icon={<CalendarMinimalisticIcon className="size-3.5" />}
           >
-            {account?.created_at
+            {account.created_at
               ? formatDate(account.created_at)
-              : "Not available in preview"}
+              : "Not available"}
           </DetailField>
         </dl>
-
-        {!account && sessionEmail ? (
-          <Alert variant="info" className="mt-4">
-            Profile details for this preview session are not available. Sign in
-            with one of the preview staff accounts to see the full profile.
-          </Alert>
-        ) : null}
       </PageSection>
 
       <PageSection
         title="Change password"
         description="Update the password used to sign in to this account."
       >
-        <Alert variant="info" className="mb-4">
-          Password changes are not connected to Supabase Auth in this build. The
-          form validates locally, but nothing is saved.
-        </Alert>
+        {formError ? (
+          <Alert variant="danger" title="Unable to update password" className="mb-4">
+            {formError}
+          </Alert>
+        ) : null}
 
         {submitted ? (
-          <Alert
-            variant="info"
-            title="Password not changed"
-            className="mb-4"
-          >
-            The form passed validation, but Supabase Auth is not connected yet.
-            No password was updated.
+          <Alert variant="success" title="Password updated" className="mb-4">
+            Your password was changed. Use it the next time you sign in.
           </Alert>
         ) : null}
 
@@ -376,7 +389,7 @@ export function AccountSettingsView({ users }: AccountSettingsViewProps) {
             </ul>
           </div>
 
-          <Button type="submit" size="md">
+          <Button type="submit" size="md" loading={loading}>
             <LockPasswordIcon className="size-4" aria-hidden="true" />
             Update password
           </Button>
