@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import {
   BedIcon,
   Buildings2Icon,
@@ -15,6 +16,7 @@ import {
   type SettingsLink,
 } from "@/components/settings/settings-link-list";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { checkSupabaseConnection } from "@/lib/supabase/health";
 
 export const metadata = {
   title: "Settings",
@@ -59,7 +61,17 @@ const REFERENCE_LINKS: SettingsLink[] = [
   },
 ];
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  await connection();
+  const supabase = await checkSupabaseConnection();
+
+  const backendStatus =
+    supabase.state === "connected"
+      ? "connected"
+      : supabase.state === "unreachable"
+        ? "not_connected"
+        : "inactive";
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -99,15 +111,20 @@ export default function SettingsPage() {
                 Supabase connection
               </p>
               <p className="mt-0.5 text-xs text-hospital-text-muted">
-                Not configured
+                {supabase.state === "connected"
+                  ? "Project reachable"
+                  : supabase.state === "unreachable"
+                    ? "Configured but unreachable"
+                    : "Not configured"}
               </p>
               <p className="mt-2 text-xs leading-relaxed text-hospital-text-muted">
-                Authentication, database access and storage are not connected in
-                this build.
+                {supabase.state === "connected"
+                  ? "Credentials are configured and the project is reachable. UI pages still render preview fixtures until the data layer is switched to Supabase."
+                  : supabase.message}
               </p>
             </div>
           </div>
-          <StatusBadge status="inactive" />
+          <StatusBadge status={backendStatus} />
         </div>
       </PageSection>
 

@@ -18,16 +18,16 @@
 | Phase | Scope | Done | Status |
 |---|---|---|---|
 | 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
-| 1 | Database schema | 24 / 29 | In progress (live apply pending) |
+| 1 | Database schema | 24 / 29 | In progress (live schema verified; `db lint` pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 0 / 55 | Not started |
+| 6 | Frontend ↔ backend integration | 6 / 55 | In progress (client setup connected; data layer still preview) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **132 / 284** | |
+| **Total** | | **138 / 284** | |
 
 ---
 
@@ -92,7 +92,7 @@
 
 - [x] `npx supabase init` → create `supabase/config.toml` — 2026-11-12, `supabase/config.toml` + `supabase/.gitignore`
 - [x] Split `schema.sql` into the 22 timestamped migrations listed in `SUPABASE.MD` §31.3 — 2026-11-12, `supabase/migrations/20261110000100` … `20261110002200`; 47 tables and 16 enums verified in dependency order
-- [ ] Apply to a live project and run `npx supabase db lint` — **blocked by: no linked Supabase project or credentials**
+- [ ] Apply to a live project and run `npx supabase db lint` — 2026-11-13: live schema verified (47/47 tables present, all RLS-protected); `db lint` still pending (no access token / linked CLI)
 - [ ] Run `npx supabase db reset` on a clean local database — **blocked by: Docker/PostgreSQL not installed**
 - [ ] Generate types: `npx supabase gen types typescript --schema public > types/supabase.ts` — **blocked by: requires a running database**
 - [ ] Replace hand-written `types/hospital.ts` usage with the generated `Database` types (keep view models on top) — **blocked by: generated types above**
@@ -334,12 +334,12 @@
 
 ### 6.1 Client setup
 
-- [ ] Install `@supabase/supabase-js`, `@supabase/ssr`, `zod`
-- [ ] `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- [ ] Fix `.gitignore` so `.env.example` is tracked (`!.env.example`)
-- [ ] `lib/supabase/client.ts` — singleton browser client with `Database` types
-- [ ] `lib/supabase/server.ts` — cookie-based server client
-- [ ] `lib/supabase/proxy.ts` + root proxy — session refresh
+- [x] Install `@supabase/supabase-js`, `@supabase/ssr`, `zod` — 2026-11-13, 2.119.0 / 0.12.7 / 4.6.7
+- [x] `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — 2026-11-13, verified by key-name check without reading values; `/auth/v1/health` returns 200
+- [x] Fix `.gitignore` so `.env.example` is tracked (`!.env.example`)
+- [x] `lib/supabase/client.ts` — singleton browser client
+- [x] `lib/supabase/server.ts` — cookie-based server client
+- [x] `lib/supabase/proxy.ts` + root `proxy.ts` — session refresh (no auth redirect until sign-in is real)
 - [ ] `lib/supabase/storage.ts`, `lib/supabase/realtime.ts`
 
 ### 6.2 Authentication
