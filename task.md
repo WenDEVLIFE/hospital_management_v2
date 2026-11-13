@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 14 / 55 | In progress (auth wired; data layer still preview) |
+| 6 | Frontend ↔ backend integration | 16 / 55 | In progress (auth + patients wired; remaining data modules still preview) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **146 / 284** | |
+| **Total** | | **148 / 284** | |
 
 ---
 
@@ -350,13 +350,13 @@
 - [x] Password reset completion route — 2026-11-13, `/auth/callback` exchanges PKCE code or verifies `token_hash`; `/reset-password` calls `updateUser`
 - [x] Wire `/settings/account` password change to `supabase.auth.updateUser` — 2026-11-13, verifies current password first
 - [x] Sign out clears the real session — 2026-11-13, header calls `auth.signOut()` and refreshes
-- [ ] Profile bootstrap verified on first sign-in — trigger exists; verify after re-running the auth-token repair in `supabase/seed.sql`
+- [x] Profile bootstrap verified on first sign-in — 2026-11-13, `admin@spmc.test` signs in and `profiles` returns an active row
 - [x] Disabled accounts (`profiles.is_active = false`) blocked at sign-in — 2026-11-13, login flow signs out; server guard redirects with `error=disabled`
 - [x] Remove the "authentication is not yet connected" notices from `app/(auth)/*`
 
 ### 6.3 Data layer swap (`lib/data/*`, 20 modules)
 
-- [ ] `patients.ts` → `supabase.from("patients")`
+- [x] `patients.ts` → `supabase.from("patients")` — 2026-11-13, list/get/summary through the RLS server client; joins for appointments, admissions, prescriptions, invoices, and laboratory results
 - [ ] `appointments.ts`
 - [ ] `admissions.ts`
 - [ ] `medical-records.ts`
