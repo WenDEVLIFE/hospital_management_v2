@@ -71,6 +71,10 @@ if (path.startsWith("/patients/")) {
   checks.push("Allergies", "Appointments", "Prescriptions");
 }
 
+if (path.startsWith("/appointments")) {
+  checks.push("APT-2026-0001", "Total appointments", "Daily Schedule");
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }

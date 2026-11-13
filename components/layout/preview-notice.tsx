@@ -5,7 +5,11 @@ import { InfoCircleIcon } from "@solar-icons/react/linear";
 
 // Routes that already read live Supabase data should not show the preview
 // warning. Add each module as it is migrated in Phase 6.3.
-const MIGRATED_PREFIXES = ["/patients", "/settings/account"];
+const MIGRATED_PREFIXES = [
+  "/patients",
+  "/appointments",
+  "/settings/account",
+];
 
 export function PreviewNotice() {
   const pathname = usePathname();

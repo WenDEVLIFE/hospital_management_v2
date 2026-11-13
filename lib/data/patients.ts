@@ -15,8 +15,12 @@ import type {
   PrescriptionListRow,
 } from "@/types/hospital";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { normalizePagination } from "./query";
-import { pgErrorMessage, type DataError, type DataResult, type PagedResult } from "./result";
+import { normalizePagination, sanitizeSearchTerm } from "./query";
+import {
+  toDataError,
+  type DataResult,
+  type PagedResult,
+} from "./result";
 
 const NOT_FOUND = {
   code: "NOT_FOUND",
@@ -82,12 +86,6 @@ type PrescriptionJoinRow = Prescription & {
   }> | null;
 };
 
-function toDataError(error: { code?: string; message?: string } | null): DataError {
-  const code = error?.code ?? "UNKNOWN";
-
-  return { code, message: pgErrorMessage(code) };
-}
-
 function fullName(row: {
   first_name: string;
   middle_name?: string | null;
@@ -124,19 +122,6 @@ function toPatientListRow(row: PatientDbRow): PatientListRow {
  * PostgREST `or` filters use commas and parentheses as syntax. Strip those
  * characters from free-text search so a patient search cannot break the filter.
  */
-function sanitizeSearch(value: string | undefined): string | null {
-  const trimmed = value?.trim();
-
-  if (!trimmed) {
-    return null;
-  }
-
-  return trimmed
-    .replace(/[(),\\"]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 export async function listPatients(
   params: {
     q?: string;
@@ -156,7 +141,7 @@ export async function listPatients(
     query = query.eq("registration_status", params.status);
   }
 
-  const search = sanitizeSearch(params.q);
+  const search = sanitizeSearchTerm(params.q);
 
   if (search) {
     const term = `%${search}%`;

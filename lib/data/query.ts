@@ -73,6 +73,25 @@ export function matchesQuery(
   );
 }
 
+/**
+ * PostgREST `or` filters use commas and parentheses as syntax. Strip those
+ * characters from free-text search so a search term cannot break the filter.
+ */
+export function sanitizeSearchTerm(
+  value: string | undefined
+): string | null {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed
+    .replace(/[(),\\"]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function manilaDate(value: string): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Manila",

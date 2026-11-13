@@ -27,3 +27,11 @@ const GENERIC_ERROR_MESSAGE =
 
 export const pgErrorMessage = (code: string): string =>
   PG_ERROR_MESSAGES[code] ?? GENERIC_ERROR_MESSAGE;
+
+export function toDataError(
+  error: { code?: string | null; message?: string | null } | null
+): DataError {
+  const code = error?.code ?? "UNKNOWN";
+
+  return { code, message: pgErrorMessage(code) };
+}
