@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 27 / 55 | In progress (auth, patients, appointments, admissions, medical records, nursing, staff, laboratory, radiology, pharmacy, billing, inventory, departments wired; remaining data modules still preview) |
+| 6 | Frontend ↔ backend integration | 28 / 55 | In progress (auth, patients, appointments, admissions, medical records, nursing, staff, laboratory, radiology, pharmacy, billing, inventory, departments, rooms wired; remaining data modules still preview) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **159 / 284** | |
+| **Total** | | **160 / 284** | |
 
 ---
 
@@ -368,7 +368,7 @@
 - [x] `billing.ts` — 2026-11-14, invoices, payments, and billing stats through the RLS server client; patient, invoice, and receiving-staff joins
 - [x] `inventory.ts` — 2026-11-14, items with batch-derived quantities/expiry, categories, stock history, and stats through the RLS server client
 - [x] `departments.ts` — 2026-11-14, departments directory and stats through the RLS server client; staff count included
-- [ ] `rooms.ts`
+- [x] `rooms.ts` — 2026-11-14, rooms through the RLS server client; beds already flow through the live admissions bed board
 - [ ] `reports.ts`
 - [ ] `users.ts`
 - [ ] `audit.ts`

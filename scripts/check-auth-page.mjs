@@ -170,6 +170,10 @@ if (path === "/departments") {
   );
 }
 
+if (path === "/rooms-beds") {
+  checks.push("Total rooms", "Room inventory", "W3-301", "Bed availability");
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }

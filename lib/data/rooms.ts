@@ -1,9 +1,8 @@
 import type { BedBoardRow, Room } from "@/types/hospital";
-import { rooms } from "@/lib/fixtures";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getBedBoard } from "./admissions";
-import { isPreviewMode } from "./config";
-import { emptyPage, matchesQuery, pageSlice } from "./query";
-import type { DataResult, PagedResult } from "./result";
+import { normalizePagination, sanitizeSearchTerm } from "./query";
+import { toDataError, type DataResult, type PagedResult } from "./result";
 
 export async function listRooms(
   params: {
@@ -12,25 +11,39 @@ export async function listRooms(
     pageSize?: number;
   } = {}
 ): Promise<PagedResult<Room>> {
-  // TODO(supabase): replace with supabase.from("rooms").select("*")
-  if (!isPreviewMode) {
-    return emptyPage<Room>(params.page, params.pageSize);
+  const meta = normalizePagination(params.page, params.pageSize);
+  const supabase = await getSupabaseServerClient();
+
+  let query = supabase.from("rooms").select("*", { count: "exact" });
+
+  const search = sanitizeSearchTerm(params.q);
+
+  if (search) {
+    const term = `%${search}%`;
+    query = query.or(
+      [
+        `room_number.ilike.${term}`,
+        `room_type.ilike.${term}`,
+        `floor_number.ilike.${term}`,
+      ].join(",")
+    );
   }
 
-  await Promise.resolve();
+  const { data, error, count } = await query
+    .order("room_number", { ascending: true })
+    .range(meta.offset, meta.offset + meta.pageSize - 1);
 
-  const filtered = rooms
-    .filter((room) =>
-      matchesQuery(params.q, [
-        room.room_number,
-        room.room_type,
-        room.floor_number,
-      ])
-    )
-    .sort((a, b) => a.room_number.localeCompare(b.room_number));
+  if (error) {
+    return { data: null, error: toDataError(error) };
+  }
 
   return {
-    data: pageSlice(filtered, params.page, params.pageSize),
+    data: {
+      rows: (data ?? []) as Room[],
+      total: count ?? 0,
+      page: meta.page,
+      pageSize: meta.pageSize,
+    },
     error: null,
   };
 }
@@ -41,7 +54,6 @@ export async function listBeds(
     status?: string;
   } = {}
 ): Promise<DataResult<BedBoardRow[]>> {
-  // TODO(supabase): replace with supabase.from("v_bed_availability").select("*")
   const board = await getBedBoard();
 
   if (board.error) {

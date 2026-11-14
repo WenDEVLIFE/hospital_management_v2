@@ -21,6 +21,7 @@ const MIGRATED_PREFIXES = [
   "/payments",
   "/inventory",
   "/departments",
+  "/rooms-beds",
   "/settings/account",
 ];
 
