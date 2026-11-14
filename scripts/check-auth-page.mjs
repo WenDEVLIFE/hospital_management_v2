@@ -203,6 +203,16 @@ if (path === "/audit-logs") {
   );
 }
 
+if (path === "/dashboard") {
+  checks.push(
+    "Dashboard",
+    "Total Registered Patients",
+    "Currently Admitted Patients",
+    "Recent Patient Registrations",
+    "Pending Activities"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }

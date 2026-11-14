@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 31 / 55 | In progress (all modules through audit wired; dashboard remains preview) |
+| 6 | Frontend ↔ backend integration | 34 / 55 | In progress (6.3 data layer complete; mutations, storage/realtime, roles, and preview decommission remain) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **163 / 284** | |
+| **Total** | | **166 / 284** | |
 
 ---
 
@@ -372,9 +372,9 @@
 - [x] `reports.ts` — 2026-11-14, report catalogue moved out of fixtures and the default range computed at request time (no report_categories table exists; categories are product configuration)
 - [x] `users.ts` — 2026-11-14, user accounts, roles, departments, and stats through the RLS server client; last activity stays blank because auth users are not exposed
 - [x] `audit.ts` — 2026-11-14, audit log rows and stats through the RLS server client; actor names joined from profiles, result derived from metadata
-- [ ] `dashboard.ts` (aggregates; may need RPC or views)
-- [ ] Keep the `DataResult` / `PagedResult` contract so components do not change
-- [ ] Map PostgreSQL error codes to `THEME.MD` §9.4 messages
+- [x] `dashboard.ts` — 2026-11-14, aggregate overview from live patients, appointments, admissions, beds, laboratory, prescriptions, radiology, and invoices; recent registrations and six-month admission trend
+- [x] Keep the `DataResult` / `PagedResult` contract so components do not change — preserved across every swapped module
+- [x] Map PostgreSQL error codes to `THEME.MD` §9.4 messages — `toDataError` / `pgErrorMessage` applied across `lib/data`
 
 ### 6.4 Mutations
 

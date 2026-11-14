@@ -1,19 +1,13 @@
-import type { DashboardOverview, PatientListRow } from "@/types/hospital";
-import {
-  PREVIEW_NOW,
-  admissionListRows,
-  admissionTrend,
-  appointmentListRows,
-  bedBoardRows,
-  invoiceListRows,
-  labOrderListRows,
-  patientListRows,
-  prescriptionListRows,
-  radiologyOrderListRows,
-} from "@/lib/fixtures";
-import { isPreviewMode } from "./config";
-import { manilaDate, roundMoney, sortByDateDesc } from "./query";
-import type { DataResult } from "./result";
+import type {
+  Admission,
+  Appointment,
+  DashboardOverview,
+  Invoice,
+} from "@/types/hospital";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { listPatients } from "./patients";
+import { manilaDate, roundMoney } from "./query";
+import { toDataError, type DataResult } from "./result";
 
 const APPOINTMENT_STATUSES = [
   "scheduled",
@@ -25,109 +19,183 @@ const APPOINTMENT_STATUSES = [
   "no_show",
 ] as const;
 
-function emptyOverview(): DashboardOverview {
-  return {
-    metrics: {
-      totalPatients: 0,
-      todaysAppointments: 0,
-      admittedPatients: 0,
-      availableBeds: 0,
-      pendingLabOrders: 0,
-      pendingPrescriptions: 0,
-      outstandingBilling: 0,
-    },
-    admissionTrend: [],
-    appointmentBreakdown: [],
-    recentRegistrations: [],
-    pendingActivities: [],
-  };
+function manilaMonthKey(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+  }).format(date);
+}
+
+function lastSixManilaMonths(): string[] {
+  const [year, month] = manilaMonthKey(new Date()).split("-").map(Number);
+
+  return Array.from({ length: 6 }, (_, index) => {
+    const offset = 5 - index;
+    const date = new Date(Date.UTC(year, month - 1 - offset, 1));
+
+    return `${date.getUTCFullYear()}-${String(
+      date.getUTCMonth() + 1
+    ).padStart(2, "0")}`;
+  });
 }
 
 export async function getDashboardOverview(): Promise<
   DataResult<DashboardOverview>
 > {
-  // TODO(supabase): replace with supabase.from("v_patient_summary").select("*")
-  if (!isPreviewMode) {
-    return { data: emptyOverview(), error: null };
+  const supabase = await getSupabaseServerClient();
+
+  const [
+    patientsCount,
+    appointmentsResult,
+    admissionsResult,
+    availableBedsCount,
+    pendingLabCount,
+    pendingPrescriptionsCount,
+    pendingRadiologyCount,
+    invoicesResult,
+    recentPatients,
+  ] = await Promise.all([
+    supabase.from("patients").select("id", { count: "exact", head: true }),
+    supabase.from("appointments").select("status, scheduled_at"),
+    supabase
+      .from("admissions")
+      .select("status, admission_date, discharge_date"),
+    supabase
+      .from("beds")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "available"),
+    supabase
+      .from("laboratory_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    supabase
+      .from("prescriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    supabase
+      .from("radiology_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    supabase
+      .from("invoices")
+      .select("status, balance")
+      .in("status", ["unpaid", "partially_paid"]),
+    listPatients({ pageSize: 5 }),
+  ]);
+
+  const error =
+    patientsCount.error ??
+    appointmentsResult.error ??
+    admissionsResult.error ??
+    availableBedsCount.error ??
+    pendingLabCount.error ??
+    pendingPrescriptionsCount.error ??
+    pendingRadiologyCount.error ??
+    invoicesResult.error ??
+    recentPatients.error;
+
+  if (error) {
+    return { data: null, error: toDataError(error) };
   }
 
-  await Promise.resolve();
+  const appointmentRows = (appointmentsResult.data ?? []) as Array<
+    Pick<Appointment, "status" | "scheduled_at">
+  >;
+  const admissionRows = (admissionsResult.data ?? []) as Array<
+    Pick<Admission, "status" | "admission_date" | "discharge_date">
+  >;
+  const invoiceRows = (invoicesResult.data ?? []) as Array<
+    Pick<Invoice, "status" | "balance">
+  >;
 
-  const today = manilaDate(PREVIEW_NOW);
-
-  const todaysAppointments = appointmentListRows.filter(
+  const today = manilaDate(new Date().toISOString());
+  const todaysAppointments = appointmentRows.filter(
     (appointment) => manilaDate(appointment.scheduled_at) === today
   ).length;
-
-  const admittedPatients = admissionListRows.filter(
+  const admittedPatients = admissionRows.filter(
     (admission) =>
       admission.status === "admitted" || admission.status === "transferred"
   ).length;
 
-  const availableBeds = bedBoardRows.filter(
-    (bed) => bed.status === "available"
-  ).length;
-
-  const pendingLabOrders = labOrderListRows.filter(
-    (order) => order.status === "pending"
-  ).length;
-
-  const pendingPrescriptions = prescriptionListRows.filter(
-    (prescription) => prescription.status === "pending"
-  ).length;
-
-  const pendingRadiologyOrders = radiologyOrderListRows.filter(
-    (order) => order.status === "pending"
-  ).length;
-
-  const outstandingInvoices = invoiceListRows.filter(
-    (invoice) =>
-      invoice.status === "unpaid" || invoice.status === "partially_paid"
-  );
-
   const outstandingBilling = roundMoney(
-    outstandingInvoices.reduce((total, invoice) => total + invoice.balance, 0)
+    invoiceRows.reduce(
+      (total, invoice) => total + Number(invoice.balance ?? 0),
+      0
+    )
   );
 
   const appointmentBreakdown = APPOINTMENT_STATUSES.map((status) => ({
     status,
-    count: appointmentListRows.filter(
+    count: appointmentRows.filter(
       (appointment) => appointment.status === status
     ).length,
   }));
 
-  const recentRegistrations: PatientListRow[] = sortByDateDesc(
-    patientListRows,
-    (patient) => patient.registration_date
-  ).slice(0, 5);
+  const trendMonths = lastSixManilaMonths();
+  const trendMap = new Map(
+    trendMonths.map((month) => [
+      month,
+      { month, admissions: 0, discharges: 0 },
+    ])
+  );
+
+  for (const admission of admissionRows) {
+    const admissionPoint = trendMap.get(
+      manilaMonthKey(admission.admission_date)
+    );
+
+    if (admissionPoint) {
+      admissionPoint.admissions += 1;
+    }
+
+    if (admission.discharge_date) {
+      const dischargePoint = trendMap.get(
+        manilaMonthKey(admission.discharge_date)
+      );
+
+      if (dischargePoint) {
+        dischargePoint.discharges += 1;
+      }
+    }
+  }
+
+  const admissionTrend = trendMonths
+    .map((month) => trendMap.get(month))
+    .filter(
+      (point): point is { month: string; admissions: number; discharges: number } =>
+        Boolean(point)
+    );
 
   const pendingActivities = [
     {
       id: "lab-pending",
       label: "Laboratory orders awaiting processing",
       module: "Laboratory",
-      count: pendingLabOrders,
+      count: pendingLabCount.count ?? 0,
       href: "/laboratory",
     },
     {
       id: "prescription-pending",
       label: "Prescriptions awaiting dispensing",
       module: "Pharmacy",
-      count: pendingPrescriptions,
+      count: pendingPrescriptionsCount.count ?? 0,
       href: "/prescriptions",
     },
     {
       id: "radiology-pending",
       label: "Radiology orders awaiting scheduling",
       module: "Radiology",
-      count: pendingRadiologyOrders,
+      count: pendingRadiologyCount.count ?? 0,
       href: "/radiology",
     },
     {
       id: "billing-outstanding",
       label: "Invoices with outstanding balances",
       module: "Billing",
-      count: outstandingInvoices.length,
+      count: invoiceRows.length,
       href: "/billing",
     },
   ];
@@ -135,17 +203,17 @@ export async function getDashboardOverview(): Promise<
   return {
     data: {
       metrics: {
-        totalPatients: patientListRows.length,
+        totalPatients: patientsCount.count ?? 0,
         todaysAppointments,
         admittedPatients,
-        availableBeds,
-        pendingLabOrders,
-        pendingPrescriptions,
+        availableBeds: availableBedsCount.count ?? 0,
+        pendingLabOrders: pendingLabCount.count ?? 0,
+        pendingPrescriptions: pendingPrescriptionsCount.count ?? 0,
         outstandingBilling,
       },
       admissionTrend,
       appointmentBreakdown,
-      recentRegistrations,
+      recentRegistrations: recentPatients.data?.rows ?? [],
       pendingActivities,
     },
     error: null,
