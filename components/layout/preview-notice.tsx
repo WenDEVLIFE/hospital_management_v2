@@ -23,6 +23,7 @@ const MIGRATED_PREFIXES = [
   "/departments",
   "/rooms-beds",
   "/reports",
+  "/settings/users",
   "/settings/account",
 ];
 

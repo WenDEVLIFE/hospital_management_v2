@@ -183,6 +183,16 @@ if (path === "/reports") {
   );
 }
 
+if (path === "/settings/users") {
+  checks.push(
+    "User Management",
+    "Staff accounts",
+    "superadmin@spmc.test",
+    "Super Administrator",
+    "Roles"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }
