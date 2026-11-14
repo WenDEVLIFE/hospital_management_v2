@@ -14,6 +14,7 @@ const MIGRATED_PREFIXES = [
   "/nursing",
   "/staff",
   "/laboratory",
+  "/radiology",
   "/settings/account",
 ];
 

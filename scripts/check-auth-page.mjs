@@ -122,6 +122,15 @@ if (path === "/laboratory") {
   );
 }
 
+if (path === "/radiology") {
+  checks.push(
+    "RAD-2026-0001",
+    "Examination Requests",
+    "Scheduled",
+    "Chest X-ray"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }

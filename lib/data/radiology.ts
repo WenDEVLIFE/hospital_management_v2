@@ -1,11 +1,39 @@
 import type {
+  RadiologyOrder,
   RadiologyOrderListRow,
+  RadiologyReport,
   RadiologyStats,
 } from "@/types/hospital";
-import { radiologyOrderListRows, radiologyOrders } from "@/lib/fixtures";
-import { isPreviewMode } from "./config";
-import { emptyPage, matchesQuery, pageSlice } from "./query";
-import type { DataResult, PagedResult } from "./result";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizePagination, sanitizeSearchTerm } from "./query";
+import { toDataError, type DataResult, type PagedResult } from "./result";
+
+const RADIOLOGY_ORDER_COLUMNS =
+  "*, patients(first_name, middle_name, last_name, suffix, medical_record_number), profiles!radiology_orders_ordered_by_fkey(full_name), radiology_reports(report_status)";
+
+type Relation<T> = T | T[] | null;
+
+type RadiologyOrderJoinRow = RadiologyOrder & {
+  patients: Relation<{
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+    suffix: string | null;
+    medical_record_number: string;
+  }>;
+  profiles: Relation<{ full_name: string }>;
+  radiology_reports: Array<{
+    report_status: RadiologyReport["report_status"];
+  }> | null;
+};
+
+function firstRelation<T>(value: Relation<T>): T | null {
+  if (!value) {
+    return null;
+  }
+
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
 
 function emptyStats(): RadiologyStats {
   return {
@@ -18,6 +46,41 @@ function emptyStats(): RadiologyStats {
   };
 }
 
+function fullName(row: {
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  suffix?: string | null;
+}): string {
+  return [row.first_name, row.middle_name, row.last_name, row.suffix]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function toRadiologyOrderListRow(
+  row: RadiologyOrderJoinRow
+): RadiologyOrderListRow {
+  const patient = firstRelation(row.patients);
+  const orderedBy = firstRelation(row.profiles);
+  const report = (row.radiology_reports ?? [])[0] ?? null;
+
+  return {
+    id: row.id,
+    order_number: row.order_number,
+    patient_id: row.patient_id,
+    patient_name: patient ? fullName(patient) : "Unknown patient",
+    patient_mrn: patient?.medical_record_number ?? "\u2014",
+    encounter_id: row.encounter_id,
+    ordered_by_name: orderedBy?.full_name ?? "Unknown physician",
+    examination_type: row.examination_type,
+    body_part: row.body_part,
+    scheduled_at: row.scheduled_at,
+    status: row.status,
+    report_status: report?.report_status ?? null,
+    created_at: row.created_at,
+  };
+}
+
 export async function listRadiologyOrders(
   params: {
     q?: string;
@@ -26,31 +89,47 @@ export async function listRadiologyOrders(
     pageSize?: number;
   } = {}
 ): Promise<PagedResult<RadiologyOrderListRow>> {
-  // TODO(supabase): replace with supabase.from("radiology_orders").select("*")
-  if (!isPreviewMode) {
-    return emptyPage<RadiologyOrderListRow>(params.page, params.pageSize);
+  const meta = normalizePagination(params.page, params.pageSize);
+  const supabase = await getSupabaseServerClient();
+
+  let query = supabase
+    .from("radiology_orders")
+    .select(RADIOLOGY_ORDER_COLUMNS, { count: "exact" });
+
+  if (params.status) {
+    query = query.eq("status", params.status);
   }
 
-  await Promise.resolve();
+  const search = sanitizeSearchTerm(params.q);
 
-  const filtered = radiologyOrderListRows.filter((order) => {
-    if (params.status && order.status !== params.status) {
-      return false;
-    }
+  if (search) {
+    const term = `%${search}%`;
+    query = query.or(
+      [
+        `order_number.ilike.${term}`,
+        `examination_type.ilike.${term}`,
+        `body_part.ilike.${term}`,
+      ].join(",")
+    );
+  }
 
-    return matchesQuery(params.q, [
-      order.order_number,
-      order.patient_name,
-      order.patient_mrn,
-      order.ordered_by_name,
-      order.examination_type,
-      order.body_part,
-      order.status,
-    ]);
-  });
+  const { data, error, count } = await query
+    .order("created_at", { ascending: false })
+    .range(meta.offset, meta.offset + meta.pageSize - 1);
+
+  if (error) {
+    return { data: null, error: toDataError(error) };
+  }
 
   return {
-    data: pageSlice(filtered, params.page, params.pageSize),
+    data: {
+      rows: ((data ?? []) as RadiologyOrderJoinRow[]).map(
+        toRadiologyOrderListRow
+      ),
+      total: count ?? 0,
+      page: meta.page,
+      pageSize: meta.pageSize,
+    },
     error: null,
   };
 }
@@ -58,16 +137,20 @@ export async function listRadiologyOrders(
 export async function getRadiologyStats(): Promise<
   DataResult<RadiologyStats>
 > {
-  // TODO(supabase): replace with supabase.from("radiology_orders").select("status")
-  if (!isPreviewMode) {
-    return { data: emptyStats(), error: null };
-  }
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("radiology_orders")
+    .select("status");
 
-  await Promise.resolve();
+  if (error) {
+    return { data: null, error: toDataError(error) };
+  }
 
   const stats = emptyStats();
 
-  for (const order of radiologyOrders) {
+  for (const order of (data ?? []) as Array<
+    Pick<RadiologyOrder, "status">
+  >) {
     stats.total += 1;
 
     switch (order.status) {
