@@ -113,6 +113,15 @@ if (path === "/staff") {
   );
 }
 
+if (path === "/laboratory") {
+  checks.push(
+    "LAB-2026-0001",
+    "Laboratory Requests",
+    "Pending",
+    "Complete Blood Count"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }
