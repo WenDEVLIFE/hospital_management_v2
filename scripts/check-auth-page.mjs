@@ -131,6 +131,14 @@ if (path === "/radiology") {
   );
 }
 
+if (path === "/pharmacy") {
+  checks.push("RX-2026-0001", "Prescription Queue", "Pending Prescriptions");
+}
+
+if (path === "/prescriptions") {
+  checks.push("RX-2026-0001", "Prescription Records", "Paracetamol");
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }

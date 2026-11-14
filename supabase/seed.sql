@@ -182,7 +182,8 @@ values
   ('Surgical Supplies',   'Operating and procedure supplies.'),
   ('Laboratory Supplies', 'Laboratory collection and testing supplies.'),
   ('PPE',                 'Personal protective equipment.'),
-  ('Housekeeping',        'Cleaning and housekeeping supplies.')
+  ('Housekeeping',        'Cleaning and housekeeping supplies.'),
+  ('Pharmacy',            'Medication stock.')
 on conflict (name) do nothing;
 
 -- Guard: reference data must exist after the inserts above.
@@ -1238,6 +1239,26 @@ values
   ('ab000000-0000-4000-8000-000000000008', 'ITM-0008', 'Syringe 5mL', 'Disposable 5mL syringe.', (select id from public.inventory_categories where name = 'Medical Supplies'), 'piece', 100, '11111111-1111-4111-8111-00000000000c')
 on conflict (id) do nothing;
 
+-- Medication stock is represented as inventory items whose item_code matches
+-- the medication code. A dedicated stock table remains future work.
+insert into public.inventory_items (
+  id, item_code, name, description, category_id, unit, reorder_level, created_by
+)
+values
+  ('ab000000-0000-4000-8000-000000000009', 'MED-0001', 'Paracetamol', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'tablet', 300, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-00000000000a', 'MED-0002', 'Amoxicillin', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'capsule', 150, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-00000000000b', 'MED-0003', 'Losartan', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'tablet', 100, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-00000000000c', 'MED-0004', 'Metformin', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'tablet', 200, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-00000000000d', 'MED-0005', 'Salbutamol', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'nebule', 40, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-00000000000e', 'MED-0006', 'Omeprazole', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'capsule', 60, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-00000000000f', 'MED-0007', 'Cetirizine', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'tablet', 80, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-000000000010', 'MED-0008', 'Amlodipine', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'tablet', 100, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-000000000011', 'MED-0009', 'Ceftriaxone', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'vial', 50, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-000000000012', 'MED-0010', 'Insulin (Human)', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'vial', 25, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-000000000013', 'MED-0011', 'Ibuprofen', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'tablet', 100, '11111111-1111-4111-8111-00000000000c'),
+  ('ab000000-0000-4000-8000-000000000014', 'MED-0012', 'Tranexamic Acid', 'Medication stock.', (select id from public.inventory_categories where name = 'Pharmacy'), 'tablet', 40, '11111111-1111-4111-8111-00000000000c')
+on conflict do nothing;
+
 insert into public.inventory_batches (
   id, item_id, batch_number, quantity_received, quantity_remaining,
   expiration_date, unit_cost, received_at, created_by
@@ -1252,6 +1273,26 @@ values
   ('ac000000-0000-4000-8000-000000000007', 'ab000000-0000-4000-8000-000000000007', 'BATCH-2026-0007', 60, 56, date '2027-08-31', 150.00, now() - interval '6 days', '11111111-1111-4111-8111-00000000000c'),
   ('ac000000-0000-4000-8000-000000000008', 'ab000000-0000-4000-8000-000000000008', 'BATCH-2026-0008', 500, 500, date '2028-05-31', 6.00, now() - interval '4 days', '11111111-1111-4111-8111-00000000000c')
 on conflict (id) do nothing;
+
+-- Medication stock batches backing the pharmacy inventory tab.
+insert into public.inventory_batches (
+  id, item_id, batch_number, quantity_received, quantity_remaining,
+  expiration_date, unit_cost, received_at, created_by
+)
+values
+  ('ac000000-0000-4000-8000-000000000009', 'ab000000-0000-4000-8000-000000000009', 'MED-BATCH-0001', 1200, 1200, current_date + 200, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-00000000000a', 'ab000000-0000-4000-8000-00000000000a', 'MED-BATCH-0002', 80, 80, current_date + 45, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-00000000000b', 'ab000000-0000-4000-8000-00000000000b', 'MED-BATCH-0003', 420, 420, current_date + 300, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-00000000000c', 'ab000000-0000-4000-8000-00000000000c', 'MED-BATCH-0004', 0, 0, current_date + 60, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-00000000000d', 'ab000000-0000-4000-8000-00000000000d', 'MED-BATCH-0005', 65, 65, current_date + 120, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-00000000000e', 'ab000000-0000-4000-8000-00000000000e', 'MED-BATCH-0006', 30, 30, current_date + 25, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-00000000000f', 'ab000000-0000-4000-8000-00000000000f', 'MED-BATCH-0007', 250, 250, current_date + 400, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-000000000010', 'ab000000-0000-4000-8000-000000000010', 'MED-BATCH-0008', 150, 150, current_date + 180, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-000000000011', 'ab000000-0000-4000-8000-000000000011', 'MED-BATCH-0009', 0, 0, current_date + 90, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-000000000012', 'ab000000-0000-4000-8000-000000000012', 'MED-BATCH-0010', 18, 18, current_date + 30, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-000000000013', 'ab000000-0000-4000-8000-000000000013', 'MED-BATCH-0011', 300, 300, current_date + 220, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c'),
+  ('ac000000-0000-4000-8000-000000000014', 'ab000000-0000-4000-8000-000000000014', 'MED-BATCH-0012', 12, 12, current_date + 70, null, now() - interval '30 days', '11111111-1111-4111-8111-00000000000c')
+on conflict do nothing;
 
 insert into public.stock_transactions (
   id, item_id, batch_id, transaction_type, quantity, reference_type,
