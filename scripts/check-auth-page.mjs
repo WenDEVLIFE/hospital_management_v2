@@ -174,6 +174,15 @@ if (path === "/rooms-beds") {
   checks.push("Total rooms", "Room inventory", "W3-301", "Bed availability");
 }
 
+if (path === "/reports") {
+  checks.push(
+    "Patient Registration",
+    "Report categories",
+    "Last 30 days",
+    "Report range"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }

@@ -1,3 +1,5 @@
+import { connection } from "next/server";
+
 import { PageHeader } from "@/components/layout/page-header";
 import { PageSection } from "@/components/layout/page-section";
 import { ErrorState } from "@/components/module/error-state";
@@ -11,6 +13,8 @@ export const metadata = {
 };
 
 export default async function ReportsPage() {
+  await connection();
+
   const [categoriesResult, rangeResult] = await Promise.all([
     listReportCategories(),
     getReportRange(),
