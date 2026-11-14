@@ -11,6 +11,7 @@ const MIGRATED_PREFIXES = [
   "/admissions",
   "/discharges",
   "/medical-records",
+  "/nursing",
   "/settings/account",
 ];
 

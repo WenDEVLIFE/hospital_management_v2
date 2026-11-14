@@ -93,6 +93,16 @@ if (path === "/medical-records") {
   checks.push("ENC-2026-0001", "Encounter register", "In Progress");
 }
 
+if (path === "/nursing") {
+  checks.push(
+    "ADM-2026-0001",
+    "Assigned patients",
+    "Latest vital signs",
+    "Test Patient Two",
+    "Assigned nurse Test Nurse One"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }
