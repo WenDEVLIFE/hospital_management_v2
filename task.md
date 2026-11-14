@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 20 / 55 | In progress (auth, patients, appointments, admissions, medical records, nursing wired; remaining data modules still preview) |
+| 6 | Frontend ↔ backend integration | 21 / 55 | In progress (auth, patients, appointments, admissions, medical records, nursing, staff wired; remaining data modules still preview) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **152 / 284** | |
+| **Total** | | **153 / 284** | |
 
 ---
 
@@ -361,7 +361,7 @@
 - [x] `admissions.ts` — 2026-11-13, admissions list, discharges, bed board, and stats through the RLS server client; patient/department/physician/bed joins
 - [x] `medical-records.ts` — 2026-11-13, encounter register, bulk encounter details (vitals/diagnoses/notes/patient), and stats through the RLS server client
 - [x] `nursing.ts` — 2026-11-14, active admissions with bed/room, assigned nurse, latest vitals, and assessment counts through the RLS server client
-- [ ] `staff.ts`
+- [x] `staff.ts` — 2026-11-14, staff directory with account, department, physician, specialty, and role lookups; stats by status and department through the RLS server client
 - [ ] `laboratory.ts`
 - [ ] `radiology.ts`
 - [ ] `pharmacy.ts`

@@ -103,6 +103,16 @@ if (path === "/nursing") {
   );
 }
 
+if (path === "/staff") {
+  checks.push(
+    "SPMC-2026-0001",
+    "Doctors & Staff",
+    "Staff directory",
+    "Test Physician One",
+    "Physician / Doctor"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }
