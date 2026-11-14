@@ -17,6 +17,8 @@ const MIGRATED_PREFIXES = [
   "/radiology",
   "/pharmacy",
   "/prescriptions",
+  "/billing",
+  "/payments",
   "/settings/account",
 ];
 

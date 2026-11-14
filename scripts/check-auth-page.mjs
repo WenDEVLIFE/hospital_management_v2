@@ -139,6 +139,19 @@ if (path === "/prescriptions") {
   checks.push("RX-2026-0001", "Prescription Records", "Paracetamol");
 }
 
+if (path === "/billing") {
+  checks.push(
+    "INV-2026-0001",
+    "Invoices",
+    "Total billing",
+    "Outstanding balance"
+  );
+}
+
+if (path === "/payments") {
+  checks.push("PAY-2026-0001", "Recorded payments", "Total collected");
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }
