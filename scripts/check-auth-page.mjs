@@ -152,6 +152,15 @@ if (path === "/payments") {
   checks.push("PAY-2026-0001", "Recorded payments", "Total collected");
 }
 
+if (path === "/inventory") {
+  checks.push(
+    "ITM-0001",
+    "Inventory",
+    "Total items",
+    "Surgical Gloves (Medium)"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }

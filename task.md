@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 25 / 55 | In progress (auth, patients, appointments, admissions, medical records, nursing, staff, laboratory, radiology, pharmacy, billing wired; remaining data modules still preview) |
+| 6 | Frontend ↔ backend integration | 26 / 55 | In progress (auth, patients, appointments, admissions, medical records, nursing, staff, laboratory, radiology, pharmacy, billing, inventory wired; remaining data modules still preview) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **157 / 284** | |
+| **Total** | | **158 / 284** | |
 
 ---
 
@@ -366,7 +366,7 @@
 - [x] `radiology.ts` — 2026-11-14, radiology requests with patient, requesting physician, report status, scheduling, and stats through the RLS server client
 - [x] `pharmacy.ts` — 2026-11-14, prescriptions + stock through the RLS server client; stock derives from inventory items/batches matched by medication code (dedicated stock table remains Phase 8 debt)
 - [x] `billing.ts` — 2026-11-14, invoices, payments, and billing stats through the RLS server client; patient, invoice, and receiving-staff joins
-- [ ] `inventory.ts`
+- [x] `inventory.ts` — 2026-11-14, items with batch-derived quantities/expiry, categories, stock history, and stats through the RLS server client
 - [ ] `departments.ts`
 - [ ] `rooms.ts`
 - [ ] `reports.ts`
