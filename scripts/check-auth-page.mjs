@@ -161,6 +161,15 @@ if (path === "/inventory") {
   );
 }
 
+if (path === "/departments") {
+  checks.push(
+    "Emergency Department",
+    "Departments",
+    "Total departments",
+    "ER"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }
