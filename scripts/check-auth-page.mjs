@@ -193,6 +193,16 @@ if (path === "/settings/users") {
   );
 }
 
+if (path === "/audit-logs") {
+  checks.push(
+    "Audit Logs",
+    "Audit trail",
+    "Total events",
+    "patient.create",
+    "Test Hospital Admin"
+  );
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }

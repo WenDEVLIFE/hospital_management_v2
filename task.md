@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 30 / 55 | In progress (all modules through users wired; dashboard and audit remain preview) |
+| 6 | Frontend ↔ backend integration | 31 / 55 | In progress (all modules through audit wired; dashboard remains preview) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **162 / 284** | |
+| **Total** | | **163 / 284** | |
 
 ---
 
@@ -371,7 +371,7 @@
 - [x] `rooms.ts` — 2026-11-14, rooms through the RLS server client; beds already flow through the live admissions bed board
 - [x] `reports.ts` — 2026-11-14, report catalogue moved out of fixtures and the default range computed at request time (no report_categories table exists; categories are product configuration)
 - [x] `users.ts` — 2026-11-14, user accounts, roles, departments, and stats through the RLS server client; last activity stays blank because auth users are not exposed
-- [ ] `audit.ts`
+- [x] `audit.ts` — 2026-11-14, audit log rows and stats through the RLS server client; actor names joined from profiles, result derived from metadata
 - [ ] `dashboard.ts` (aggregates; may need RPC or views)
 - [ ] Keep the `DataResult` / `PagedResult` contract so components do not change
 - [ ] Map PostgreSQL error codes to `THEME.MD` §9.4 messages

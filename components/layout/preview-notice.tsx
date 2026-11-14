@@ -25,6 +25,7 @@ const MIGRATED_PREFIXES = [
   "/reports",
   "/settings/users",
   "/settings/account",
+  "/audit-logs",
 ];
 
 export function PreviewNotice() {

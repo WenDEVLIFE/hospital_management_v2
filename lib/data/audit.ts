@@ -1,8 +1,23 @@
-import type { AuditLogRow, AuditStats } from "@/types/hospital";
-import { PREVIEW_NOW, auditLogRows } from "@/lib/fixtures";
-import { isPreviewMode } from "./config";
-import { emptyPage, manilaDate, matchesQuery, pageSlice } from "./query";
-import type { DataResult, PagedResult } from "./result";
+import type { AuditLog, AuditLogRow, AuditStats } from "@/types/hospital";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { manilaDate, normalizePagination, sanitizeSearchTerm } from "./query";
+import { toDataError, type DataResult, type PagedResult } from "./result";
+
+const AUDIT_COLUMNS = "*, profiles!audit_logs_actor_id_fkey(full_name)";
+
+type Relation<T> = T | T[] | null;
+
+type AuditLogJoinRow = AuditLog & {
+  profiles: Relation<{ full_name: string }>;
+};
+
+function firstRelation<T>(value: Relation<T>): T | null {
+  if (!value) {
+    return null;
+  }
+
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
 
 function emptyStats(): AuditStats {
   return {
@@ -11,6 +26,29 @@ function emptyStats(): AuditStats {
     success: 0,
     failed: 0,
     byAction: [],
+  };
+}
+
+function auditResult(
+  metadata: Record<string, unknown> | null
+): "success" | "failed" {
+  return metadata?.outcome === "failed" ? "failed" : "success";
+}
+
+function toAuditLogRow(row: AuditLogJoinRow): AuditLogRow {
+  const actor = firstRelation(row.profiles);
+
+  return {
+    id: Number(row.id),
+    created_at: row.created_at,
+    actor_id: row.actor_id,
+    actor_name: actor?.full_name ?? "System",
+    action: row.action,
+    entity_type: row.entity_type,
+    entity_id: row.entity_id,
+    description: row.description,
+    ip_address: row.ip_address,
+    result: auditResult(row.metadata),
   };
 }
 
@@ -23,54 +61,73 @@ export async function listAuditLogs(
     pageSize?: number;
   } = {}
 ): Promise<PagedResult<AuditLogRow>> {
-  // TODO(supabase): replace with supabase.from("audit_logs").select("*")
-  if (!isPreviewMode) {
-    return emptyPage<AuditLogRow>(params.page, params.pageSize);
+  const meta = normalizePagination(params.page, params.pageSize);
+  const supabase = await getSupabaseServerClient();
+
+  let query = supabase
+    .from("audit_logs")
+    .select(AUDIT_COLUMNS, { count: "exact" });
+
+  if (params.action) {
+    query = query.eq("action", params.action);
   }
 
-  await Promise.resolve();
+  if (params.actorId) {
+    query = query.eq("actor_id", params.actorId);
+  }
 
-  const filtered = auditLogRows.filter((log) => {
-    if (params.action && log.action !== params.action) {
-      return false;
-    }
+  const search = sanitizeSearchTerm(params.q);
 
-    if (params.actorId && log.actor_id !== params.actorId) {
-      return false;
-    }
+  if (search) {
+    const term = `%${search}%`;
+    query = query.or(
+      [
+        `action.ilike.${term}`,
+        `entity_type.ilike.${term}`,
+        `description.ilike.${term}`,
+      ].join(",")
+    );
+  }
 
-    return matchesQuery(params.q, [
-      log.actor_name,
-      log.action,
-      log.entity_type,
-      log.description,
-      log.ip_address,
-      log.result,
-    ]);
-  });
+  const { data, error, count } = await query
+    .order("created_at", { ascending: false })
+    .range(meta.offset, meta.offset + meta.pageSize - 1);
+
+  if (error) {
+    return { data: null, error: toDataError(error) };
+  }
 
   return {
-    data: pageSlice(filtered, params.page, params.pageSize),
+    data: {
+      rows: ((data ?? []) as AuditLogJoinRow[]).map(toAuditLogRow),
+      total: count ?? 0,
+      page: meta.page,
+      pageSize: meta.pageSize,
+    },
     error: null,
   };
 }
 
 export async function getAuditStats(): Promise<DataResult<AuditStats>> {
-  // TODO(supabase): replace with supabase.from("audit_logs").select("action")
-  if (!isPreviewMode) {
-    return { data: emptyStats(), error: null };
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("audit_logs")
+    .select("action, metadata, created_at");
+
+  if (error) {
+    return { data: null, error: toDataError(error) };
   }
 
-  await Promise.resolve();
-
   const stats = emptyStats();
-  const today = manilaDate(PREVIEW_NOW);
+  const today = manilaDate(new Date().toISOString());
   const byAction = new Map<string, number>();
 
-  for (const log of auditLogRows) {
+  for (const log of (data ?? []) as Array<
+    Pick<AuditLog, "action" | "metadata" | "created_at">
+  >) {
     stats.total += 1;
 
-    if (log.result === "success") {
+    if (auditResult(log.metadata) === "success") {
       stats.success += 1;
     } else {
       stats.failed += 1;
@@ -85,7 +142,7 @@ export async function getAuditStats(): Promise<DataResult<AuditStats>> {
 
   stats.byAction = [...byAction.entries()]
     .map(([action, count]) => ({ action, count }))
-    .sort((a, b) => a.action.localeCompare(b.action));
+    .sort((left, right) => left.action.localeCompare(right.action));
 
   return { data: stats, error: null };
 }
