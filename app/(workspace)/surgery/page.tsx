@@ -10,9 +10,12 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { SurgeryActions } from "@/components/surgery/surgery-actions";
 import { SurgeryView } from "@/components/surgery/surgery-view";
 import { SurgeryWorkflowStrip } from "@/components/surgery/surgery-workflow-strip";
+import { listDepartments } from "@/lib/data/departments";
+import { listPatients } from "@/lib/data/patients";
+import { listPhysicians } from "@/lib/data/staff";
 import {
   getOperatingRoomBoard,
   getSurgeryDetails,
@@ -27,13 +30,23 @@ export const metadata = {
 export default async function SurgeryPage() {
   await connection();
 
-  const [statsResult, listResult, roomsResult, detailsResult] =
-    await Promise.all([
-      getSurgeryStats(),
-      listSurgeryCases({ pageSize: 200 }),
-      getOperatingRoomBoard(),
-      getSurgeryDetails(),
-    ]);
+  const [
+    statsResult,
+    listResult,
+    roomsResult,
+    detailsResult,
+    patientResult,
+    departmentResult,
+    physicianResult,
+  ] = await Promise.all([
+    getSurgeryStats(),
+    listSurgeryCases({ pageSize: 200 }),
+    getOperatingRoomBoard(),
+    getSurgeryDetails(),
+    listPatients({ pageSize: 300 }),
+    listDepartments({ pageSize: 100 }),
+    listPhysicians(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -41,19 +54,22 @@ export default async function SurgeryPage() {
         title="Surgery & Operating Room"
         description="Schedule surgical cases, coordinate theatre teams, and track recovery."
         actions={
-          <>
-            <UnavailableAction
-              label="Register OR"
-              description="Register an operating room and record its availability state."
-              variant="secondary"
-              icon={<MedicalKitIcon className="size-4" aria-hidden="true" />}
-            />
-            <UnavailableAction
-              label="Schedule Surgery"
-              description="Create a surgical request, assign the surgical team, and reserve an operating room slot."
-              icon={<CalendarMarkIcon className="size-4" aria-hidden="true" />}
-            />
-          </>
+          <SurgeryActions
+            patients={(patientResult.data?.rows ?? []).map((patient) => ({
+              id: patient.id,
+              full_name: patient.full_name,
+              medical_record_number: patient.medical_record_number,
+            }))}
+            departments={(departmentResult.data?.rows ?? []).map(
+              (department) => ({ id: department.id, name: department.name })
+            )}
+            rooms={(roomsResult.data ?? []).map((room) => ({
+              id: room.id,
+              room_name: room.room_name,
+              status: room.status,
+            }))}
+            physicians={physicianResult.data ?? []}
+          />
         }
       />
 

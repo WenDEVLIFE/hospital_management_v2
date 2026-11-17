@@ -1455,3 +1455,51 @@ values
    null, '11111111-1111-4111-8111-000000000005')
 on conflict (id) do nothing;
 
+
+-- ============================================================================
+-- SURGERY & OPERATING ROOMS
+-- ============================================================================
+
+insert into public.departments (code, name)
+values ('SURG', 'Surgery Department')
+on conflict (code) do nothing;
+
+insert into public.operating_rooms (
+  id, room_name, department_id, status, notes, created_by
+)
+values
+  ('a2000000-0000-4000-8000-000000000001', 'OR-1',
+   (select id from public.departments where code = 'SURG'),
+   'available', 'General theatre.', '11111111-1111-4111-8111-000000000002'),
+  ('a2000000-0000-4000-8000-000000000002', 'OR-2',
+   (select id from public.departments where code = 'SURG'),
+   'cleaning', 'Minor procedures.', '11111111-1111-4111-8111-000000000002')
+on conflict (id) do nothing;
+
+insert into public.surgery_cases (
+  id, case_number, patient_id, room_id, procedure_code, procedure_name,
+  scheduled_start, scheduled_end, status, priority, surgeon_id,
+  anesthesia_type, pre_op_completed, consent_signed,
+  safety_checklist_completed, notes, created_by
+)
+values
+  ('a3000000-0000-4000-8000-000000000001', 'SUR-2026-0001',
+   '66666666-6666-4666-8666-000000000001',
+   'a2000000-0000-4000-8000-000000000001',
+   'CHOL-01', 'Laparoscopic cholecystectomy',
+   date_trunc('day', now()) + interval '9 hours',
+   date_trunc('day', now()) + interval '11 hours',
+   'scheduled', 'elective', '33333333-3333-4333-8333-000000000001',
+   'general', true, true, false, 'Standard pre-op workup complete.',
+   '11111111-1111-4111-8111-000000000004'),
+  ('a3000000-0000-4000-8000-000000000002', 'SUR-2026-0002',
+   '66666666-6666-4666-8666-000000000002',
+   'a2000000-0000-4000-8000-000000000002',
+   'APP-02', 'Appendectomy',
+   now() - interval '90 minutes',
+   now() + interval '30 minutes',
+   'in_progress', 'urgent', '33333333-3333-4333-8333-000000000002',
+   'regional', true, true, true, 'Case in progress.',
+   '11111111-1111-4111-8111-000000000004')
+on conflict (id) do nothing;
+

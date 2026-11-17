@@ -408,8 +408,8 @@
 
 ### 6.7 Fixture-only module backends
 
-- [ ] Emergency — migration 035 adds `emergency_visits`, permissions, RLS, `start_emergency_visit`, and a real data layer; apply and verify
-- [ ] Surgery
+- [ ] Emergency — migration 035 adds `emergency_visits`, permissions, RLS, `start_emergency_visit`, and a real data layer; apply `20261117001200_emergency_visits.sql` and verify
+- [ ] Surgery — migration 036 adds `operating_rooms`, `surgery_cases`, permissions, RLS, `register_operating_room` and `schedule_surgery_case`, plus a real data layer and dialogs; apply `20261117001300_surgery.sql` and verify
 - [ ] HR
 - [ ] Insurance
 - [ ] Blood bank
