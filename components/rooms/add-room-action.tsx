@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
+import { useCan } from "@/components/providers/permission-provider";
 import { createRoomAction } from "@/app/(workspace)/staff/actions";
 import { roomSchema } from "@/lib/validations/organisation";
 
@@ -42,6 +43,11 @@ export function AddRoomAction({ departments }: AddRoomActionProps) {
   const [errors, setErrors] = React.useState<FormErrors>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const can = useCan();
+
+  if (!can("bed.manage")) {
+    return null;
+  }
 
   function setField<K extends keyof FormValues>(
     field: K,

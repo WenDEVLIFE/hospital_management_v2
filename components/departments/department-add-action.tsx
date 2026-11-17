@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { usePermissions } from "@/components/providers/permission-provider";
 import { createDepartmentAction } from "@/app/(workspace)/staff/actions";
 import { departmentSchema } from "@/lib/validations/organisation";
 
@@ -32,6 +33,11 @@ export function DepartmentAddAction() {
   const [errors, setErrors] = React.useState<FormErrors>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const { isAdmin } = usePermissions();
+
+  if (!isAdmin) {
+    return null;
+  }
 
   function setField<K extends keyof FormValues>(
     field: K,

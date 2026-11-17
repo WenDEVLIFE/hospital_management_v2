@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { useCan } from "@/components/providers/permission-provider";
 import { startEmergencyVisitAction } from "@/app/(workspace)/emergency/actions";
 import { startEmergencyVisitSchema } from "@/lib/validations/emergency";
 
@@ -62,6 +63,11 @@ export function StartTriageAction({ patients }: StartTriageDialogProps) {
   const [errors, setErrors] = React.useState<FormErrors>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const can = useCan();
+
+  if (!can("emergency.create")) {
+    return null;
+  }
 
   function setField<K extends keyof FormValues>(
     field: K,
@@ -141,7 +147,6 @@ export function StartTriageAction({ patients }: StartTriageDialogProps) {
         <HeartPulseIcon className="size-4" aria-hidden="true" />
         Start Triage
       </Button>
-
       <Modal
         open={open}
         onClose={() => {

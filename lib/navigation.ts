@@ -60,11 +60,11 @@ export const navigation: NavSection[] = [
   {
     title: "PATIENT SERVICES",
     items: [
-      { label: "Patients", href: "/patients", icon: UserRoundedIcon },
-      { label: "Appointments", href: "/appointments", icon: CalendarMarkIcon },
-      { label: "Emergency Room", href: "/emergency", icon: SirenRoundedIcon },
-      { label: "Admissions", href: "/admissions", icon: LoginIcon },
-      { label: "Discharges", href: "/discharges", icon: LogoutIcon },
+      { label: "Patients", href: "/patients", permission: "patient.view", icon: UserRoundedIcon },
+      { label: "Appointments", href: "/appointments", permission: "appointment.view", icon: CalendarMarkIcon },
+      { label: "Emergency Room", href: "/emergency", permission: "emergency.view", icon: SirenRoundedIcon },
+      { label: "Admissions", href: "/admissions", permission: "admission.view", icon: LoginIcon },
+      { label: "Discharges", href: "/discharges", permission: "admission.view", icon: LogoutIcon },
     ],
   },
   {
@@ -72,29 +72,29 @@ export const navigation: NavSection[] = [
     items: [
       {
         label: "Medical Records",
-        href: "/medical-records",
+        href: "/medical-records", permission: "medical_record.view",
         icon: DocumentTextIcon,
       },
-      { label: "Nursing", href: "/nursing", icon: HeartPulseIcon },
-      { label: "Surgery & OR", href: "/surgery", icon: MedicalKitIcon },
-      { label: "Doctors & Staff", href: "/staff", icon: StethoscopeIcon },
+      { label: "Nursing", href: "/nursing", permission: "nursing.view", icon: HeartPulseIcon },
+      { label: "Surgery & OR", href: "/surgery", permission: "surgery.view", icon: MedicalKitIcon },
+      { label: "Doctors & Staff", href: "/staff", permission: "hr.view", icon: StethoscopeIcon },
     ],
   },
   {
     title: "DIAGNOSTIC SERVICES",
     items: [
-      { label: "Laboratory", href: "/laboratory", icon: TestTubeIcon },
-      { label: "Radiology", href: "/radiology", icon: Scanner2Icon },
+      { label: "Laboratory", href: "/laboratory", permission: "laboratory.view", icon: TestTubeIcon },
+      { label: "Radiology", href: "/radiology", permission: "radiology.view", icon: Scanner2Icon },
       { label: "Blood Bank", href: "/blood-bank", icon: WaterdropIcon },
     ],
   },
   {
     title: "MEDICATION SERVICES",
     items: [
-      { label: "Pharmacy", href: "/pharmacy", icon: Pills2Icon },
+      { label: "Pharmacy", href: "/pharmacy", permission: "pharmacy.view", icon: Pills2Icon },
       {
         label: "Prescriptions",
-        href: "/prescriptions",
+        href: "/prescriptions", permission: "prescription.view",
         icon: DocumentMedicineIcon,
       },
     ],
@@ -102,8 +102,8 @@ export const navigation: NavSection[] = [
   {
     title: "FINANCIAL SERVICES",
     items: [
-      { label: "Billing", href: "/billing", icon: BillListIcon },
-      { label: "Payments", href: "/payments", icon: WalletMoneyIcon },
+      { label: "Billing", href: "/billing", permission: "billing.view", icon: BillListIcon },
+      { label: "Payments", href: "/payments", permission: "billing.view", icon: WalletMoneyIcon },
       {
         label: "Insurance & PhilHealth",
         href: "/insurance",
@@ -114,9 +114,9 @@ export const navigation: NavSection[] = [
   {
     title: "OPERATIONS",
     items: [
-      { label: "Inventory", href: "/inventory", icon: BoxIcon },
+      { label: "Inventory", href: "/inventory", permission: "inventory.view", icon: BoxIcon },
       { label: "Departments", href: "/departments", icon: Buildings2Icon },
-      { label: "Rooms & Beds", href: "/rooms-beds", icon: BedIcon },
+      { label: "Rooms & Beds", href: "/rooms-beds", permission: "bed.view", icon: BedIcon },
       { label: "Ambulance", href: "/ambulance", icon: BusIcon },
     ],
   },
@@ -153,14 +153,14 @@ export const navigation: NavSection[] = [
   {
     title: "MANAGEMENT",
     items: [
-      { label: "HR & Payroll", href: "/hr", icon: CaseIcon },
+      { label: "HR & Payroll", href: "/hr", permission: "hr.view", icon: CaseIcon },
       { label: "Reports & Analytics", href: "/reports", icon: Chart2Icon },
       {
         label: "User Management",
-        href: "/settings/users",
+        href: "/settings/users", permission: "user.view",
         icon: UsersGroupTwoRoundedIcon,
       },
-      { label: "Audit Logs", href: "/audit-logs", icon: HistoryIcon },
+      { label: "Audit Logs", href: "/audit-logs", permission: "audit.view", icon: HistoryIcon },
       { label: "Settings", href: "/settings", icon: SettingsIcon },
     ],
   },

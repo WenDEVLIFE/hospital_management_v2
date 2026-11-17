@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { CloseIcon } from "@solar-icons/react/linear";
 import { cn } from "@/lib/utils";
 import { isNavItemActive, navigation } from "@/lib/navigation";
+import { useCan } from "@/components/providers/permission-provider";
 import { useSidebar } from "./sidebar-provider";
 
 type SidebarNavProps = {
@@ -15,13 +16,21 @@ type SidebarNavProps = {
 
 function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
+  const can = useCan();
+
+  const sections = navigation
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => can(item.permission)),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <nav
       aria-label="Primary"
       className="flex-1 space-y-5 overflow-y-auto px-2 py-4"
     >
-      {navigation.map((section) => (
+      {sections.map((section) => (
         <div key={section.title}>
           {collapsed ? (
             <div

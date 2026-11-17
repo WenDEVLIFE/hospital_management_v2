@@ -4,6 +4,7 @@ import * as React from "react";
 import { BillListIcon } from "@solar-icons/react/linear";
 
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/components/providers/permission-provider";
 
 import { CreateInvoiceDialog } from "./create-invoice-dialog";
 
@@ -17,6 +18,11 @@ export interface CreateInvoiceActionProps {
 
 export function CreateInvoiceAction({ patients }: CreateInvoiceActionProps) {
   const [open, setOpen] = React.useState(false);
+  const can = useCan();
+
+  if (!can("billing.invoice.create")) {
+    return null;
+  }
 
   return (
     <>

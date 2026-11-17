@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 45 / 67 | In progress (6.7: emergency and surgery verified; HR awaiting the overnight-shift fix. 8 fixture modules remain) |
+| 6 | Frontend ↔ backend integration | 46 / 67 | In progress (6.7: emergency, surgery and HR verified. 6.5 role-based navigation in progress; 8 fixture modules remain) |
 | 7 | QA & security verification | 8 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **180 / 296** | |
+| **Total** | | **181 / 296** | |
 
 ---
 
@@ -395,9 +395,9 @@
 
 - [ ] Upload UI for patient documents, lab attachments, radiology files
 - [ ] Signed URL viewer
-- [ ] Realtime hooks for the 9 published tables
-- [ ] Set `NavItem.permission` and filter navigation by `has_permission`
-- [ ] Hide actions the user cannot perform (never rely on hiding alone — RLS still enforces)
+- [ ] Realtime hooks for the 9 published tables — publication is added by migration 039; client hooks not started
+- [ ] Set `NavItem.permission` and filter navigation by `has_permission` — implemented: `current_permissions()` RPC, `getCurrentUserAccess()`, `PermissionProvider`, and sidebar filtering; apply migration 039 and verify with a non-admin account
+- [ ] Hide actions the user cannot perform (never rely on hiding alone — RLS still enforces) — started: billing invoice, payments, emergency triage, surgery, inventory stock, departments and rooms are gated; pharmacy dispensing, lab verification, HR and staff actions remain
 
 ### 6.6 Decommission preview mode
 
@@ -410,7 +410,7 @@
 
 - [x] Emergency — 2026-11-17, applied and verified; start triage created ER-2026-0001 with encounter ENC-2026-0007, duplicate active visits rejected, and the board renders real data
 - [x] Surgery — 2026-11-17, applied and verified; registered an OR, scheduled a case, and an overlapping slot was rejected with 23P01 (verification records cleaned up). Demo rooms/cases arrive with the seed block
-- [ ] HR — applied; leave filing and review verified (3-day request, approved, repeat review rejected). Overnight shifts were rejected by an ordering bug, fixed in `20261117001600_overnight_shifts.sql` — apply and verify a 23:00–07:00 shift. Payroll processing still needs a salary model
+- [x] HR — 2026-11-17, applied and verified; leave filing/review worked (repeat review rejected), overnight 23:00–07:00 shift now accepted by migration 038 with `overnight: true` in the audit metadata, and equal start/end times rejected. Payroll processing still needs a salary model
 - [ ] Insurance
 - [ ] Blood bank
 - [ ] Ambulance

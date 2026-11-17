@@ -23,6 +23,7 @@ import {
   registerRoomSchema,
   scheduleSurgerySchema,
 } from "@/lib/validations/surgery";
+import { useCan } from "@/components/providers/permission-provider";
 import type { PhysicianOption } from "@/types/hospital";
 
 type RoomValues = {
@@ -122,6 +123,11 @@ export function SurgeryActions({
   const [caseSubmitting, setCaseSubmitting] = React.useState(false);
 
   const bookableRooms = rooms.filter((room) => room.status !== "maintenance");
+  const can = useCan();
+
+  if (!can("surgery.create")) {
+    return null;
+  }
 
   function setRoomField<K extends keyof RoomValues>(
     field: K,
