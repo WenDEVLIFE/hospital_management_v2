@@ -35,6 +35,7 @@ export const nursingAssignmentRows: NursingAssignmentRow[] = admissions
         patientMrnById.get(admission.patient_id) ?? "MRN-2026-0000",
       admission_id: admission.id,
       admission_number: admission.admission_number,
+      encounter_id: null,
       department_name: bed?.department_name ?? "Inpatient Department",
       room_number: bed?.room_number ?? null,
       bed_number: bed?.bed_number ?? null,

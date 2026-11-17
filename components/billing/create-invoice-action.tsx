@@ -1,16 +1,36 @@
 "use client";
 
+import * as React from "react";
 import { BillListIcon } from "@solar-icons/react/linear";
 
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { Button } from "@/components/ui/button";
 
-export function CreateInvoiceAction() {
+import { CreateInvoiceDialog } from "./create-invoice-dialog";
+
+export interface CreateInvoiceActionProps {
+  patients: Array<{
+    id: string;
+    full_name: string;
+    medical_record_number: string;
+  }>;
+}
+
+export function CreateInvoiceAction({ patients }: CreateInvoiceActionProps) {
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <UnavailableAction
-      label="Create Invoice"
-      icon={<BillListIcon className="size-4" aria-hidden="true" />}
-      description="Start a new invoice for recorded hospital charges."
-      note="Invoice creation will be enabled once the hospital database connection is available. No invoice will be created in this preview."
-    />
+    <>
+      <Button onClick={() => setOpen(true)} disabled={patients.length === 0}>
+        <BillListIcon className="size-4" aria-hidden="true" />
+        Create Invoice
+      </Button>
+
+      <CreateInvoiceDialog
+        key={open ? "open" : "closed"}
+        open={open}
+        onClose={() => setOpen(false)}
+        patients={patients}
+      />
+    </>
   );
 }

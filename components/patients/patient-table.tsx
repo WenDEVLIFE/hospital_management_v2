@@ -5,11 +5,12 @@ import Link from "next/link";
 import { UserRoundedIcon } from "@solar-icons/react/linear";
 
 import { RecordTable, type Column } from "@/components/module/record-table";
-import { UnavailableActionDialog } from "@/components/module/unavailable-action";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { PatientListRow } from "@/types/hospital";
 import { formatDate, formatIdentifier, formatName } from "@/lib/format";
+
+import { PatientEditDialog } from "./patient-edit-dialog";
 
 export interface PatientTableProps {
   rows: PatientListRow[];
@@ -145,15 +146,11 @@ export function PatientTable({ rows }: PatientTableProps) {
         emptyIcon={<UserRoundedIcon className="size-5" aria-hidden="true" />}
       />
 
-      <UnavailableActionDialog
+      <PatientEditDialog
+        key={editTarget?.id ?? "none"}
         open={editTarget !== null}
+        patient={editTarget}
         onClose={() => setEditTarget(null)}
-        title="Edit patient record"
-        description={
-          editTarget
-            ? `Editing ${formatName(editTarget)} is not available yet.`
-            : undefined
-        }
       />
     </>
   );

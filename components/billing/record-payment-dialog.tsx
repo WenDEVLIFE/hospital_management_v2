@@ -69,32 +69,44 @@ function validate(values: FormValues, invoiceId: string): FormErrors {
 export interface RecordPaymentDialogProps {
   open: boolean;
   onClose: () => void;
-  invoice: InvoiceListRow | null;
+  invoices: InvoiceListRow[];
+  initialInvoiceId?: string | null;
 }
 
 export function RecordPaymentDialog({
   open,
   onClose,
-  invoice,
+  invoices,
+  initialInvoiceId,
 }: RecordPaymentDialogProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [selectedId, setSelectedId] = React.useState(
+    () => initialInvoiceId ?? (invoices.length === 1 ? invoices[0]?.id ?? "" : "")
+  );
   const [values, setValues] = React.useState<FormValues>(() =>
-    initialValues(invoice)
+    initialValues(invoices.find((entry) => entry.id === (initialInvoiceId ?? "")) ?? null)
   );
   const [errors, setErrors] = React.useState<FormErrors>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
+  const invoice = invoices.find((entry) => entry.id === selectedId) ?? null;
   const invoiceId = invoice?.id ?? "";
 
-  if (!invoice) {
-    return null;
+  const balance = invoice?.balance ?? 0;
+
+  function handleInvoiceChange(nextId: string) {
+    const next = invoices.find((entry) => entry.id === nextId) ?? null;
+
+    setSelectedId(nextId);
+    setValues((current) => ({
+      ...current,
+      amount: next && next.balance > 0 ? next.balance.toFixed(2) : "",
+    }));
+    setFormError(null);
   }
 
-  const activeInvoice = invoice;
-
-  const balance = invoice.balance;
   function setField<K extends keyof FormValues>(
     field: K,
     value: FormValues[K]
@@ -117,6 +129,11 @@ export function RecordPaymentDialog({
     event.preventDefault();
 
     if (submitting) {
+      return;
+    }
+
+    if (!invoice) {
+      setFormError("Select the invoice receiving this payment.");
       return;
     }
 
@@ -146,7 +163,7 @@ export function RecordPaymentDialog({
       toast({
         title: "Payment recorded",
         description: `${formatCurrency(Number(values.amount))} applied to ${
-          activeInvoice.invoice_number
+          invoice.invoice_number
         }.`,
         variant: "success",
       });
@@ -166,8 +183,14 @@ export function RecordPaymentDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title={`Record payment · ${invoice.invoice_number}`}
-      description={`${invoice.patient_name} · ${invoice.patient_mrn}`}
+      title={
+        invoice ? `Record payment · ${invoice.invoice_number}` : "Record payment"
+      }
+      description={
+        invoice
+          ? `${invoice.patient_name} · ${invoice.patient_mrn}`
+          : "Apply a payment to an outstanding invoice."
+      }
       footer={
         <>
           <Button
@@ -195,6 +218,32 @@ export function RecordPaymentDialog({
           </Alert>
         ) : null}
 
+        {invoices.length > 1 ? (
+          <FormField
+            label="Invoice"
+            htmlFor="payment_invoice"
+            required
+            hint="Only invoices with an outstanding balance are listed."
+          >
+            <Select
+              id="payment_invoice"
+              name="payment_invoice"
+              value={selectedId}
+              onChange={(event) => handleInvoiceChange(event.target.value)}
+            >
+              <option value="">Select invoice</option>
+              {invoices.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.invoice_number} · {entry.patient_name} ·{" "}
+                  {formatCurrency(entry.balance)} due
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        ) : null}
+
+        {invoice ? (
+          <>
         <dl className="grid gap-3 rounded-md border border-hospital-border bg-hospital-surface-muted/60 px-3 py-3 sm:grid-cols-3">
           <div>
             <dt className="text-[11px] font-medium text-hospital-text-muted">
@@ -280,6 +329,12 @@ export function RecordPaymentDialog({
           Recording a payment creates a permanent payment record and updates the
           invoice balance. Use the refund workflow to reverse a payment.
         </Alert>
+          </>
+        ) : (
+          <Alert variant="info" title="Select an invoice">
+            Choose the invoice that should receive this payment.
+          </Alert>
+        )}
       </form>
     </Modal>
   );

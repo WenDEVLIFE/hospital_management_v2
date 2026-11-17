@@ -216,7 +216,8 @@ export function BillingView({ invoices, payments }: BillingViewProps) {
       <RecordPaymentDialog
         key={`payment-${paymentInvoice?.id ?? "none"}-${paymentInvoice ? "open" : "closed"}`}
         open={paymentInvoice !== null}
-        invoice={paymentInvoice}
+        invoices={paymentInvoice ? [paymentInvoice] : []}
+        initialInvoiceId={paymentInvoice?.id ?? null}
         onClose={() => setPaymentInvoice(null)}
       />
 

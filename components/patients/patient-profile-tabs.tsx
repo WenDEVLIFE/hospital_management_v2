@@ -14,7 +14,6 @@ import {
 
 import { PageSection } from "@/components/layout/page-section";
 import { RecordTable, type Column } from "@/components/module/record-table";
-import { UnavailableActionDialog } from "@/components/module/unavailable-action";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
@@ -37,6 +36,7 @@ import {
   formatIdentifier,
 } from "@/lib/format";
 import { formatPatientAddress, getPatientAge } from "./patient-utils";
+import { PatientAllergyDialog } from "./patient-allergy-dialog";
 
 export interface PatientProfileTabsProps {
   patient: PatientListRow;
@@ -619,11 +619,12 @@ export function PatientProfileTabs({
         {tab === "billing" ? <BillingPanel rows={summary.invoices} /> : null}
       </div>
 
-      <UnavailableActionDialog
+      <PatientAllergyDialog
+        key={showAddAllergy ? "open" : "closed"}
         open={showAddAllergy}
+        patientId={patient.id}
+        patientName={formatIdentifier(patient.medical_record_number)}
         onClose={() => setShowAddAllergy(false)}
-        title="Add allergy"
-        description="Allergy records cannot be changed yet."
       />
     </PageSection>
   );

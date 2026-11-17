@@ -1,16 +1,32 @@
 "use client";
 
+import * as React from "react";
 import { WalletMoneyIcon } from "@solar-icons/react/linear";
 
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { Button } from "@/components/ui/button";
+import { RecordPaymentDialog } from "@/components/billing/record-payment-dialog";
+import type { InvoiceListRow } from "@/types/hospital";
 
-export function RecordPaymentAction() {
+export interface RecordPaymentActionProps {
+  invoices: InvoiceListRow[];
+}
+
+export function RecordPaymentAction({ invoices }: RecordPaymentActionProps) {
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <UnavailableAction
-      label="Record Payment"
-      icon={<WalletMoneyIcon className="size-4" aria-hidden="true" />}
-      description="Apply a payment to an outstanding patient invoice."
-      note="Payment recording will be enabled once the hospital database connection is available. No payment will be posted in this preview. Payment recording must be transactional and must not create duplicate transactions."
-    />
+    <>
+      <Button onClick={() => setOpen(true)} disabled={invoices.length === 0}>
+        <WalletMoneyIcon className="size-4" aria-hidden="true" />
+        Record Payment
+      </Button>
+
+      <RecordPaymentDialog
+        key={open ? "open" : "closed"}
+        open={open}
+        invoices={invoices}
+        onClose={() => setOpen(false)}
+      />
+    </>
   );
 }

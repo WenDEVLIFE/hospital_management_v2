@@ -2133,6 +2133,7 @@ export type NursingAssignmentRow = {
   patient_mrn: string;
   admission_id: string;
   admission_number: string;
+  encounter_id: string | null;
   department_name: string;
   room_number: string | null;
   bed_number: string | null;

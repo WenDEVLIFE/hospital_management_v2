@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 42 / 55 | In progress (6.3 complete; patient, appointment, admission/transfer/discharge, finalize-note, lab-verify, dispensing, payment/refund, and stock-movement mutations live; remaining placeholder removal and preview decommission) |
+| 6 | Frontend ↔ backend integration | 43 / 56 | In progress (6.3 complete; patient, appointment, admission/transfer/discharge, finalize-note, lab-verify, dispensing, payment/refund, stock-movement, invoice, patient-record, and nursing mutations live; remaining placeholders and preview decommission) |
 | 7 | QA & security verification | 8 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **177 / 284** | |
+| **Total** | | **178 / 285** | |
 
 ---
 
@@ -387,7 +387,8 @@
 - [x] Dispensing → `dispense_prescription` — 2026-11-17, applied and verified; RX-2026-0003 (30 Losartan) and RX-2026-0002 (20 Paracetamol remaining) became dispensed, batches went 420→390 and 1200→1180, `stock_transactions` + audit rows written, repeat call rejected with 22023. Fixed the `can_access_patient` gate in migration 029 that blocked pharmacists.
 - [x] Payment / refund → `record_payment` / `refund_payment` — 2026-11-17, applied and verified; INV-2026-0003 collected 2,000 then 2,200 (PAY-2026-0004/0005) and became paid, overpayment and post-paid payments rejected, PAY-2026-0002 refunded and INV-2026-0002 returned to unpaid with an 18,000 balance, duplicate refund rejected, audit rows written. Migration 031 fixed the 42804 enum cast failure.
 - [x] Stock movements → `adjust_inventory` — 2026-11-17, applied and verified; received a 50-unit batch on ITM-0001, issued 90 units FIFO across two batches (80 + 10), an over-issue of 1,000 was rejected with no quantity change, a count adjustment of 40→38 wrote a delta of 2, a count above the received quantity was rejected, a missing reason was rejected, and audit rows were written
-- [ ] Delete every `UnavailableAction` call site and `components/module/unavailable-action.tsx`
+- [x] Replace `UnavailableAction` in modules with a live backend — billing invoice creation, payments, patient edit/archive/allergy, and nursing vitals/notes now call real RPCs (migration 033)
+- [ ] Remove the remaining placeholders — departments/rooms creation, staff edit/deactivate, user invites (needs Auth admin), and the 11 fixture-only modules (ambulance, blood bank, dietary, emergency, equipment, housekeeping, HR, insurance, mortuary, surgery) which have no schema yet
 - [ ] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted; patient, appointment, admission, transfer, discharge, clinical-note, and lab-verification flows use success toasts; other forms pending
 
 ### 6.5 Files, realtime, roles

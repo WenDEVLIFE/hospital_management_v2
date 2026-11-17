@@ -100,7 +100,7 @@ export default async function PatientRecordPage({
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={patient.registration_status} />
-            <PatientRecordActions />
+            <PatientRecordActions patient={patient} />
           </div>
         }
       />

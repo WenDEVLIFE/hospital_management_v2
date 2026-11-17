@@ -10,7 +10,7 @@ import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
 import { PaymentsView } from "@/components/payments/payments-view";
 import { RecordPaymentAction } from "@/components/payments/record-payment-action";
-import { getBillingStats, listPayments } from "@/lib/data/billing";
+import { getBillingStats, listInvoices, listPayments } from "@/lib/data/billing";
 import { formatCurrency } from "@/lib/format";
 
 export const metadata = {
@@ -18,10 +18,18 @@ export const metadata = {
 };
 
 export default async function PaymentsPage() {
-  const [statsResult, paymentResult] = await Promise.all([
+  const [statsResult, paymentResult, invoiceResult] = await Promise.all([
     getBillingStats(),
     listPayments({ pageSize: 500 }),
+    listInvoices({ pageSize: 300 }),
   ]);
+
+  const payableInvoices = (invoiceResult.data?.rows ?? []).filter(
+    (invoice) =>
+      invoice.balance > 0 &&
+      invoice.status !== "cancelled" &&
+      invoice.status !== "refunded"
+  );
 
   const payments = paymentResult.data?.rows ?? [];
   const totalCollected = payments
@@ -40,7 +48,7 @@ export default async function PaymentsPage() {
       <PageHeader
         title="Payments"
         description="Recorded payments and transaction references."
-        actions={<RecordPaymentAction />}
+        actions={<RecordPaymentAction invoices={payableInvoices} />}
       />
 
       {statsResult.error ? (

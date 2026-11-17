@@ -9,9 +9,12 @@ import {
 } from "@solar-icons/react/linear";
 
 import { EmptyState } from "@/components/ui/empty-state";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { Button } from "@/components/ui/button";
 import { formatDateTime, formatIdentifier } from "@/lib/format";
 import type { NursingAssignmentRow, VitalSigns } from "@/types/hospital";
+
+import { AddNursingNoteDialog } from "./add-nursing-note-dialog";
+import { RecordVitalsDialog } from "./record-vitals-dialog";
 
 export interface NursingWorkspaceProps {
   rows: NursingAssignmentRow[];
@@ -79,6 +82,8 @@ export function NursingWorkspace({
   const [selectedPatientId, setSelectedPatientId] = React.useState<
     string | null
   >(rows[0]?.patient_id ?? null);
+  const [vitalsOpen, setVitalsOpen] = React.useState(false);
+  const [noteOpen, setNoteOpen] = React.useState(false);
 
   const selected =
     rows.find((row) => row.patient_id === selectedPatientId) ?? rows[0] ?? null;
@@ -199,24 +204,21 @@ export function NursingWorkspace({
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <UnavailableAction
-                  label="Record vitals"
-                  icon={<HeartPulseIcon className="size-4" aria-hidden="true" />}
-                  description={`Record a new set of observations for ${selected.patient_name}.`}
-                  note="This form would record vital signs for the patient, with the current timestamp and your staff reference. Nothing is saved in this preview."
-                />
-                <UnavailableAction
-                  label="Add nursing note"
+                <Button
+                  onClick={() => setVitalsOpen(true)}
+                  disabled={!selected.encounter_id}
+                >
+                  <HeartPulseIcon className="size-4" aria-hidden="true" />
+                  Record vitals
+                </Button>
+                <Button
                   variant="secondary"
-                  icon={
-                    <ClipboardListIcon
-                      className="size-4"
-                      aria-hidden="true"
-                    />
-                  }
-                  description={`Add a nursing note to the record for ${selected.patient_name}.`}
-                  note="This form would record a nursing note for the patient, with the current timestamp and your staff reference. Nothing is saved in this preview."
-                />
+                  onClick={() => setNoteOpen(true)}
+                  disabled={!selected.encounter_id}
+                >
+                  <ClipboardListIcon className="size-4" aria-hidden="true" />
+                  Add nursing note
+                </Button>
               </div>
             </div>
           </div>
@@ -312,6 +314,24 @@ export function NursingWorkspace({
           </div>
         </div>
       </div>
+
+      <RecordVitalsDialog
+        key={`vitals-${vitalsOpen ? selected.patient_id : "closed"}`}
+        open={vitalsOpen}
+        patientId={selected.patient_id}
+        encounterId={selected.encounter_id ?? ""}
+        patientName={selected.patient_name}
+        onClose={() => setVitalsOpen(false)}
+      />
+
+      <AddNursingNoteDialog
+        key={`note-${noteOpen ? selected.patient_id : "closed"}`}
+        open={noteOpen}
+        patientId={selected.patient_id}
+        encounterId={selected.encounter_id ?? ""}
+        patientName={selected.patient_name}
+        onClose={() => setNoteOpen(false)}
+      />
     </>
   );
 }

@@ -10,6 +10,10 @@ import {
   type RecordPaymentInput,
   type RefundPaymentInput,
 } from "@/lib/validations/payment";
+import {
+  createInvoiceSchema,
+  type CreateInvoiceInput,
+} from "@/lib/validations/invoice";
 
 type RpcError = { code?: string | null; message?: string | null };
 
@@ -19,6 +23,10 @@ export type RecordPaymentResult =
 
 export type RefundPaymentResult =
   | { ok: true; paymentId: string }
+  | { ok: false; formError: string };
+
+export type CreateInvoiceResult =
+  | { ok: true; invoiceId: string }
   | { ok: false; formError: string };
 
 function recordPaymentErrorMessage(error: RpcError): string {
@@ -75,7 +83,66 @@ function refundPaymentErrorMessage(error: RpcError): string {
 
 function revalidateBilling() {
   revalidatePath("/billing");
+  revalidatePath("/payments");
   revalidatePath("/dashboard");
+}
+
+export async function createInvoiceAction(
+  input: CreateInvoiceInput
+): Promise<CreateInvoiceResult> {
+  const parsed = createInvoiceSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError:
+        parsed.error.issues[0]?.message ?? "Check the invoice details.",
+    };
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("create_invoice", {
+    p_patient_id: value.patientId,
+    p_items: value.items.map((item) => ({
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+    })),
+    p_discount_amount: value.discountAmount ?? 0,
+  });
+
+  if (error) {
+    const message = (error.message ?? "").toLowerCase();
+
+    if (message.includes("patient not found")) {
+      return { ok: false, formError: "The patient could not be found." };
+    }
+
+    if (message.includes("charge line") || message.includes("description")) {
+      return {
+        ok: false,
+        formError: "Every charge line needs a description and a quantity above zero.",
+      };
+    }
+
+    if (message.includes("discount")) {
+      return { ok: false, formError: "The discount exceeds the invoice subtotal." };
+    }
+
+    return { ok: false, formError: pgErrorMessage(error.code ?? "UNKNOWN") };
+  }
+
+  if (!data) {
+    return {
+      ok: false,
+      formError: "The invoice was created but no identifier was returned.",
+    };
+  }
+
+  revalidateBilling();
+
+  return { ok: true, invoiceId: String(data) };
 }
 
 export async function recordPaymentAction(

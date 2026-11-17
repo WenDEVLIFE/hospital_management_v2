@@ -13,6 +13,7 @@ import { StatCard } from "@/components/module/stat-card";
 import { BillingView } from "@/components/billing/billing-view";
 import { CreateInvoiceAction } from "@/components/billing/create-invoice-action";
 import { getBillingStats, listInvoices, listPayments } from "@/lib/data/billing";
+import { listPatients } from "@/lib/data/patients";
 import { formatCurrency } from "@/lib/format";
 
 export const metadata = {
@@ -20,18 +21,28 @@ export const metadata = {
 };
 
 export default async function BillingPage() {
-  const [statsResult, invoiceResult, paymentResult] = await Promise.all([
-    getBillingStats(),
-    listInvoices({ pageSize: 200 }),
-    listPayments({ pageSize: 500 }),
-  ]);
+  const [statsResult, invoiceResult, paymentResult, patientResult] =
+    await Promise.all([
+      getBillingStats(),
+      listInvoices({ pageSize: 200 }),
+      listPayments({ pageSize: 500 }),
+      listPatients({ pageSize: 300 }),
+    ]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Billing"
         description="Invoices, charges and outstanding balances."
-        actions={<CreateInvoiceAction />}
+        actions={
+          <CreateInvoiceAction
+            patients={(patientResult.data?.rows ?? []).map((patient) => ({
+              id: patient.id,
+              full_name: patient.full_name,
+              medical_record_number: patient.medical_record_number,
+            }))}
+          />
+        }
       />
 
       {statsResult.error ? (

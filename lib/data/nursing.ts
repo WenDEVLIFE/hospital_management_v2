@@ -101,26 +101,35 @@ const loadNursingAssignments = cache(
       return { data: [], error: null };
     }
 
-    const [vitalsResult, assessmentsResult, careResult] = await Promise.all([
-      supabase
-        .from("vital_signs")
-        .select("*")
-        .in("patient_id", patientIds)
-        .order("recorded_at", { ascending: false }),
-      supabase
-        .from("nursing_assessments")
-        .select("patient_id, assessed_at")
-        .in("patient_id", patientIds),
-      supabase
-        .from("patient_care_assignments")
-        .select(
-          "patient_id, assigned_at, staff_profiles!inner(profiles!staff_profiles_user_id_fkey(full_name))"
-        )
-        .is("ended_at", null)
-        .ilike("assignment_type", "%nurse%")
-        .in("patient_id", patientIds)
-        .order("assigned_at", { ascending: false }),
-    ]);
+    const [vitalsResult, assessmentsResult, careResult, encounterResult] =
+      await Promise.all([
+        supabase
+          .from("vital_signs")
+          .select("*")
+          .in("patient_id", patientIds)
+          .order("recorded_at", { ascending: false }),
+        supabase
+          .from("nursing_assessments")
+          .select("patient_id, assessed_at")
+          .in("patient_id", patientIds),
+        supabase
+          .from("patient_care_assignments")
+          .select(
+            "patient_id, assigned_at, staff_profiles!inner(profiles!staff_profiles_user_id_fkey(full_name))"
+          )
+          .is("ended_at", null)
+          .ilike("assignment_type", "%nurse%")
+          .in("patient_id", patientIds)
+          .order("assigned_at", { ascending: false }),
+        supabase
+          .from("encounters")
+          .select("id, admission_id, clinical_status, started_at")
+          .in(
+            "admission_id",
+            admissions.map((admission) => admission.id)
+          )
+          .order("started_at", { ascending: false }),
+      ]);
 
     // Latest vitals: rows are ordered newest first, so the first row per
     // patient wins. A dedicated latest-per-patient view would be cheaper at
@@ -150,6 +159,26 @@ const loadNursingAssignments = cache(
     }
 
     const nurseByPatient = new Map<string, string>();
+
+    const encounterByAdmission = new Map<string, string>();
+
+    if (!encounterResult.error) {
+      for (const encounter of (encounterResult.data ?? []) as Array<{
+        id: string;
+        admission_id: string | null;
+        clinical_status: string;
+      }>) {
+        if (!encounter.admission_id) {
+          continue;
+        }
+
+        const existing = encounterByAdmission.get(encounter.admission_id);
+
+        if (!existing || encounter.clinical_status !== "completed") {
+          encounterByAdmission.set(encounter.admission_id, encounter.id);
+        }
+      }
+    }
 
     if (!careResult.error) {
       for (const care of (careResult.data ?? []) as CareAssignmentJoinRow[]) {
@@ -185,6 +214,7 @@ const loadNursingAssignments = cache(
         patient_mrn: patient?.medical_record_number ?? "\u2014",
         admission_id: admission.id,
         admission_number: admission.admission_number,
+        encounter_id: encounterByAdmission.get(admission.id) ?? null,
         department_name: department?.name ?? "Unknown department",
         room_number: room?.room_number ?? null,
         bed_number: bed?.bed_number ?? null,
