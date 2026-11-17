@@ -18,16 +18,16 @@
 | Phase | Scope | Done | Status |
 |---|---|---|---|
 | 0 | Specification & design authority | 8 / 8 | Complete |
-| 1 | Database schema | 27 / 29 | In progress (live schema verified; `db lint` pending) |
+| 1 | Database schema | 28 / 29 | In progress (live schema verified; `db lint` pending) |
 | 2 | UI foundation | 31 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 48 / 48 | Complete |
-| 4 | Row Level Security | 23 / 25 | Implemented, runtime verification pending |
+| 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 0 / 28 | Not tracked (RPCs listed here were implemented through 6.4 but the boxes were never ticked) |
 | 6 | Frontend ↔ backend integration | 51 / 67 | In progress (6.5 helpers and visibility done; upload UI, signed-URL viewer and realtime consumers next; 8 fixture modules remain in 6.7) |
 | 7 | QA & security verification | 8 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **196 / 295** | **66%** |
+| **Total** | | **199 / 295** | **67%** |
 
 ---
 
@@ -74,7 +74,7 @@
 - [x] Seed 8 departments (ER, OPD, IPD, LAB, RAD, PHARM, BILL, ADMIN)
 - [x] Seed 10 system roles
 - [x] Seed 73 permissions across 12 modules
-- [ ] Seed `role_permissions` — 2026-11-17: the live matrix already holds 285 grants (admins 82, physician 38, nurse 25, receptionist 16, lab 9, radiology 8, pharmacist 8, billing 10, inventory 7). Migration 040 makes it authoritative and idempotent, and closes the audit gaps: physician could not admit, transfer, or schedule follow-ups; nurse could not transfer. Apply `20261117001700_role_permission_matrix.sql` and re-check per-role counts
+- [x] Seed `role_permissions` — 2026-11-17, applied and verified: admins 82, physician 41, nurse 26, receptionist 16, lab 9, radiology 8, pharmacist 8, billing 10, inventory 7. Migration 040 closed the audit gaps (physician admit/transfer/schedule, nurse transfer)
 - [x] Seed laboratory test catalog (`laboratory_tests`) — 2026-11-12, 8 tests from PROJECT.MD §16 in migration 022
 - [x] Seed medication catalog (`medications`) — 2026-11-12, 12 starter medications in migration 022 (pharmacy review required before production)
 - [x] Seed inventory categories — 2026-11-12, 5 categories in migration 022
@@ -270,8 +270,8 @@
 ### 4.6 Helper hardening
 
 - [x] Confirm every `security definer` helper has a fixed `search_path` and explicit `grant execute` — 2026-11-12, `has_role`, `is_admin`, `has_permission`, `can_access_patient`, `current_staff_department_id`
-- [ ] Test privilege escalation through `has_permission` / `can_access_patient` — **blocked by: no running database or authenticated test tokens**
-- [ ] Add `SECURITY INVOKER` views verified against RLS (all 8 views) — views are `security_invoker` and grants are applied; runtime RLS verification **blocked by: no running database**
+- [x] Test privilege escalation through `has_permission` / `can_access_patient` — 2026-11-17, 24 assertions against the live project: 6 RPC guards rejected (nurse→payment, billing→dispensing, inventory→triage, physician→stock, receptionist→department, lab→invoice, all `42501`), 5 table-level attempts denied (self-granting an admin role, writing `role_permissions`, inserting an invoice, changing own email, reading `audit_logs`), and `can_access_patient` blocked an unassigned nurse from writing vitals or allergies and from reading allergy/vitals/diagnosis rows (0 rows). Two authorized controls still succeeded
+- [x] Add `SECURITY INVOKER` views verified against RLS (all 8 views) — 2026-11-17, all 8 views declare `security_invoker = true`; verified behaviourally: inventory staff (no `patient.view`) sees 0 rows through `v_patient_summary` and 0 directly, anon gets `42501`, and nurse/billing see only what their policies allow. Note: `patients` demographics are readable by anyone with `patient.view` by design; clinical child tables are scoped by `can_access_patient`
 
 ---
 
@@ -340,7 +340,7 @@
 - [x] `lib/supabase/client.ts` — singleton browser client
 - [x] `lib/supabase/server.ts` — cookie-based server client
 - [x] `lib/supabase/proxy.ts` + root `proxy.ts` — session refresh (no auth redirect until sign-in is real)
-- [x] `lib/supabase/storage.ts`, `lib/supabase/realtime.ts` — 2026-11-17, storage helpers (upload, signed URL, list, remove) with typed errors, and realtime hooks (`useRealtimeTable`, `subscribeToTable`) for the 9 published tables; applies migration 041 for the private buckets
+- [x] `lib/supabase/storage.ts`, `lib/supabase/realtime.ts` — 2026-11-17, storage helpers (upload, signed URL, list, remove) with typed errors, and realtime hooks (`useRealtimeTable`, `subscribeToTable`) for the 9 published tables. Migration 041 buckets verified: allowed upload, signed URL, delete, size/MIME rejection, and billing staff denied by RLS
 
 ### 6.2 Authentication
 
