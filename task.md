@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 37 / 55 | In progress (6.3 complete; patient, appointment, admission/transfer/discharge mutations live; remaining clinical, lab, pharmacy, billing, inventory mutations and preview decommission) |
+| 6 | Frontend ↔ backend integration | 38 / 55 | In progress (6.3 complete; patient, appointment, admission/transfer/discharge, and finalize-note mutations live; remaining lab, pharmacy, billing, inventory mutations and preview decommission) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **169 / 284** | |
+| **Total** | | **170 / 284** | |
 
 ---
 
@@ -382,7 +382,7 @@
 - [x] Patient registration → `register_patient` RPC — 2026-11-17, RPC applied and verified end-to-end; created MRN-2026-0011 with emergency contact and audit row, and the patient list shows it
 - [x] Appointment creation → `create_appointment` RPC — 2026-11-17, RPC applied and verified end-to-end; created APT-2026-0007 with audit row, conflict probe returned 23P01, and the appointment list shows it
 - [x] Admission / transfer / discharge → RPCs — 2026-11-17, applied and verified end-to-end; ADM-2026-0004 admitted to W3-302-A, transferred to W3-302-B, discharged; bed states, assignment history, and audit rows verified
-- [ ] Clinical note finalize → `finalize_clinical_note` — code complete; apply `supabase/migrations/20261117000300_finalize_clinical_note.sql` before testing
+- [x] Clinical note finalize → `finalize_clinical_note` — 2026-11-17, applied and verified; draft note for ENC-2026-0003 became finalized with timestamps, updated_by, and audit row
 - [ ] Lab result verify → `verify_laboratory_result`
 - [ ] Dispensing → `dispense_prescription`
 - [ ] Payment / refund → `record_payment` / `refund_payment`
