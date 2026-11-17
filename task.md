@@ -21,13 +21,13 @@
 | 1 | Database schema | 24 / 29 | In progress (live schema verified; `db lint` pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
-| 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
-| 5 | Backend services | 0 / 29 | Not started |
+| 4 | Row Level Security | 23 / 25 | Implemented, runtime verification pending |
+| 5 | Backend services | 0 / 28 | Not tracked (RPCs listed here were implemented through 6.4 but the boxes were never ticked) |
 | 6 | Frontend ↔ backend integration | 46 / 67 | In progress (6.7: emergency, surgery and HR verified. 6.5 role-based navigation in progress; 8 fixture modules remain) |
 | 7 | QA & security verification | 8 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **181 / 296** | |
+| **Total** | | **182 / 295** | **62%** |
 
 ---
 

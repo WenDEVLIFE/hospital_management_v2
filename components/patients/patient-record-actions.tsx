@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { useCan } from "@/components/providers/permission-provider";
 import { setPatientStatusAction } from "@/app/(workspace)/patients/actions";
 
 import {
@@ -27,6 +28,13 @@ export function PatientRecordActions({ patient }: PatientRecordActionsProps) {
 
   const isArchived = patient.registration_status === "archived";
   const nextStatus = isArchived ? "active" : "archived";
+  const can = useCan();
+  const canEdit = can("patient.update");
+  const canArchive = can("patient.archive");
+
+  if (!canEdit && !canArchive) {
+    return null;
+  }
 
   async function handleStatusChange() {
     if (submitting) {
@@ -68,19 +76,23 @@ export function PatientRecordActions({ patient }: PatientRecordActionsProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-        Edit
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          setError(null);
-          setConfirming(true);
-        }}
-      >
-        {isArchived ? "Restore" : "Archive"}
-      </Button>
+      {canEdit ? (
+        <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+          Edit
+        </Button>
+      ) : null}
+      {canArchive ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setError(null);
+            setConfirming(true);
+          }}
+        >
+          {isArchived ? "Restore" : "Archive"}
+        </Button>
+      ) : null}
 
       <PatientEditDialog
         key={editing ? "open" : "closed"}
