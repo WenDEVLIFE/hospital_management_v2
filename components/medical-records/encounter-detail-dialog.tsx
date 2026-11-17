@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   ClipboardListIcon,
   DangerTriangleIcon,
@@ -12,14 +13,17 @@ import {
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useToast } from "@/components/ui/toast";
 import {
   formatDateTime,
   formatIdentifier,
   formatName,
 } from "@/lib/format";
+import { finalizeClinicalNoteAction } from "@/app/(workspace)/medical-records/actions";
 import type {
   EncounterDetail,
   EncounterListRow,
@@ -164,6 +168,14 @@ export function EncounterDetailDialog({
   staffNamesByUserId,
   onClose,
 }: EncounterDetailDialogProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [finalizeTarget, setFinalizeTarget] = React.useState<{
+    id: string;
+    noteType: string;
+  } | null>(null);
+  const [finalizing, setFinalizing] = React.useState(false);
+
   const title = row ? `Encounter ${row.encounter_number}` : "Encounter detail";
   const description = detail
     ? `${formatName(detail.patient)} \u00b7 ${formatIdentifier(
@@ -171,19 +183,65 @@ export function EncounterDetailDialog({
       )}`
     : row?.patient_name;
 
-  return (
-    <Modal
-      open={row !== null}
-      onClose={onClose}
-      title={title}
-      description={description}
-      size="lg"
-      footer={
-        <Button variant="secondary" onClick={onClose}>
-          Close
-        </Button>
+  function closeAll() {
+    setFinalizeTarget(null);
+    setFinalizing(false);
+    onClose();
+  }
+
+  async function handleFinalize() {
+    if (!finalizeTarget || finalizing) {
+      return;
+    }
+
+    setFinalizing(true);
+
+    try {
+      const result = await finalizeClinicalNoteAction({
+        noteId: finalizeTarget.id,
+      });
+
+      if (!result.ok) {
+        toast({
+          title: "Unable to finalize note",
+          description: result.formError,
+          variant: "danger",
+        });
+        return;
       }
-    >
+
+      toast({
+        title: "Clinical note finalized",
+        description: "The note is now locked.",
+        variant: "success",
+      });
+      setFinalizeTarget(null);
+      router.refresh();
+    } catch {
+      toast({
+        title: "Unable to finalize note",
+        description: "Check your connection and try again.",
+        variant: "danger",
+      });
+    } finally {
+      setFinalizing(false);
+    }
+  }
+
+  return (
+    <>
+      <Modal
+        open={row !== null}
+        onClose={closeAll}
+        title={title}
+        description={description}
+        size="lg"
+        footer={
+          <Button variant="secondary" onClick={closeAll}>
+            Close
+          </Button>
+        }
+      >
       {!detail ? (
         <Alert variant="danger" title="Encounter detail unavailable">
           The encounter record could not be loaded. Close this dialog and try
@@ -375,7 +433,23 @@ export function EncounterDetailDialog({
                       <p className="text-sm font-semibold text-hospital-text">
                         {note.note_type}
                       </p>
-                      <StatusBadge status={note.status} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusBadge status={note.status} />
+                        {note.status === "draft" ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() =>
+                              setFinalizeTarget({
+                                id: note.id,
+                                noteType: note.note_type,
+                              })
+                            }
+                          >
+                            Finalize note
+                          </Button>
+                        ) : null}
+                      </div>
                     </div>
 
                     <p className="mt-2 break-words text-sm leading-relaxed text-hospital-text">
@@ -416,6 +490,21 @@ export function EncounterDetailDialog({
           </RecordSection>
         </div>
       )}
-    </Modal>
+      </Modal>
+
+      <ConfirmationDialog
+        open={finalizeTarget !== null}
+        onClose={() => setFinalizeTarget(null)}
+        onConfirm={handleFinalize}
+        title="Finalize clinical note"
+        description={
+          finalizeTarget
+            ? `Finalize the ${finalizeTarget.noteType} note? Finalized notes cannot be edited.`
+            : ""
+        }
+        confirmLabel="Finalize note"
+        loading={finalizing}
+      />
+    </>
   );
 }

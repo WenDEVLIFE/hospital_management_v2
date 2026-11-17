@@ -378,17 +378,17 @@
 
 ### 6.4 Mutations
 
-- [ ] Zod schemas in `lib/validations/*` for every form — patient, appointment, admission, transfer, and discharge schemas added; remaining forms pending
+- [ ] Zod schemas in `lib/validations/*` for every form — patient, appointment, admission, transfer, discharge, and clinical-note schemas added; remaining forms pending
 - [x] Patient registration → `register_patient` RPC — 2026-11-17, RPC applied and verified end-to-end; created MRN-2026-0011 with emergency contact and audit row, and the patient list shows it
 - [x] Appointment creation → `create_appointment` RPC — 2026-11-17, RPC applied and verified end-to-end; created APT-2026-0007 with audit row, conflict probe returned 23P01, and the appointment list shows it
 - [x] Admission / transfer / discharge → RPCs — 2026-11-17, applied and verified end-to-end; ADM-2026-0004 admitted to W3-302-A, transferred to W3-302-B, discharged; bed states, assignment history, and audit rows verified
-- [ ] Clinical note finalize → `finalize_clinical_note`
+- [ ] Clinical note finalize → `finalize_clinical_note` — code complete; apply `supabase/migrations/20261117000300_finalize_clinical_note.sql` before testing
 - [ ] Lab result verify → `verify_laboratory_result`
 - [ ] Dispensing → `dispense_prescription`
 - [ ] Payment / refund → `record_payment` / `refund_payment`
 - [ ] Stock movements → `adjust_inventory`
 - [ ] Delete every `UnavailableAction` call site and `components/module/unavailable-action.tsx`
-- [ ] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted; patient, appointment, admission, transfer, and discharge forms use success toasts; other forms pending
+- [ ] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted; patient, appointment, admission, transfer, discharge, and clinical-note forms use success toasts; other forms pending
 
 ### 6.5 Files, realtime, roles
 
