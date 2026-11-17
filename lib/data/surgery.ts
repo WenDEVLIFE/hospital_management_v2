@@ -12,20 +12,22 @@ import { manilaDate, pageSlice, sanitizeSearchTerm } from "./query";
 import { toDataError, type DataResult, type PagedResult } from "./result";
 
 const CASE_COLUMNS =
-  "*, patients(id, medical_record_number, first_name, middle_name, last_name, suffix, date_of_birth, sex, civil_status, nationality, contact_number, email, address_line, barangay, city, province, postal_code, registration_date, registration_status, created_by, created_at, updated_at), operating_rooms(id, room_name, status, department_id, notes), physicians!surgery_cases_surgeon_id_fkey(id, profiles(full_name)), anesthesiologist:physicians!surgery_cases_anesthesiologist_id_fkey(id, profiles(full_name))";
+  "*, patients(id, medical_record_number, first_name, middle_name, last_name, suffix, date_of_birth, sex, civil_status, nationality, contact_number, email, address_line, barangay, city, province, postal_code, registration_date, registration_status, created_by, created_at, updated_at), operating_rooms(id, room_name, status, department_id, notes), physicians!surgery_cases_surgeon_id_fkey(id, staff_profiles!physicians_staff_id_fkey(profiles!staff_profiles_user_id_fkey(full_name))), anesthesiologist:physicians!surgery_cases_anesthesiologist_id_fkey(id, staff_profiles!physicians_staff_id_fkey(profiles!staff_profiles_user_id_fkey(full_name)))";
 
 const ROOM_COLUMNS = "id, room_name, status, department_id, notes";
 
 type Relation<T> = T | T[] | null;
 
+type PhysicianNameRow = {
+  id: string;
+  staff_profiles: Relation<{ profiles: Relation<{ full_name: string }> }>;
+};
+
 type CaseJoinRow = SurgeryCase & {
   patients: Relation<Patient>;
   operating_rooms: Relation<OperatingRoom>;
-  physicians: Relation<{ id: string; profiles: Relation<{ full_name: string }> }>;
-  anesthesiologist: Relation<{
-    id: string;
-    profiles: Relation<{ full_name: string }>;
-  }>;
+  physicians: Relation<PhysicianNameRow>;
+  anesthesiologist: Relation<PhysicianNameRow>;
 };
 
 const NOT_FOUND = {
@@ -67,18 +69,23 @@ function fullName(row: {
     .join(" ");
 }
 
-function surgeonName(row: CaseJoinRow): string | null {
-  const physician = firstRelation(row.physicians);
-  const profile = physician ? firstRelation(physician.profiles) : null;
+function physicianName(row: PhysicianNameRow | null): string | null {
+  if (!row) {
+    return null;
+  }
+
+  const staff = firstRelation(row.staff_profiles);
+  const profile = staff ? firstRelation(staff.profiles) : null;
 
   return profile?.full_name ?? null;
 }
 
-function anesthesiologistName(row: CaseJoinRow): string | null {
-  const physician = firstRelation(row.anesthesiologist);
-  const profile = physician ? firstRelation(physician.profiles) : null;
+function surgeonName(row: CaseJoinRow): string | null {
+  return physicianName(firstRelation(row.physicians));
+}
 
-  return profile?.full_name ?? null;
+function anesthesiologistName(row: CaseJoinRow): string | null {
+  return physicianName(firstRelation(row.anesthesiologist));
 }
 
 function toListRow(row: CaseJoinRow): SurgeryListRow | null {

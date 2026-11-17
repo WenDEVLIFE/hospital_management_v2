@@ -16,18 +16,34 @@ import { pageSlice, sanitizeSearchTerm } from "./query";
 import { toDataError, type DataResult, type PagedResult } from "./result";
 
 const VISIT_COLUMNS =
-  "*, patients(id, medical_record_number, first_name, middle_name, last_name, suffix, date_of_birth, sex, civil_status, nationality, contact_number, email, address_line, barangay, city, province, postal_code, registration_date, registration_status, created_by, created_at, updated_at), physicians!emergency_visits_attending_physician_id_fkey(id, profiles(full_name)), staff_profiles!emergency_visits_triage_nurse_id_fkey(id, profiles(full_name))";
+  "*, patients(id, medical_record_number, first_name, middle_name, last_name, suffix, date_of_birth, sex, civil_status, nationality, contact_number, email, address_line, barangay, city, province, postal_code, registration_date, registration_status, created_by, created_at, updated_at), physicians!emergency_visits_attending_physician_id_fkey(id, staff_profiles!physicians_staff_id_fkey(profiles!staff_profiles_user_id_fkey(full_name))), staff_profiles!emergency_visits_triage_nurse_id_fkey(id, profiles!staff_profiles_user_id_fkey(full_name))";
 
 type Relation<T> = T | T[] | null;
 
+type PhysicianNameRow = {
+  id: string;
+  staff_profiles: Relation<{ profiles: Relation<{ full_name: string }> }>;
+};
+
 type VisitJoinRow = EmergencyVisit & {
   patients: Relation<Patient>;
-  physicians: Relation<{ id: string; profiles: Relation<{ full_name: string }> }>;
+  physicians: Relation<PhysicianNameRow>;
   staff_profiles: Relation<{
     id: string;
     profiles: Relation<{ full_name: string }>;
   }>;
 };
+
+function physicianFullName(physician: PhysicianNameRow | null): string | null {
+  if (!physician) {
+    return null;
+  }
+
+  const staff = firstRelation(physician.staff_profiles);
+  const profile = staff ? firstRelation(staff.profiles) : null;
+
+  return profile?.full_name ?? null;
+}
 
 const NOT_FOUND = {
   code: "NOT_FOUND",
@@ -132,7 +148,7 @@ function toListRow(
   }
 
   const physician = firstRelation(visit.physicians);
-  const physicianProfile = physician ? firstRelation(physician.profiles) : null;
+  const physicianName = physicianFullName(physician);
   const nurse = firstRelation(visit.staff_profiles);
   const nurseProfile = nurse ? firstRelation(nurse.profiles) : null;
 
@@ -149,7 +165,7 @@ function toListRow(
     chief_complaint: visit.chief_complaint,
     status: visit.status,
     attending_physician_id: visit.attending_physician_id,
-    attending_physician_name: physicianProfile?.full_name ?? null,
+    attending_physician_name: physicianName,
     triage_nurse_name: nurseProfile?.full_name ?? null,
     treatment_area: visit.treatment_area,
     wait_minutes: minutesSince(visit.arrival_at),
@@ -352,7 +368,7 @@ export async function getEmergencyVisitDetails(): Promise<
     }
 
     const physician = firstRelation(visit.physicians);
-    const physicianProfile = physician ? firstRelation(physician.profiles) : null;
+    const physicianName = physicianFullName(physician);
     const nurse = firstRelation(visit.staff_profiles);
     const nurseProfile = nurse ? firstRelation(nurse.profiles) : null;
 
@@ -387,7 +403,7 @@ export async function getEmergencyVisitDetails(): Promise<
       },
       patient,
       encounter,
-      attending_physician_name: physicianProfile?.full_name ?? null,
+      attending_physician_name: physicianName,
       triage_nurse_name: nurseProfile?.full_name ?? null,
       vitals: vitalsByEncounter.get(visit.encounter_id) ?? [],
       notes,
