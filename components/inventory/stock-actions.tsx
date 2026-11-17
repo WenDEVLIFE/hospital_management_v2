@@ -1,39 +1,68 @@
 "use client";
 
+import * as React from "react";
 import {
   BoxIcon,
   CartLargeIcon,
   TuningIcon,
 } from "@solar-icons/react/linear";
 
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { Button } from "@/components/ui/button";
+import type { StockMovementType } from "@/lib/validations/inventory";
+import type { InventoryBatchOption, InventoryListRow } from "@/types/hospital";
 
-const NOTE =
-  "Stock movements will be enabled once the hospital database connection is available. No stock quantity will change in this preview. Stock movements must be recorded as transactions; negative stock is not allowed.";
+import { StockMovementDialog } from "./stock-movement-dialog";
 
-export function StockActions() {
+export interface StockActionsProps {
+  items: InventoryListRow[];
+  batches: InventoryBatchOption[];
+}
+
+const ACTIONS: Array<{
+  mode: StockMovementType;
+  label: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    mode: "stock_in",
+    label: "Stock In",
+    icon: <BoxIcon className="size-4" aria-hidden="true" />,
+  },
+  {
+    mode: "stock_out",
+    label: "Stock Out",
+    icon: <CartLargeIcon className="size-4" aria-hidden="true" />,
+  },
+  {
+    mode: "adjustment",
+    label: "Adjust Stock",
+    icon: <TuningIcon className="size-4" aria-hidden="true" />,
+  },
+];
+
+export function StockActions({ items, batches }: StockActionsProps) {
+  const [mode, setMode] = React.useState<StockMovementType | null>(null);
+
   return (
     <>
-      <UnavailableAction
-        label="Stock In"
-        variant="secondary"
-        icon={<BoxIcon className="size-4" aria-hidden="true" />}
-        description="Receive units into an inventory item batch."
-        note={NOTE}
-      />
-      <UnavailableAction
-        label="Stock Out"
-        variant="secondary"
-        icon={<CartLargeIcon className="size-4" aria-hidden="true" />}
-        description="Issue units from an inventory item."
-        note={NOTE}
-      />
-      <UnavailableAction
-        label="Adjust Stock"
-        variant="secondary"
-        icon={<TuningIcon className="size-4" aria-hidden="true" />}
-        description="Correct a recorded stock quantity after review."
-        note={NOTE}
+      {ACTIONS.map((action) => (
+        <Button
+          key={action.mode}
+          variant="secondary"
+          onClick={() => setMode(action.mode)}
+        >
+          {action.icon}
+          {action.label}
+        </Button>
+      ))}
+
+      <StockMovementDialog
+        key={`${mode ?? "closed"}`}
+        open={mode !== null}
+        mode={mode ?? "stock_in"}
+        items={items}
+        batches={batches}
+        onClose={() => setMode(null)}
       />
     </>
   );

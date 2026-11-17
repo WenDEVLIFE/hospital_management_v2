@@ -2261,6 +2261,15 @@ export type InventoryListRow = {
   expiring_soon: boolean;
 };
 
+export type InventoryBatchOption = {
+  id: string;
+  item_id: string;
+  batch_number: string | null;
+  quantity_received: number;
+  quantity_remaining: number;
+  expiration_date: string | null;
+};
+
 export type StockTransactionRow = {
   id: string;
   item_id: string;

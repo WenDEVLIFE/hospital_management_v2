@@ -14,6 +14,7 @@ import { InventoryView } from "@/components/inventory/inventory-view";
 import { StockActions } from "@/components/inventory/stock-actions";
 import {
   getInventoryStats,
+  listInventoryBatches,
   listInventoryCategories,
   listInventoryItems,
   listStockTransactions,
@@ -24,20 +25,31 @@ export const metadata = {
 };
 
 export default async function InventoryPage() {
-  const [statsResult, itemResult, categoryResult, transactionResult] =
-    await Promise.all([
-      getInventoryStats(),
-      listInventoryItems({ pageSize: 200 }),
-      listInventoryCategories(),
-      listStockTransactions({ pageSize: 300 }),
-    ]);
+  const [
+    statsResult,
+    itemResult,
+    categoryResult,
+    transactionResult,
+    batchResult,
+  ] = await Promise.all([
+    getInventoryStats(),
+    listInventoryItems({ pageSize: 200 }),
+    listInventoryCategories(),
+    listStockTransactions({ pageSize: 300 }),
+    listInventoryBatches(),
+  ]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Inventory"
         description="Medical supplies, stock levels and movements."
-        actions={<StockActions />}
+        actions={
+          <StockActions
+            items={itemResult.data?.rows ?? []}
+            batches={batchResult.data ?? []}
+          />
+        }
       />
 
       {statsResult.error ? (

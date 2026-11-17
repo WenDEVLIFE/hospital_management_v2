@@ -1,6 +1,7 @@
 import { cache } from "react";
 
 import type {
+  InventoryBatchOption,
   InventoryCategory,
   InventoryListRow,
   InventoryStats,
@@ -259,10 +260,34 @@ export async function listStockTransactions(
   };
 }
 
-export async function listInventoryCategories(): Promise<
-  DataResult<InventoryCategory[]>
+export async function listInventoryBatches(): Promise<
+  DataResult<InventoryBatchOption[]>
 > {
   const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("inventory_batches")
+    .select(
+      "id, item_id, batch_number, quantity_received, quantity_remaining, expiration_date"
+    )
+    .order("expiration_date", { ascending: true, nullsFirst: false });
+
+  if (error) {
+    return { data: null, error: toDataError(error) };
+  }
+
+  return {
+    data: ((data ?? []) as InventoryBatchOption[]).map((batch) => ({
+      ...batch,
+      quantity_received: Number(batch.quantity_received),
+      quantity_remaining: Number(batch.quantity_remaining),
+    })),
+    error: null,
+  };
+}
+
+export async function listInventoryCategories(): Promise<
+  DataResult<InventoryCategory[]>
+> {  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("inventory_categories")
     .select("id, name, description, created_at")
