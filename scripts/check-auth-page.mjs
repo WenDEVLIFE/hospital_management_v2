@@ -213,6 +213,12 @@ if (path === "/dashboard") {
   );
 }
 
+for (const extra of process.argv.slice(3)) {
+  if (extra) {
+    checks.push(extra);
+  }
+}
+
 for (const check of checks) {
   console.log(`  ${check} = ${html.includes(check)}`);
 }

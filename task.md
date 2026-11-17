@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 34 / 55 | In progress (6.3 data layer complete; mutations, storage/realtime, roles, and preview decommission remain) |
+| 6 | Frontend ↔ backend integration | 35 / 55 | In progress (6.3 data layer complete; patient registration mutation live; remaining mutations, storage/realtime, roles, and preview decommission) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **166 / 284** | |
+| **Total** | | **167 / 284** | |
 
 ---
 
@@ -379,7 +379,7 @@
 ### 6.4 Mutations
 
 - [ ] Zod schemas in `lib/validations/*` for every form — patient registration schema added (`lib/validations/patient.ts`); remaining forms pending
-- [ ] Patient registration → `register_patient` RPC — code complete; apply `supabase/migrations/20261117000000_register_patient.sql` before testing
+- [x] Patient registration → `register_patient` RPC — 2026-11-17, RPC applied and verified end-to-end; created MRN-2026-0011 with emergency contact and audit row, and the patient list shows it
 - [ ] Appointment creation → `create_appointment` RPC
 - [ ] Admission / transfer / discharge → RPCs
 - [ ] Clinical note finalize → `finalize_clinical_note`
