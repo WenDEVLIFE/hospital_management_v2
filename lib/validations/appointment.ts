@@ -25,6 +25,16 @@ export const appointmentSchema = z.object({
     .regex(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/,
       "Select a valid date and time."
+    )
+    .refine(
+      (value) => {
+        const scheduled = new Date(`${value}:00+08:00`);
+
+        return (
+          !Number.isNaN(scheduled.getTime()) && scheduled.getTime() > Date.now()
+        );
+      },
+      "Appointments cannot be scheduled in the past."
     ),
   duration_minutes: z
     .string()

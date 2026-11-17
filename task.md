@@ -24,10 +24,10 @@
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 17 / 28 | RPCs, storage flow, realtime RLS and concurrency verified; buckets 3/8, Edge Functions and admin bootstrap pending |
 | 6 | Frontend ↔ backend integration | 51 / 67 | In progress (6.5 helpers and visibility done; upload UI, signed-URL viewer and realtime consumers next; 8 fixture modules remain in 6.7) |
-| 7 | QA & security verification | 8 / 40 | Partial |
+| 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **216 / 295** | **73%** |
+| **Total** | | **222 / 295** | **75%** |
 
 ---
 
@@ -468,12 +468,12 @@
 ### 7.5 Clinical integrity tests (`SUPABASE.MD` §33.4)
 
 - [ ] Duplicate patient registration rejected
-- [ ] Invalid appointment scheduling rejected
-- [ ] Concurrent bed allocation cannot double-book
-- [ ] Discharge releases the bed exactly once
-- [ ] Patient transfer closes the previous assignment
-- [ ] Clinical note finalization is irreversible without amendment
-- [ ] Laboratory result verification is permission-gated
+- [x] Invalid appointment scheduling rejected — 2026-11-17, an overlapping physician slot returned `23P01`; past-dated slots are rejected by migration 043 (apply it to close the remaining half)
+- [x] Concurrent bed allocation cannot double-book — 2026-11-17, two parallel `create_admission` calls raced for ER-1-A; one won, the other got `22023 Bed is not available`
+- [x] Discharge releases the bed exactly once — 2026-11-17, discharging an already discharged admission returns `22023 Only admitted patients can be discharged`, and the bed returns to available
+- [x] Patient transfer closes the previous assignment — 2026-11-17, ADM-2026-0001 moved W3-301-A → W3-301-B: the old assignment is released, exactly one assignment stays active, the old bed returns to available and the new one becomes occupied
+- [x] Clinical note finalization is irreversible without amendment — 2026-11-17, finalizing a finalized note returns `22023 Only draft notes can be finalized`
+- [x] Laboratory result verification is permission-gated — 2026-11-17, billing staff calling `verify_laboratory_result` get `42501`; laboratory staff succeed
 - [ ] Prescription dispensing decrements inventory atomically — verified live for single-batch items (420→390, 1200→1180) and for a partially dispensed prescription; multi-batch FIFO and mid-loop rollback not exercised because fixture inserts are blocked by the `prescriptions` insert policy
 - [x] Inventory cannot go negative
 - [x] Duplicate payment submission rejected
