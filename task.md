@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 36 / 55 | In progress (6.3 complete; patient registration and appointment scheduling live; remaining 6.4 mutations, storage/realtime, roles, and preview decommission) |
+| 6 | Frontend ↔ backend integration | 37 / 55 | In progress (6.3 complete; patient, appointment, admission/transfer/discharge mutations live; remaining clinical, lab, pharmacy, billing, inventory mutations and preview decommission) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **168 / 284** | |
+| **Total** | | **169 / 284** | |
 
 ---
 
@@ -378,17 +378,17 @@
 
 ### 6.4 Mutations
 
-- [ ] Zod schemas in `lib/validations/*` for every form — patient and appointment schemas added; remaining forms pending
+- [ ] Zod schemas in `lib/validations/*` for every form — patient, appointment, admission, transfer, and discharge schemas added; remaining forms pending
 - [x] Patient registration → `register_patient` RPC — 2026-11-17, RPC applied and verified end-to-end; created MRN-2026-0011 with emergency contact and audit row, and the patient list shows it
 - [x] Appointment creation → `create_appointment` RPC — 2026-11-17, RPC applied and verified end-to-end; created APT-2026-0007 with audit row, conflict probe returned 23P01, and the appointment list shows it
-- [ ] Admission / transfer / discharge → RPCs
+- [x] Admission / transfer / discharge → RPCs — 2026-11-17, applied and verified end-to-end; ADM-2026-0004 admitted to W3-302-A, transferred to W3-302-B, discharged; bed states, assignment history, and audit rows verified
 - [ ] Clinical note finalize → `finalize_clinical_note`
 - [ ] Lab result verify → `verify_laboratory_result`
 - [ ] Dispensing → `dispense_prescription`
 - [ ] Payment / refund → `record_payment` / `refund_payment`
 - [ ] Stock movements → `adjust_inventory`
 - [ ] Delete every `UnavailableAction` call site and `components/module/unavailable-action.tsx`
-- [ ] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted; patient registration and appointment scheduling use success toasts; other forms pending
+- [ ] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted; patient, appointment, admission, transfer, and discharge forms use success toasts; other forms pending
 
 ### 6.5 Files, realtime, roles
 

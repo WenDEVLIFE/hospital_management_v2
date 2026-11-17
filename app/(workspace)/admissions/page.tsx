@@ -5,6 +5,7 @@ import {
   LogoutIcon,
   TransferHorizontalIcon,
 } from "@solar-icons/react/linear";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { PageSection } from "@/components/layout/page-section";
@@ -12,7 +13,7 @@ import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
 import { AdmissionsView } from "@/components/admissions/admissions-view";
 import { BedBoard } from "@/components/admissions/bed-board";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { Button } from "@/components/ui/button";
 import {
   getAdmissionStats,
   getBedBoard,
@@ -37,22 +38,21 @@ export default async function AdmissionsPage() {
         description="Admit patients and manage bed allocation."
         actions={
           <>
-            <UnavailableAction
-              label="Transfer Patient"
-              description="Move an admitted patient to a different room or bed."
-              variant="secondary"
-              icon={
+            <Link href="/admissions/transfer">
+              <Button variant="secondary">
                 <TransferHorizontalIcon
                   className="size-4"
                   aria-hidden="true"
                 />
-              }
-            />
-            <UnavailableAction
-              label="Admit Patient"
-              description="Create a new inpatient admission and assign a bed."
-              icon={<LoginIcon className="size-4" aria-hidden="true" />}
-            />
+                Transfer Patient
+              </Button>
+            </Link>
+            <Link href="/admissions/new">
+              <Button>
+                <LoginIcon className="size-4" aria-hidden="true" />
+                Admit Patient
+              </Button>
+            </Link>
           </>
         }
       />

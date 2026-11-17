@@ -1,10 +1,11 @@
 import { LogoutIcon } from "@solar-icons/react/linear";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { PageSection } from "@/components/layout/page-section";
 import { ErrorState } from "@/components/module/error-state";
 import { DischargesView } from "@/components/admissions/discharges-view";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { Button } from "@/components/ui/button";
 import { listDischarges } from "@/lib/data/admissions";
 
 export const metadata = {
@@ -20,11 +21,12 @@ export default async function DischargesPage() {
         title="Discharges"
         description="Complete discharge workflows and release beds."
         actions={
-          <UnavailableAction
-            label="Discharge Patient"
-            description="Complete the discharge workflow and release the assigned bed."
-            icon={<LogoutIcon className="size-4" aria-hidden="true" />}
-          />
+          <Link href="/discharges/new">
+            <Button>
+              <LogoutIcon className="size-4" aria-hidden="true" />
+              Discharge Patient
+            </Button>
+          </Link>
         }
       />
 

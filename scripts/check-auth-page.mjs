@@ -94,6 +94,23 @@ if (path === "/admissions") {
   );
 }
 
+if (path === "/admissions/new") {
+  checks.push(
+    "Admit Patient",
+    "Admission type",
+    "Select patient",
+    "Select available bed"
+  );
+}
+
+if (path === "/admissions/transfer") {
+  checks.push("Transfer Patient", "Current bed", "New bed", "Transfer reason");
+}
+
+if (path === "/discharges/new") {
+  checks.push("Discharge Patient", "Discharge notes", "Select admission");
+}
+
 if (path === "/discharges") {
   checks.push("ADM-2026-0003", "Discharge records");
 }
