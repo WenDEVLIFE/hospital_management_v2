@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/components/ui/toast";
+import { useCan } from "@/components/providers/permission-provider";
 import { formatDateTime } from "@/lib/format";
 import { verifyLaboratoryOrderAction } from "@/app/(workspace)/laboratory/actions";
 import type { LabOrderListRow } from "@/types/hospital";
@@ -69,6 +70,7 @@ export interface LabOrdersViewProps {
 export function LabOrdersView({ rows }: LabOrdersViewProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const canVerify = useCan()("laboratory.result.verify");
   const [selected, setSelected] = React.useState<LabOrderListRow | null>(null);
   const [verifyTarget, setVerifyTarget] =
     React.useState<LabOrderListRow | null>(null);
@@ -266,15 +268,17 @@ export function LabOrdersView({ rows }: LabOrdersViewProps) {
               <Button variant="secondary" onClick={() => setSelected(null)}>
                 Close
               </Button>
-              <Button
-                onClick={() => {
-                  setVerifyError(null);
-                  setVerifyTarget(selected);
-                  setSelected(null);
-                }}
-              >
-                Verify result
-              </Button>
+              {canVerify ? (
+                <Button
+                  onClick={() => {
+                    setVerifyError(null);
+                    setVerifyTarget(selected);
+                    setSelected(null);
+                  }}
+                >
+                  Verify result
+                </Button>
+              ) : null}
             </>
           ) : null
         }

@@ -6,6 +6,7 @@ import { EyeIcon } from "@solar-icons/react/linear";
 import { RecordTable, type Column } from "@/components/module/record-table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { usePermissions } from "@/components/providers/permission-provider";
 import { formatIdentifier, formatName } from "@/lib/format";
 import type { StaffListRow } from "@/types/hospital";
 
@@ -24,6 +25,7 @@ export function StaffTable({ rows, departments }: StaffTableProps) {
   const [selected, setSelected] = React.useState<StaffListRow | null>(null);
   const [writeRequest, setWriteRequest] =
     React.useState<StaffWriteRequest | null>(null);
+  const { isAdmin } = usePermissions();
 
   const departmentFilters = React.useMemo(() => {
     const byId = new Map<string, string>();
@@ -159,14 +161,22 @@ export function StaffTable({ rows, departments }: StaffTableProps) {
       <StaffDetailDialog
         staff={selected}
         onClose={() => setSelected(null)}
-        onEdit={(staff) => {
-          setSelected(null);
-          setWriteRequest({ action: "edit", staff });
-        }}
-        onDeactivate={(staff) => {
-          setSelected(null);
-          setWriteRequest({ action: "deactivate", staff });
-        }}
+        onEdit={
+          isAdmin
+            ? (staff) => {
+                setSelected(null);
+                setWriteRequest({ action: "edit", staff });
+              }
+            : undefined
+        }
+        onDeactivate={
+          isAdmin
+            ? (staff) => {
+                setSelected(null);
+                setWriteRequest({ action: "deactivate", staff });
+              }
+            : undefined
+        }
       />
 
       <StaffWriteDialog

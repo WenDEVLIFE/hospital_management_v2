@@ -5,6 +5,7 @@ import { Pills2Icon } from "@solar-icons/react/linear";
 
 import { RecordTable, type Column } from "@/components/module/record-table";
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/components/providers/permission-provider";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDateTime } from "@/lib/format";
 import type { PrescriptionListRow } from "@/types/hospital";
@@ -25,6 +26,8 @@ export interface PrescriptionQueueProps {
 export function PrescriptionQueue({ rows }: PrescriptionQueueProps) {
   const [selected, setSelected] =
     React.useState<PrescriptionListRow | null>(null);
+  const can = useCan();
+  const canDispense = can("prescription.dispense");
 
   const columns = React.useMemo<Column<PrescriptionListRow>[]>(
     () => [
@@ -82,19 +85,24 @@ export function PrescriptionQueue({ rows }: PrescriptionQueueProps) {
         key: "actions",
         header: "Actions",
         align: "right",
-        cell: (row) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label={`Dispense prescription ${row.prescription_number}`}
-            onClick={() => setSelected(row)}
-          >
-            Dispense
-          </Button>
-        ),
+        cell: (row) =>
+          canDispense ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Dispense prescription ${row.prescription_number}`}
+              onClick={() => setSelected(row)}
+            >
+              Dispense
+            </Button>
+          ) : (
+            <span className="text-[11px] text-hospital-text-muted">
+              {"\u2014"}
+            </span>
+          ),
       },
     ],
-    []
+    [canDispense]
   );
 
   return (

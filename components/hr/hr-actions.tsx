@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { useCan } from "@/components/providers/permission-provider";
 import {
   fileLeaveAction,
   scheduleShiftAction,
@@ -88,6 +89,11 @@ export function ScheduleShiftAction({
   const [errors, setErrors] = React.useState<ShiftErrors>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const can = useCan();
+
+  if (!can("hr.manage")) {
+    return null;
+  }
 
   function setField<K extends keyof ShiftValues>(
     field: K,
@@ -308,6 +314,11 @@ export function FileLeaveAction({
   const [errors, setErrors] = React.useState<LeaveErrors>({});
   const [formError, setFormError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const can = useCan();
+
+  if (!can("hr.manage")) {
+    return null;
+  }
 
   function setField<K extends keyof LeaveValues>(
     field: K,

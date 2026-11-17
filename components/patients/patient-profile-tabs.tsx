@@ -17,6 +17,7 @@ import { RecordTable, type Column } from "@/components/module/record-table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
+import { useCan } from "@/components/providers/permission-provider";
 import type {
   AdmissionListRow,
   AppointmentListRow,
@@ -176,7 +177,7 @@ function AllergiesPanel({
   onAddAllergy,
 }: {
   rows: PatientAllergy[];
-  onAddAllergy: () => void;
+  onAddAllergy?: () => void;
 }) {
   const columns: Column<PatientAllergy>[] = [
     {
@@ -215,9 +216,11 @@ function AllergiesPanel({
       rowKey={(row) => row.id}
       caption="Allergies"
       toolbarActions={
-        <Button variant="outline" size="sm" onClick={onAddAllergy}>
-          Add allergy
-        </Button>
+        onAddAllergy ? (
+          <Button variant="outline" size="sm" onClick={onAddAllergy}>
+            Add allergy
+          </Button>
+        ) : undefined
       }
       emptyTitle="No allergies recorded"
       emptyDescription="No allergies have been recorded for this patient."
@@ -533,6 +536,7 @@ export function PatientProfileTabs({
 }: PatientProfileTabsProps) {
   const [tab, setTab] = React.useState("overview");
   const [showAddAllergy, setShowAddAllergy] = React.useState(false);
+  const can = useCan();
 
   const tabItems: TabItem[] = [
     { value: "overview", label: "Overview" },
@@ -592,7 +596,11 @@ export function PatientProfileTabs({
         {tab === "allergies" ? (
           <AllergiesPanel
             rows={summary.allergies}
-            onAddAllergy={() => setShowAddAllergy(true)}
+            onAddAllergy={
+              can("medical_record.create")
+                ? () => setShowAddAllergy(true)
+                : undefined
+            }
           />
         ) : null}
 

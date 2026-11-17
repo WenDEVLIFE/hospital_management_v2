@@ -7,6 +7,7 @@ import { UserRoundedIcon } from "@solar-icons/react/linear";
 import { RecordTable, type Column } from "@/components/module/record-table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useCan } from "@/components/providers/permission-provider";
 import type { PatientListRow } from "@/types/hospital";
 import { formatDate, formatIdentifier, formatName } from "@/lib/format";
 
@@ -20,6 +21,8 @@ export function PatientTable({ rows }: PatientTableProps) {
   const [editTarget, setEditTarget] = React.useState<PatientListRow | null>(
     null
   );
+  const can = useCan();
+  const canEdit = can("patient.update");
 
   const columns: Column<PatientListRow>[] = [
     {
@@ -89,15 +92,15 @@ export function PatientTable({ rows }: PatientTableProps) {
           >
             View
           </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            className="opacity-60"
-            onClick={() => setEditTarget(row)}
-            title="Editing is not available yet"
-          >
-            Edit
-          </Button>
+          {canEdit ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditTarget(row)}
+            >
+              Edit
+            </Button>
+          ) : null}
         </div>
       ),
     },

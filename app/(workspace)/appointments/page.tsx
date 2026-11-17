@@ -14,6 +14,7 @@ import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
 import { AppointmentsView } from "@/components/appointments/appointments-view";
 import { Button } from "@/components/ui/button";
+import { accessCan, getCurrentUserAccess } from "@/lib/auth/access";
 import { getAppointmentStats, listAppointments } from "@/lib/data/appointments";
 
 export const metadata = {
@@ -36,6 +37,8 @@ function manilaMonthKey(): string {
 export default async function AppointmentsPage() {
   await connection();
 
+  const access = await getCurrentUserAccess();
+
   const [statsResult, listResult] = await Promise.all([
     getAppointmentStats(),
     listAppointments({ pageSize: 200 }),
@@ -49,12 +52,14 @@ export default async function AppointmentsPage() {
         title="Appointments"
         description="Schedule and track outpatient consultations."
         actions={
-          <Link href="/appointments/new">
-            <Button>
-              <CalendarMarkIcon className="size-4" aria-hidden="true" />
-              Schedule Appointment
-            </Button>
-          </Link>
+          accessCan(access, "appointment.create") ? (
+            <Link href="/appointments/new">
+              <Button>
+                <CalendarMarkIcon className="size-4" aria-hidden="true" />
+                Schedule Appointment
+              </Button>
+            </Link>
+          ) : null
         }
       />
 

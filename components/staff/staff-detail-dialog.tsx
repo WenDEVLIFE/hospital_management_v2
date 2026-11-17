@@ -11,8 +11,8 @@ import type { StaffListRow } from "@/types/hospital";
 export interface StaffDetailDialogProps {
   staff: StaffListRow | null;
   onClose: () => void;
-  onEdit: (staff: StaffListRow) => void;
-  onDeactivate: (staff: StaffListRow) => void;
+  onEdit?: (staff: StaffListRow) => void;
+  onDeactivate?: (staff: StaffListRow) => void;
 }
 
 function DefinitionList({
@@ -75,15 +75,19 @@ export function StaffDetailDialog({
             <Button variant="secondary" onClick={onClose}>
               Close
             </Button>
-            <Button variant="outline" onClick={() => onEdit(staff)}>
-              Edit staff
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => onDeactivate(staff)}
-            >
-              Deactivate account
-            </Button>
+            {onEdit ? (
+              <Button variant="outline" onClick={() => onEdit(staff)}>
+                Edit staff
+              </Button>
+            ) : null}
+            {onDeactivate ? (
+              <Button
+                variant="destructive"
+                onClick={() => onDeactivate(staff)}
+              >
+                Deactivate account
+              </Button>
+            ) : null}
           </>
         ) : null
       }

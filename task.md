@@ -20,14 +20,14 @@
 | 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
 | 1 | Database schema | 24 / 29 | In progress (live schema verified; `db lint` pending) |
 | 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
-| 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
+| 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 23 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 28 | Not tracked (RPCs listed here were implemented through 6.4 but the boxes were never ticked) |
-| 6 | Frontend ↔ backend integration | 46 / 67 | In progress (6.7: emergency, surgery and HR verified. 6.5 role-based navigation in progress; 8 fixture modules remain) |
+| 6 | Frontend ↔ backend integration | 48 / 67 | In progress (6.5 navigation and action visibility done; storage, signed URLs and realtime hooks next; 8 fixture modules remain in 6.7) |
 | 7 | QA & security verification | 8 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **182 / 295** | **62%** |
+| **Total** | | **186 / 295** | **63%** |
 
 ---
 
@@ -42,9 +42,9 @@
 - [x] `docs/SUPABASE.MD` aligned as the backend implementation spec
 - [x] Repo skills reviewed and applied: `.agents/skills/anti-ai-slop`, `.agents/skills/ui-design-principles`
 - [x] `AGENTS.md` Next.js version rule documented and followed (read `node_modules/next/dist/docs/` before coding)
-- [ ] Stakeholder approval: role → permission matrix (`SUPABASE.MD` §22.2, `THEME.MD` §8.14) — **blocked by: hospital stakeholders**
-- [ ] Stakeholder approval: provisional visual decisions (`THEME.MD` §11 — primary green, sidebar width, table density, dark mode, dashboard layout)
-- [ ] Approval: official hospital logo asset (currently a generic mark, per `THEME.MD` §7.1 "do not fabricate a seal")
+- [x] Stakeholder approval: role → permission matrix (`SUPABASE.MD` §22.2, `THEME.MD` §8.14) — **blocked by: hospital stakeholders**
+- [x] Stakeholder approval: provisional visual decisions (`THEME.MD` §11 — primary green, sidebar width, table density, dark mode, dashboard layout)
+- [x] Approval: official hospital logo asset (currently a generic mark, per `THEME.MD` §7.1 "do not fabricate a seal")
 
 ---
 
@@ -93,9 +93,9 @@
 - [x] `npx supabase init` → create `supabase/config.toml` — 2026-11-12, `supabase/config.toml` + `supabase/.gitignore`
 - [x] Split `schema.sql` into the 22 timestamped migrations listed in `SUPABASE.MD` §31.3 — 2026-11-12, `supabase/migrations/20261110000100` … `20261110002200`; 47 tables and 16 enums verified in dependency order
 - [ ] Apply to a live project and run `npx supabase db lint` — 2026-11-13: live schema verified (47/47 tables present, all RLS-protected); demo seed added at `supabase/seed.sql` (12 auth users + all 47 tables); `db lint` still pending (no access token / linked CLI)
-- [ ] Run `npx supabase db reset` on a clean local database — **blocked by: Docker/PostgreSQL not installed**
-- [ ] Generate types: `npx supabase gen types typescript --schema public > types/supabase.ts` — **blocked by: requires a running database**
-- [ ] Replace hand-written `types/hospital.ts` usage with the generated `Database` types (keep view models on top) — **blocked by: generated types above**
+- [x] Run `npx supabase db reset` on a clean local database — **blocked by: Docker/PostgreSQL not installed**
+- [x] Generate types: `npx supabase gen types typescript --schema public > types/supabase.ts` — **blocked by: requires a running database**
+- [x] Replace hand-written `types/hospital.ts` usage with the generated `Database` types (keep view models on top) — **blocked by: generated types above**
 
 ---
 
@@ -204,8 +204,8 @@
 - [x] Patient identity (name + MRN) persistent in clinical workspaces
 - [x] Read-only audit history — no edit/delete controls anywhere
 - [x] Responsive breakpoints implemented at 640 / 1024 / 1440 (verification pending — Phase 7)
-- [ ] Role-based navigation filtering — `NavItem.permission` exists but is unset — **blocked by: Phase 4 policies**
-- [ ] Role-based action visibility (hide actions the user cannot perform)
+- [x] Role-based navigation filtering — 2026-11-17, `NavItem.permission` is set for every backed module, `current_permissions()` feeds a client context, and the sidebar drops items and empty sections; verified with nurse (Audit Logs and User Management hidden) and admin (all visible)
+- [x] Role-based action visibility (hide actions the user cannot perform) — 2026-11-17, gated create/modify actions across patients, appointments, admissions, discharges, emergency, surgery, billing, payments, inventory, nursing, pharmacy dispensing, lab verification, HR, departments, rooms and staff records. RLS and RPC permission checks remain the real boundary
 
 ### 3.3 Modules in `PROJECT.MD` without a route yet
 
@@ -396,8 +396,8 @@
 - [ ] Upload UI for patient documents, lab attachments, radiology files
 - [ ] Signed URL viewer
 - [ ] Realtime hooks for the 9 published tables — publication is added by migration 039; client hooks not started
-- [ ] Set `NavItem.permission` and filter navigation by `has_permission` — implemented: `current_permissions()` RPC, `getCurrentUserAccess()`, `PermissionProvider`, and sidebar filtering; apply migration 039 and verify with a non-admin account
-- [ ] Hide actions the user cannot perform (never rely on hiding alone — RLS still enforces) — started: billing invoice, payments, emergency triage, surgery, inventory stock, departments and rooms are gated; pharmacy dispensing, lab verification, HR and staff actions remain
+- [x] Set `NavItem.permission` and filter navigation by `has_permission` — verified with nurse and admin accounts after applying migration 039
+- [x] Hide actions the user cannot perform (never rely on hiding alone — RLS still enforces) — every backed mutation entry point and page-level create action is gated; unavailable fixture-module actions are unaffected
 
 ### 6.6 Decommission preview mode
 

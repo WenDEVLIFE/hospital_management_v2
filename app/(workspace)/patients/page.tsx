@@ -13,9 +13,12 @@ import { StatCard } from "@/components/module/stat-card";
 import { PatientTable } from "@/components/patients/patient-table";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { accessCan, getCurrentUserAccess } from "@/lib/auth/access";
 import { listPatients } from "@/lib/data/patients";
 
 export default async function PatientsPage() {
+  const access = await getCurrentUserAccess();
+  const canCreate = accessCan(access, "patient.create");
   const [listResult, totalResult, activeResult, inactiveResult, archivedResult] =
     await Promise.all([
       listPatients({ pageSize: 100 }),
@@ -44,9 +47,11 @@ export default async function PatientsPage() {
         title="Patients"
         description="Manage patient registrations and hospital records."
         actions={
-          <Link href="/patients/new">
-            <Button>Register Patient</Button>
-          </Link>
+          canCreate ? (
+            <Link href="/patients/new">
+              <Button>Register Patient</Button>
+            </Link>
+          ) : null
         }
       />
 
@@ -86,9 +91,11 @@ export default async function PatientsPage() {
             title="No patients found"
             description="There are currently no patient records matching your search."
             action={
-              <Link href="/patients/new">
-                <Button>Register Patient</Button>
-              </Link>
+              canCreate ? (
+                <Link href="/patients/new">
+                  <Button>Register Patient</Button>
+                </Link>
+              ) : undefined
             }
             className="border-0 bg-transparent"
           />

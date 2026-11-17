@@ -10,6 +10,7 @@ import {
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/components/providers/permission-provider";
 import { formatDateTime, formatIdentifier } from "@/lib/format";
 import type { NursingAssignmentRow, VitalSigns } from "@/types/hospital";
 
@@ -84,6 +85,7 @@ export function NursingWorkspace({
   >(rows[0]?.patient_id ?? null);
   const [vitalsOpen, setVitalsOpen] = React.useState(false);
   const [noteOpen, setNoteOpen] = React.useState(false);
+  const can = useCan();
 
   const selected =
     rows.find((row) => row.patient_id === selectedPatientId) ?? rows[0] ?? null;
@@ -204,21 +206,25 @@ export function NursingWorkspace({
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  onClick={() => setVitalsOpen(true)}
-                  disabled={!selected.encounter_id}
-                >
-                  <HeartPulseIcon className="size-4" aria-hidden="true" />
-                  Record vitals
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => setNoteOpen(true)}
-                  disabled={!selected.encounter_id}
-                >
-                  <ClipboardListIcon className="size-4" aria-hidden="true" />
-                  Add nursing note
-                </Button>
+                {can("vital_signs.record") ? (
+                  <Button
+                    onClick={() => setVitalsOpen(true)}
+                    disabled={!selected.encounter_id}
+                  >
+                    <HeartPulseIcon className="size-4" aria-hidden="true" />
+                    Record vitals
+                  </Button>
+                ) : null}
+                {can("nursing.notes.create") ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => setNoteOpen(true)}
+                    disabled={!selected.encounter_id}
+                  >
+                    <ClipboardListIcon className="size-4" aria-hidden="true" />
+                    Add nursing note
+                  </Button>
+                ) : null}
               </div>
             </div>
           </div>

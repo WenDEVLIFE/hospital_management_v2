@@ -14,6 +14,7 @@ import { StatCard } from "@/components/module/stat-card";
 import { AdmissionsView } from "@/components/admissions/admissions-view";
 import { BedBoard } from "@/components/admissions/bed-board";
 import { Button } from "@/components/ui/button";
+import { accessCan, getCurrentUserAccess } from "@/lib/auth/access";
 import {
   getAdmissionStats,
   getBedBoard,
@@ -25,6 +26,7 @@ export const metadata = {
 };
 
 export default async function AdmissionsPage() {
+  const access = await getCurrentUserAccess();
   const [statsResult, listResult, boardResult] = await Promise.all([
     getAdmissionStats(),
     listAdmissions({ pageSize: 200 }),
@@ -38,21 +40,25 @@ export default async function AdmissionsPage() {
         description="Admit patients and manage bed allocation."
         actions={
           <>
-            <Link href="/admissions/transfer">
-              <Button variant="secondary">
-                <TransferHorizontalIcon
-                  className="size-4"
-                  aria-hidden="true"
-                />
-                Transfer Patient
-              </Button>
-            </Link>
-            <Link href="/admissions/new">
-              <Button>
-                <LoginIcon className="size-4" aria-hidden="true" />
-                Admit Patient
-              </Button>
-            </Link>
+            {accessCan(access, "admission.transfer") ? (
+              <Link href="/admissions/transfer">
+                <Button variant="secondary">
+                  <TransferHorizontalIcon
+                    className="size-4"
+                    aria-hidden="true"
+                  />
+                  Transfer Patient
+                </Button>
+              </Link>
+            ) : null}
+            {accessCan(access, "admission.create") ? (
+              <Link href="/admissions/new">
+                <Button>
+                  <LoginIcon className="size-4" aria-hidden="true" />
+                  Admit Patient
+                </Button>
+              </Link>
+            ) : null}
           </>
         }
       />

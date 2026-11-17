@@ -17,6 +17,7 @@ import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
 import { StartTriageAction } from "@/components/emergency/start-triage-dialog";
 import { Button } from "@/components/ui/button";
+import { accessCan, getCurrentUserAccess } from "@/lib/auth/access";
 import { listPatients } from "@/lib/data/patients";
 import {
   getEmergencyStats,
@@ -30,6 +31,8 @@ export const metadata = {
 
 export default async function EmergencyPage() {
   await connection();
+
+  const access = await getCurrentUserAccess();
 
   const [statsResult, listResult, detailsResult, patientResult] =
     await Promise.all([
@@ -53,12 +56,14 @@ export default async function EmergencyPage() {
                 medical_record_number: patient.medical_record_number,
               }))}
             />
-            <Link href="/patients/new">
-              <Button>
-                <UserRoundedIcon className="size-4" aria-hidden="true" />
-                Register Emergency Patient
-              </Button>
-            </Link>
+            {accessCan(access, "patient.create") ? (
+              <Link href="/patients/new">
+                <Button>
+                  <UserRoundedIcon className="size-4" aria-hidden="true" />
+                  Register Emergency Patient
+                </Button>
+              </Link>
+            ) : null}
           </>
         }
       />

@@ -6,6 +6,7 @@ import { PageSection } from "@/components/layout/page-section";
 import { ErrorState } from "@/components/module/error-state";
 import { DischargesView } from "@/components/admissions/discharges-view";
 import { Button } from "@/components/ui/button";
+import { accessCan, getCurrentUserAccess } from "@/lib/auth/access";
 import { listDischarges } from "@/lib/data/admissions";
 
 export const metadata = {
@@ -13,6 +14,7 @@ export const metadata = {
 };
 
 export default async function DischargesPage() {
+  const access = await getCurrentUserAccess();
   const listResult = await listDischarges({ pageSize: 200 });
 
   return (
@@ -21,12 +23,14 @@ export default async function DischargesPage() {
         title="Discharges"
         description="Complete discharge workflows and release beds."
         actions={
-          <Link href="/discharges/new">
-            <Button>
-              <LogoutIcon className="size-4" aria-hidden="true" />
-              Discharge Patient
-            </Button>
-          </Link>
+          accessCan(access, "admission.discharge") ? (
+            <Link href="/discharges/new">
+              <Button>
+                <LogoutIcon className="size-4" aria-hidden="true" />
+                Discharge Patient
+              </Button>
+            </Link>
+          ) : null
         }
       />
 
