@@ -22,12 +22,12 @@
 | 2 | UI foundation | 31 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
-| 5 | Backend services | 0 / 28 | Not tracked (RPCs listed here were implemented through 6.4 but the boxes were never ticked) |
+| 5 | Backend services | 17 / 28 | RPCs, storage flow, realtime RLS and concurrency verified; buckets 3/8, Edge Functions and admin bootstrap pending |
 | 6 | Frontend ↔ backend integration | 51 / 67 | In progress (6.5 helpers and visibility done; upload UI, signed-URL viewer and realtime consumers next; 8 fixture modules remain in 6.7) |
 | 7 | QA & security verification | 8 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **199 / 295** | **67%** |
+| **Total** | | **216 / 295** | **73%** |
 
 ---
 
@@ -283,32 +283,32 @@
 
 ### 5.1 Storage (`SUPABASE.MD` §24)
 
-- [ ] Create 8 private buckets: `avatars`, `patient-documents`, `medical-record-files`, `laboratory-files`, `radiology-files`, `prescription-files`, `billing-documents`, `hospital-documents`
-- [ ] Storage RLS policies per bucket (path scoped to patient / user id)
-- [ ] File size + MIME restrictions per bucket
-- [ ] Signed URL flow verified (short expiry)
+- [ ] Create 8 private buckets — 3 of 8 exist (`patient-documents`, `laboratory-attachments`, `radiology-files`) via migration 041; `avatars`, `medical-record-files`, `prescription-files`, `billing-documents`, `hospital-documents` deferred until a feature uses them
+- [ ] Storage RLS policies per bucket (path scoped to patient / user id) — policies applied and verified for the 3 existing buckets; the remaining 5 ship with their buckets
+- [ ] File size + MIME restrictions per bucket — enforced on the 3 existing buckets (verified: `text/plain` rejected)
+- [x] Signed URL flow verified (short expiry) — 2026-11-17, uploaded a PDF as admin, created a 60-second signed URL, and deleted the object
 
 ### 5.2 Realtime (`SUPABASE.MD` §25)
 
-- [ ] Add to `supabase_realtime` publication: `appointments`, `admissions`, `beds`, `laboratory_orders`, `laboratory_results`, `prescriptions`, `notifications`, `payments`, `stock_transactions`
-- [ ] Verify RLS is enforced on subscription payloads
+- [ ] Add to `supabase_realtime` publication: `appointments`, `admissions`, `beds`, `laboratory_orders`, `laboratory_results`, `prescriptions`, `notifications`, `payments`, `stock_transactions` — 7 of 9 published by migration 039; `payments` and `stock_transactions` are added by migration 042 (apply it). `emergency_visits` and `surgery_cases` are published as well
+- [x] Verify RLS is enforced on subscription payloads — 2026-11-17, a nurse with `appointment.view` received an UPDATE payload; inventory staff without it received nothing on the same table
 
 ### 5.3 Transactional RPC functions (`SUPABASE.MD` §21.1)
 
-- [ ] `generate_reference_number`
-- [ ] `register_patient`
-- [ ] `create_appointment`
-- [ ] `create_admission`
-- [ ] `transfer_patient`
-- [ ] `discharge_patient`
-- [ ] `finalize_clinical_note`
-- [ ] `verify_laboratory_result`
-- [ ] `dispense_prescription`
-- [ ] `record_payment`
-- [ ] `refund_payment`
-- [ ] `adjust_inventory`
-- [ ] Each function: `auth.uid()` check, permission check, row lock, single transaction, audit write, typed result
-- [ ] Concurrency tests: two simultaneous bed allocations must not double-book
+- [x] `generate_reference_number` — used by every numbered record; `MRN`/`APT`/`ADM`/`ENC`/`LAB`/`RAD`/`RX`/`INV`/`PAY`/`SUR`/`ER` sequences exercised
+- [x] `register_patient` — implemented and exercised live
+- [x] `create_appointment` — implemented and exercised live
+- [x] `create_admission` — implemented and exercised live
+- [x] `transfer_patient` — implemented and exercised live
+- [x] `discharge_patient` — implemented and exercised live
+- [x] `finalize_clinical_note` — implemented and exercised live
+- [x] `verify_laboratory_result` — implemented and exercised live
+- [x] `dispense_prescription` — implemented and exercised live
+- [x] `record_payment` — implemented and exercised live
+- [x] `refund_payment` — implemented and exercised live
+- [x] `adjust_inventory` — implemented and exercised live
+- [x] Each function: `auth.uid()` check, permission check, row lock, single transaction, audit write, typed result — every transactional RPC added in migrations 020-037 follows this shape; `generate_reference_number` is a helper without permissions or audit by design
+- [x] Concurrency tests: two simultaneous bed allocations must not double-book — 2026-11-17, two `create_admission` calls raced for ER-1-A; exactly one won, the other returned `22023 Bed is not available`, and the bed returned to available after discharge
 
 ### 5.4 Edge Functions (`SUPABASE.MD` §26)
 
@@ -322,7 +322,7 @@
 ### 5.5 Provisioning
 
 - [ ] Initial administrator created through a documented, non-public process
-- [ ] Signup flow does not grant any privileged role
+- [x] Signup flow does not grant any privileged role — there is no public signup route; accounts exist only through seeded `auth.users` rows or an admin process, so no self-service role grant path exists
 
 ---
 
