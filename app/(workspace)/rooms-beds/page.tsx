@@ -76,7 +76,11 @@ export default async function RoomsBedsPage() {
               <BedIcon className="size-4" aria-hidden="true" />
               Bed board
             </a>
-            <AddRoomAction />
+            <AddRoomAction
+              departments={(departmentsResult.data?.rows ?? []).map(
+                (department) => ({ id: department.id, name: department.name })
+              )}
+            />
           </>
         }
       />

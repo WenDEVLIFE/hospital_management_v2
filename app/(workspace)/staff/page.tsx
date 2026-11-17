@@ -11,12 +11,14 @@ import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
 import { StaffAddAction } from "@/components/staff/staff-add-action";
 import { StaffTable } from "@/components/staff/staff-table";
+import { listDepartments } from "@/lib/data/departments";
 import { getStaffStats, listStaff } from "@/lib/data/staff";
 
 export default async function StaffPage() {
-  const [listResult, statsResult] = await Promise.all([
+  const [listResult, statsResult, departmentResult] = await Promise.all([
     listStaff({ pageSize: 100 }),
     getStaffStats(),
+    listDepartments({ pageSize: 100 }),
   ]);
 
   return (
@@ -64,7 +66,12 @@ export default async function StaffPage() {
         {listResult.error ? (
           <ErrorState error={listResult.error} />
         ) : listResult.data ? (
-          <StaffTable rows={listResult.data.rows} />
+          <StaffTable
+            rows={listResult.data.rows}
+            departments={(departmentResult.data?.rows ?? []).map(
+              (department) => ({ id: department.id, name: department.name })
+            )}
+          />
         ) : null}
       </PageSection>
     </div>

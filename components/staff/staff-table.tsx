@@ -17,14 +17,15 @@ import {
 
 export interface StaffTableProps {
   rows: StaffListRow[];
+  departments: Array<{ id: string; name: string }>;
 }
 
-export function StaffTable({ rows }: StaffTableProps) {
+export function StaffTable({ rows, departments }: StaffTableProps) {
   const [selected, setSelected] = React.useState<StaffListRow | null>(null);
   const [writeRequest, setWriteRequest] =
     React.useState<StaffWriteRequest | null>(null);
 
-  const departments = React.useMemo(() => {
+  const departmentFilters = React.useMemo(() => {
     const byId = new Map<string, string>();
 
     for (const row of rows) {
@@ -137,7 +138,7 @@ export function StaffTable({ rows }: StaffTableProps) {
             key: "department",
             label: "department",
             allLabel: "All departments",
-            options: departments,
+            options: departmentFilters,
             accessor: (row) => row.department_id ?? "",
           },
           {
@@ -169,7 +170,9 @@ export function StaffTable({ rows }: StaffTableProps) {
       />
 
       <StaffWriteDialog
+        key={writeRequest ? `${writeRequest.action}-${writeRequest.staff.id}` : "closed"}
         request={writeRequest}
+        departments={departments}
         onClose={() => setWriteRequest(null)}
       />
     </>
