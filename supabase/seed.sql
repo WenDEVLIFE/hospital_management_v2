@@ -1628,3 +1628,61 @@ values
    (select id from public.staff_profiles where staff_number = 'SPMC-2026-0010'),
    'Pharmacist', 30000, 2000, 0, 32000, 4000, 28000, 'paid')
 on conflict (id) do nothing;
+
+-- ============================================================================
+-- INSURANCE & PHILHEALTH
+-- ============================================================================
+
+insert into public.insurance_providers (
+  id, name, code, type, contact_number, integration_status, is_active, created_by
+)
+values
+  ('b1000000-0000-4000-8000-000000000001', 'PhilHealth', 'PHIC',
+   'philhealth', '(02) 8441-7442', 'manual', true,
+   '11111111-1111-4111-8111-000000000002'),
+  ('b1000000-0000-4000-8000-000000000002', 'Maxicare Healthcare', 'MAXI',
+   'private_hmo', '(02) 8888-5000', 'not_connected', true,
+   '11111111-1111-4111-8111-000000000002'),
+  ('b1000000-0000-4000-8000-000000000003', 'Pacific Cross', 'PACC',
+   'private_insurer', '(02) 7799-8000', 'not_connected', true,
+   '11111111-1111-4111-8111-000000000002')
+on conflict (id) do nothing;
+
+insert into public.insurance_benefits (
+  id, provider_id, name, coverage_type, case_rate, description, is_active
+)
+values
+  ('b2000000-0000-4000-8000-000000000001',
+   'b1000000-0000-4000-8000-000000000001',
+   'Normal spontaneous delivery', 'case_rate', 19500,
+   'PhilHealth case rate for uncomplicated delivery.', true),
+  ('b2000000-0000-4000-8000-000000000002',
+   'b1000000-0000-4000-8000-000000000001',
+   'Pneumonia (moderate risk)', 'case_rate', 32000,
+   'PhilHealth case rate for moderate-risk pneumonia.', true),
+  ('b2000000-0000-4000-8000-000000000003',
+   'b1000000-0000-4000-8000-000000000001',
+   'Hemodialysis (per session)', 'case_rate', 4000,
+   'PhilHealth coverage per dialysis session.', true)
+on conflict (id) do nothing;
+
+insert into public.insurance_policies (
+  id, patient_id, provider_id, policy_number, member_number,
+  coverage_type, effective_date, expiry_date, status,
+  verification_status, notes, created_by
+)
+values (
+  'b3000000-0000-4000-8000-000000000001',
+  '66666666-6666-4666-8666-000000000001',
+  'b1000000-0000-4000-8000-000000000001',
+  'PHIC-2026-0001',
+  '12-345678901-2',
+  'PhilHealth member',
+  current_date - interval '1 year',
+  current_date + interval '1 year',
+  'active',
+  'unverified',
+  'Member with dependent coverage.',
+  '11111111-1111-4111-8111-000000000002'
+)
+on conflict (id) do nothing;

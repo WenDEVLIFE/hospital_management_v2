@@ -411,7 +411,7 @@
 - [x] Emergency — 2026-11-17, applied and verified; start triage created ER-2026-0001 with encounter ENC-2026-0007, duplicate active visits rejected, and the board renders real data
 - [x] Surgery — 2026-11-17, applied and verified; registered an OR, scheduled a case, and an overlapping slot was rejected with 23P01 (verification records cleaned up). Demo rooms/cases arrive with the seed block
 - [x] HR — 2026-11-17, applied and verified; leave filing/review worked (repeat review rejected), overnight 23:00–07:00 shift now accepted by migration 038 with `overnight: true` in the audit metadata, and equal start/end times rejected. Payroll processing still needs a salary model
-- [ ] Insurance
+- [ ] Insurance — migration 044 adds providers, policies, coverage verifications, authorizations, claims with lines/events and benefits, plus `insurance.view/manage`, RLS, `verify_coverage` and `create_claim`; real data layer and both actions wired. Apply `20261117002100_insurance.sql` and verify
 - [ ] Blood bank
 - [ ] Ambulance
 - [ ] Dietary

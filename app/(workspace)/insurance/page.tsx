@@ -11,7 +11,7 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { InsuranceActions } from "@/components/insurance/insurance-actions";
 import { InsuranceView } from "@/components/insurance/insurance-view";
 import { InsuranceWorkflowStrip } from "@/components/insurance/insurance-workflow-strip";
 import { Alert } from "@/components/ui/alert";
@@ -60,19 +60,15 @@ export default async function InsurancePage() {
         title="Insurance & PhilHealth"
         description="Patient policies, coverage verification, authorizations, and claims."
         actions={
-          <>
-            <UnavailableAction
-              label="Verify Coverage"
-              description="Record a manual eligibility verification with the patient's insurer."
-              variant="secondary"
-              icon={<ShieldCheckIcon className="size-4" aria-hidden="true" />}
-            />
-            <UnavailableAction
-              label="Create Claim"
-              description="Prepare an insurance claim from an encounter or admission."
-              icon={<BillListIcon className="size-4" aria-hidden="true" />}
-            />
-          </>
+          <InsuranceActions
+            policies={(policiesResult.data?.rows ?? []).map((policy) => ({
+              id: policy.id,
+              label: `${policy.patient_name} · ${policy.policy_number} · ${policy.provider_name}`,
+              patientName: policy.patient_name,
+              providerName: policy.provider_name,
+              status: policy.status,
+            }))}
+          />
         }
       />
 
