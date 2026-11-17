@@ -19,6 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { PasswordInput } from "@/components/ui/password-input";
+import { useToast } from "@/components/ui/toast";
+import { changePasswordSchema } from "@/lib/validations/auth";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -41,26 +43,29 @@ function validatePassword(
   next: string,
   confirm: string
 ): PasswordFieldErrors {
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: current,
+    newPassword: next,
+    confirmPassword: confirm,
+  });
+
+  if (parsed.success) {
+    return {};
+  }
+
   const errors: PasswordFieldErrors = {};
 
-  if (!current) {
-    errors.current = "Enter your current password.";
-  }
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
 
-  if (!next) {
-    errors.next = "Enter a new password.";
-  } else if (next.length < 8) {
-    errors.next = "Use at least 8 characters.";
-  } else if (!/[A-Za-z]/.test(next) || !/[0-9]/.test(next)) {
-    errors.next = "Use at least one letter and one number.";
-  } else if (next === current) {
-    errors.next = "Choose a password different from your current password.";
-  }
-
-  if (!confirm) {
-    errors.confirm = "Re-enter the new password.";
-  } else if (confirm !== next) {
-    errors.confirm = "The passwords do not match.";
+    if (
+      (field === "currentPassword" || field === "newPassword" || field === "confirmPassword") &&
+      !errors[field === "currentPassword" ? "current" : field === "newPassword" ? "next" : "confirm"]
+    ) {
+      errors[
+        field === "currentPassword" ? "current" : field === "newPassword" ? "next" : "confirm"
+      ] = issue.message;
+    }
   }
 
   return errors;
@@ -106,9 +111,9 @@ export function AccountSettingsView({ account }: AccountSettingsViewProps) {
   const [newPassword, setNewPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [errors, setErrors] = React.useState<PasswordFieldErrors>({});
-  const [submitted, setSubmitted] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const { toast } = useToast();
 
   const displayName = account.full_name;
   const displayEmail = account.email;
@@ -132,7 +137,6 @@ export function AccountSettingsView({ account }: AccountSettingsViewProps) {
     );
 
     setErrors(nextErrors);
-    setSubmitted(false);
     setFormError(null);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -171,7 +175,11 @@ export function AccountSettingsView({ account }: AccountSettingsViewProps) {
         return;
       }
 
-      setSubmitted(true);
+      toast({
+        title: "Password updated",
+        description: "Use the new password the next time you sign in.",
+        variant: "success",
+      });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -290,12 +298,6 @@ export function AccountSettingsView({ account }: AccountSettingsViewProps) {
           </Alert>
         ) : null}
 
-        {submitted ? (
-          <Alert variant="success" title="Password updated" className="mb-4">
-            Your password was changed. Use it the next time you sign in.
-          </Alert>
-        ) : null}
-
         <form
           onSubmit={handlePasswordSubmit}
           noValidate
@@ -318,7 +320,6 @@ export function AccountSettingsView({ account }: AccountSettingsViewProps) {
               value={currentPassword}
               onChange={(event) => {
                 setCurrentPassword(event.target.value);
-                setSubmitted(false);
 
                 if (errors.current) {
                   setErrors((current) => ({
@@ -343,7 +344,6 @@ export function AccountSettingsView({ account }: AccountSettingsViewProps) {
               value={newPassword}
               onChange={(event) => {
                 setNewPassword(event.target.value);
-                setSubmitted(false);
 
                 if (errors.next) {
                   setErrors((current) => ({ ...current, next: undefined }));
@@ -365,7 +365,6 @@ export function AccountSettingsView({ account }: AccountSettingsViewProps) {
               value={confirmPassword}
               onChange={(event) => {
                 setConfirmPassword(event.target.value);
-                setSubmitted(false);
 
                 if (errors.confirm) {
                   setErrors((current) => ({

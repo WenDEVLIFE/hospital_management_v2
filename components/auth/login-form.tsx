@@ -10,8 +10,8 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { loginSchema } from "@/lib/validations/auth";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type FieldErrors = {
   email?: string;
@@ -19,16 +19,20 @@ type FieldErrors = {
 };
 
 function validateLogin(email: string, password: string): FieldErrors {
-  const errors: FieldErrors = {};
+  const parsed = loginSchema.safeParse({ email, password });
 
-  if (!email.trim()) {
-    errors.email = "Enter your work email.";
-  } else if (!EMAIL_PATTERN.test(email.trim())) {
-    errors.email = "Enter a valid email address, such as name@spmc.gov.ph.";
+  if (parsed.success) {
+    return {};
   }
 
-  if (!password) {
-    errors.password = "Enter your password.";
+  const errors: FieldErrors = {};
+
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
+
+    if ((field === "email" || field === "password") && !errors[field]) {
+      errors[field] = issue.message;
+    }
   }
 
   return errors;

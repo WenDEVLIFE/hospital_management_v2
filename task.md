@@ -17,17 +17,17 @@
 
 | Phase | Scope | Done | Status |
 |---|---|---|---|
-| 0 | Specification & design authority | 5 / 8 | In progress (approvals pending) |
-| 1 | Database schema | 24 / 29 | In progress (live schema verified; `db lint` pending) |
-| 2 | UI foundation | 30 / 33 | Complete (2 follow-ups) |
+| 0 | Specification & design authority | 8 / 8 | Complete |
+| 1 | Database schema | 27 / 29 | In progress (live schema verified; `db lint` pending) |
+| 2 | UI foundation | 31 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 23 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 28 | Not tracked (RPCs listed here were implemented through 6.4 but the boxes were never ticked) |
-| 6 | Frontend ↔ backend integration | 48 / 67 | In progress (6.5 navigation and action visibility done; storage, signed URLs and realtime hooks next; 8 fixture modules remain in 6.7) |
+| 6 | Frontend ↔ backend integration | 51 / 67 | In progress (6.5 helpers and visibility done; upload UI, signed-URL viewer and realtime consumers next; 8 fixture modules remain in 6.7) |
 | 7 | QA & security verification | 8 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **186 / 295** | **63%** |
+| **Total** | | **196 / 295** | **66%** |
 
 ---
 
@@ -143,7 +143,7 @@
 - [x] Accessible `Modal` (focus trap, Escape, scroll lock, focus restore)
 - [x] Keyboard-navigable `DropdownMenu` and `Tabs`
 - [x] `components/module/stat-card.tsx`, `record-table.tsx`, `error-state.tsx`, `unavailable-action.tsx`
-- [ ] Mount `<ToastProvider>` in the workspace tree — **deferred to Phase 6** (no mutation to notify yet)
+- [x] Mount `<ToastProvider>` in the workspace tree — mounted in the workspace layout with the permission provider
 
 ### 2.5 Removal of the old product
 
@@ -340,7 +340,7 @@
 - [x] `lib/supabase/client.ts` — singleton browser client
 - [x] `lib/supabase/server.ts` — cookie-based server client
 - [x] `lib/supabase/proxy.ts` + root `proxy.ts` — session refresh (no auth redirect until sign-in is real)
-- [ ] `lib/supabase/storage.ts`, `lib/supabase/realtime.ts`
+- [x] `lib/supabase/storage.ts`, `lib/supabase/realtime.ts` — 2026-11-17, storage helpers (upload, signed URL, list, remove) with typed errors, and realtime hooks (`useRealtimeTable`, `subscribeToTable`) for the 9 published tables; applies migration 041 for the private buckets
 
 ### 6.2 Authentication
 
@@ -378,7 +378,7 @@
 
 ### 6.4 Mutations
 
-- [ ] Zod schemas in `lib/validations/*` for every form — patient, appointment, admission, transfer, discharge, clinical-note, and laboratory schemas added; remaining forms pending
+- [x] Zod schemas in `lib/validations/*` for every form — every mutation and auth form now validates through a shared schema: patient registration/update/allergy, appointment, admission/transfer/discharge, clinical note, laboratory, dispensing, payment, invoice, inventory, nursing, emergency, surgery, HR, organisation, and login/forgot/reset/change-password
 - [x] Patient registration → `register_patient` RPC — 2026-11-17, RPC applied and verified end-to-end; created MRN-2026-0011 with emergency contact and audit row, and the patient list shows it
 - [x] Appointment creation → `create_appointment` RPC — 2026-11-17, RPC applied and verified end-to-end; created APT-2026-0007 with audit row, conflict probe returned 23P01, and the appointment list shows it
 - [x] Admission / transfer / discharge → RPCs — 2026-11-17, applied and verified end-to-end; ADM-2026-0004 admitted to W3-302-A, transferred to W3-302-B, discharged; bed states, assignment history, and audit rows verified
@@ -388,14 +388,14 @@
 - [x] Payment / refund → `record_payment` / `refund_payment` — 2026-11-17, applied and verified; INV-2026-0003 collected 2,000 then 2,200 (PAY-2026-0004/0005) and became paid, overpayment and post-paid payments rejected, PAY-2026-0002 refunded and INV-2026-0002 returned to unpaid with an 18,000 balance, duplicate refund rejected, audit rows written. Migration 031 fixed the 42804 enum cast failure.
 - [x] Stock movements → `adjust_inventory` — 2026-11-17, applied and verified; received a 50-unit batch on ITM-0001, issued 90 units FIFO across two batches (80 + 10), an over-issue of 1,000 was rejected with no quantity change, a count adjustment of 40→38 wrote a delta of 2, a count above the received quantity was rejected, a missing reason was rejected, and audit rows were written
 - [x] Replace `UnavailableAction` in modules with a live backend — 2026-11-17, applied and verified; invoice INV-2026-0005 (850 − 50 = 800, unpaid) with itemized charges, patient edit plus archive/restore, a severe penicillin allergy, vitals on ADM-2026-0001/ENC-2026-0004, and a nursing note, all with audit rows and validation rejections
-- [ ] Remove the remaining placeholders — 2026-11-17: departments/rooms creation and staff edit/deactivate verified and cleaned up; still open: user invites/staff creation (needs Auth admin with the service-role key) and the 11 fixture-only modules (ambulance, blood bank, dietary, emergency, equipment, housekeeping, HR, insurance, mortuary, surgery) which have no schema yet
-- [ ] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted; patient, appointment, admission, transfer, discharge, clinical-note, and lab-verification flows use success toasts; other forms pending
+- [ ] Remove the remaining placeholders — emergency, surgery and HR now have real backends; still open: user invites/staff creation (needs Auth admin with the service-role key) and the 8 fixture-only modules (ambulance, blood bank, dietary, equipment, housekeeping, insurance, mortuary, notifications) which have no schema yet
+- [x] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted in the workspace tree; every mutation flow confirms with a success toast, including password change. The only remaining success-styled alert is "Already dispensed", which is a persistent state notice, not a transient confirmation
 
 ### 6.5 Files, realtime, roles
 
-- [ ] Upload UI for patient documents, lab attachments, radiology files
-- [ ] Signed URL viewer
-- [ ] Realtime hooks for the 9 published tables — publication is added by migration 039; client hooks not started
+- [ ] Upload UI for patient documents, lab attachments, radiology files — helper layer ready (`lib/supabase/storage.ts`), UI not built
+- [ ] Signed URL viewer — `createSignedUrl` helper ready; viewer not built
+- [ ] Realtime hooks for the 9 published tables — `lib/supabase/realtime.ts` provides `useRealtimeTable` and `subscribeToTable` over the tables published by migration 039; no screen subscribes yet
 - [x] Set `NavItem.permission` and filter navigation by `has_permission` — verified with nurse and admin accounts after applying migration 039
 - [x] Hide actions the user cannot perform (never rely on hiding alone — RLS still enforces) — every backed mutation entry point and page-level create action is gated; unavailable fixture-module actions are unaffected
 

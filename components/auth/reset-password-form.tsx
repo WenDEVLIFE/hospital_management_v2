@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { resetPasswordSchema } from "@/lib/validations/auth";
 
 type PasswordFieldErrors = {
   next?: string;
@@ -19,20 +20,27 @@ type PasswordFieldErrors = {
 type ResetStatus = "loading" | "ready" | "invalid" | "done";
 
 function validatePassword(next: string, confirm: string): PasswordFieldErrors {
-  const errors: PasswordFieldErrors = {};
+  const parsed = resetPasswordSchema.safeParse({
+    password: next,
+    confirmPassword: confirm,
+  });
 
-  if (!next) {
-    errors.next = "Enter a new password.";
-  } else if (next.length < 8) {
-    errors.next = "Use at least 8 characters.";
-  } else if (!/[A-Za-z]/.test(next) || !/[0-9]/.test(next)) {
-    errors.next = "Use at least one letter and one number.";
+  if (parsed.success) {
+    return {};
   }
 
-  if (!confirm) {
-    errors.confirm = "Re-enter the new password.";
-  } else if (confirm !== next) {
-    errors.confirm = "The passwords do not match.";
+  const errors: PasswordFieldErrors = {};
+
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
+
+    if (field === "password" && !errors.next) {
+      errors.next = issue.message;
+    }
+
+    if (field === "confirmPassword" && !errors.confirm) {
+      errors.confirm = issue.message;
+    }
   }
 
   return errors;

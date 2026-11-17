@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { forgotPasswordSchema } from "@/lib/validations/auth";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = React.useState("");
@@ -19,15 +19,9 @@ export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = React.useState(false);
 
   const validate = (value: string): string | undefined => {
-    if (!value.trim()) {
-      return "Enter your work email.";
-    }
+    const parsed = forgotPasswordSchema.safeParse({ email: value });
 
-    if (!EMAIL_PATTERN.test(value.trim())) {
-      return "Enter a valid email address, such as name@spmc.gov.ph.";
-    }
-
-    return undefined;
+    return parsed.success ? undefined : parsed.error.issues[0]?.message;
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
