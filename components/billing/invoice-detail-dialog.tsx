@@ -21,6 +21,8 @@ export interface InvoiceDetailDialogProps {
   invoice: InvoiceListRow | null;
   payments: PaymentListRow[];
   items?: InvoiceChargeLine[];
+  onRecordPayment?: (invoice: InvoiceListRow) => void;
+  onRefundPayment?: (payment: PaymentListRow) => void;
   onClose: () => void;
 }
 
@@ -73,6 +75,8 @@ export function InvoiceDetailDialog({
   invoice,
   payments,
   items = [],
+  onRecordPayment,
+  onRefundPayment,
   onClose,
 }: InvoiceDetailDialogProps) {
   const relatedPayments = React.useMemo(
@@ -86,6 +90,14 @@ export function InvoiceDetailDialog({
   const isFinalized =
     invoice?.status === "paid" || invoice?.status === "refunded";
 
+  const canRecordPayment = Boolean(
+    invoice &&
+      onRecordPayment &&
+      invoice.balance > 0 &&
+      invoice.status !== "cancelled" &&
+      invoice.status !== "refunded"
+  );
+
   return (
     <Modal
       open={invoice !== null}
@@ -94,9 +106,16 @@ export function InvoiceDetailDialog({
       description="Itemized charges, payment history and outstanding balance."
       size="lg"
       footer={
-        <Button variant="secondary" onClick={onClose}>
-          Close
-        </Button>
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+          {invoice && canRecordPayment && onRecordPayment ? (
+            <Button onClick={() => onRecordPayment(invoice)}>
+              Record payment
+            </Button>
+          ) : null}
+        </>
       }
     >
       {invoice ? (
@@ -301,6 +320,17 @@ export function InvoiceDetailDialog({
                         {formatCurrency(payment.amount)}
                       </span>
                       <StatusBadge status={payment.payment_status} />
+                      {payment.payment_status === "completed" &&
+                      onRefundPayment ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Refund payment ${payment.payment_reference}`}
+                          onClick={() => onRefundPayment(payment)}
+                        >
+                          Refund
+                        </Button>
+                      ) : null}
                     </div>
                   </li>
                 ))}

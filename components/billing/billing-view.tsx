@@ -14,6 +14,8 @@ import {
 } from "@/lib/format";
 
 import { InvoiceDetailDialog } from "./invoice-detail-dialog";
+import { RecordPaymentDialog } from "./record-payment-dialog";
+import { RefundPaymentDialog } from "./refund-payment-dialog";
 
 export interface BillingViewProps {
   invoices: InvoiceListRow[];
@@ -36,6 +38,12 @@ function referenceLabel(invoice: InvoiceListRow): string | null {
 
 export function BillingView({ invoices, payments }: BillingViewProps) {
   const [selected, setSelected] = React.useState<InvoiceListRow | null>(null);
+  const [paymentInvoice, setPaymentInvoice] =
+    React.useState<InvoiceListRow | null>(null);
+  const [refundTarget, setRefundTarget] = React.useState<{
+    payment: PaymentListRow;
+    invoice: InvoiceListRow | null;
+  } | null>(null);
 
   const columns: Column<InvoiceListRow>[] = [
     {
@@ -189,7 +197,35 @@ export function BillingView({ invoices, payments }: BillingViewProps) {
       <InvoiceDetailDialog
         invoice={selected}
         payments={payments}
+        onRecordPayment={(invoice) => {
+          setSelected(null);
+          setPaymentInvoice(invoice);
+        }}
+        onRefundPayment={(payment) => {
+          setRefundTarget({
+            payment,
+            invoice:
+              invoices.find((invoice) => invoice.id === payment.invoice_id) ??
+              null,
+          });
+          setSelected(null);
+        }}
         onClose={() => setSelected(null)}
+      />
+
+      <RecordPaymentDialog
+        key={`payment-${paymentInvoice?.id ?? "none"}-${paymentInvoice ? "open" : "closed"}`}
+        open={paymentInvoice !== null}
+        invoice={paymentInvoice}
+        onClose={() => setPaymentInvoice(null)}
+      />
+
+      <RefundPaymentDialog
+        key={`refund-${refundTarget?.payment.id ?? "none"}`}
+        open={refundTarget !== null}
+        payment={refundTarget?.payment ?? null}
+        invoice={refundTarget?.invoice ?? null}
+        onClose={() => setRefundTarget(null)}
       />
     </>
   );

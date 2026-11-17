@@ -385,7 +385,7 @@
 - [x] Clinical note finalize → `finalize_clinical_note` — 2026-11-17, applied and verified; draft note for ENC-2026-0003 became finalized with timestamps, updated_by, and audit row
 - [x] Lab result verify → `verify_laboratory_result` — 2026-11-17, applied and verified; pending CBC result for LAB-2026-0002 became verified, item completed, order stayed processing, and audit row created
 - [x] Dispensing → `dispense_prescription` — 2026-11-17, applied and verified; RX-2026-0003 (30 Losartan) and RX-2026-0002 (20 Paracetamol remaining) became dispensed, batches went 420→390 and 1200→1180, `stock_transactions` + audit rows written, repeat call rejected with 22023. Fixed the `can_access_patient` gate in migration 029 that blocked pharmacists.
-- [ ] Payment / refund → `record_payment` / `refund_payment`
+- [ ] Payment / refund → `record_payment` / `refund_payment` — migration 030 applied but every write failed with `42804` because the CASE expressions assigned text to the `invoice_status` enum; apply `supabase/migrations/20261117000800_fix_payment_enum_casts.sql` (migration 031), then verify against INV-2026-0003 (unpaid, 4,200) and PAY-2026-0002 (id `a1000000-0000-4000-8000-000000000002`)
 - [ ] Stock movements → `adjust_inventory`
 - [ ] Delete every `UnavailableAction` call site and `components/module/unavailable-action.tsx`
 - [ ] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted; patient, appointment, admission, transfer, discharge, clinical-note, and lab-verification flows use success toasts; other forms pending
