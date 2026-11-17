@@ -384,7 +384,7 @@
 - [x] Admission / transfer / discharge → RPCs — 2026-11-17, applied and verified end-to-end; ADM-2026-0004 admitted to W3-302-A, transferred to W3-302-B, discharged; bed states, assignment history, and audit rows verified
 - [x] Clinical note finalize → `finalize_clinical_note` — 2026-11-17, applied and verified; draft note for ENC-2026-0003 became finalized with timestamps, updated_by, and audit row
 - [x] Lab result verify → `verify_laboratory_result` — 2026-11-17, applied and verified; pending CBC result for LAB-2026-0002 became verified, item completed, order stayed processing, and audit row created
-- [ ] Dispensing → `dispense_prescription`
+- [ ] Dispensing → `dispense_prescription` — code complete; migration applied, but the pharmacist probe returned `42501` because the RPC gated on `can_access_patient` (pharmacists are not care-assigned). Apply `supabase/migrations/20261117000600_fix_dispense_prescription.sql` and verify
 - [ ] Payment / refund → `record_payment` / `refund_payment`
 - [ ] Stock movements → `adjust_inventory`
 - [ ] Delete every `UnavailableAction` call site and `components/module/unavailable-action.tsx`
