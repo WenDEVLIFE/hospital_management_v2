@@ -5,7 +5,6 @@ import {
   ClockCircleIcon,
   HeartPulseIcon,
   TestTubeIcon,
-  UserRoundedIcon,
   WaterdropIcon,
 } from "@solar-icons/react/linear";
 
@@ -14,8 +13,13 @@ import { BloodBankView } from "@/components/blood-bank/blood-bank-view";
 import { BloodBankWorkflowStrip } from "@/components/blood-bank/blood-bank-workflow-strip";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import {
+  CreateRequestAction,
+  RecordDonationAction,
+  RegisterDonorAction,
+} from "@/components/blood-bank/blood-bank-actions";
 import { Alert } from "@/components/ui/alert";
+import { listPatients } from "@/lib/data/patients";
 import {
   getBloodBankStats,
   getBloodDonorDetails,
@@ -45,6 +49,7 @@ export default async function BloodBankPage() {
     donorDetailsResult,
     screeningsResult,
     transfusionsResult,
+    patientResult,
   ] = await Promise.all([
     getBloodBankStats(),
     listBloodUnits({ pageSize: 200 }),
@@ -55,6 +60,7 @@ export default async function BloodBankPage() {
     getBloodDonorDetails(),
     listBloodScreenings(),
     listTransfusionRecords(),
+    listPatients({ pageSize: 300 }),
   ]);
 
   const donors = donorsResult.error ? [] : donorsResult.data.rows;
@@ -73,16 +79,20 @@ export default async function BloodBankPage() {
         description="Donors, blood components, requests, crossmatching, and transfusion records."
         actions={
           <>
-            <UnavailableAction
-              label="Register Donor"
-              description="Register a blood donor and record eligibility screening."
-              variant="secondary"
-              icon={<UserRoundedIcon className="size-4" aria-hidden="true" />}
+            <RegisterDonorAction />
+            <RecordDonationAction
+              donors={donors.map((donor) => ({
+                id: donor.id,
+                full_name: donor.full_name,
+                blood_type: donor.blood_type,
+              }))}
             />
-            <UnavailableAction
-              label="Create Request"
-              description="Create a blood request for a patient and route it to the blood bank."
-              icon={<ClipboardListIcon className="size-4" aria-hidden="true" />}
+            <CreateRequestAction
+              patients={(patientResult.data?.rows ?? []).map((patient) => ({
+                id: patient.id,
+                full_name: patient.full_name,
+                medical_record_number: patient.medical_record_number,
+              }))}
             />
           </>
         }

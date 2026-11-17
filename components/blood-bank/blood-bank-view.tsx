@@ -25,8 +25,10 @@ import {
   type Column,
   type FilterConfig,
 } from "@/components/module/record-table";
-import { UNAVAILABLE_MESSAGE, UnavailableAction } from "@/components/module/unavailable-action";
-import { Alert } from "@/components/ui/alert";
+import {
+  CrossmatchUnitDialog,
+  IssueUnitDialog,
+} from "./blood-bank-unit-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -177,7 +179,9 @@ export function BloodBankView({
     React.useState<BloodRequestListRow | null>(null);
   const [selectedDonor, setSelectedDonor] =
     React.useState<BloodDonorListRow | null>(null);
-  const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  const [unitAction, setUnitAction] = React.useState<
+    "crossmatch" | "issue" | null
+  >(null);
 
   const unitRowById = React.useMemo(
     () => new Map(units.map((unit) => [unit.id, unit])),
@@ -197,7 +201,7 @@ export function BloodBankView({
       const row = unitRowById.get(id);
 
       if (row) {
-        setPendingAction(null);
+        setUnitAction(null);
         setSelectedUnit(row);
       }
     },
@@ -205,7 +209,7 @@ export function BloodBankView({
   );
 
   const closeUnit = React.useCallback(() => {
-    setPendingAction(null);
+    setUnitAction(null);
     setSelectedUnit(null);
   }, []);
 
@@ -214,7 +218,7 @@ export function BloodBankView({
       const row = requestRowById.get(id);
 
       if (row) {
-        setPendingAction(null);
+        setUnitAction(null);
         setSelectedRequest(row);
       }
     },
@@ -222,7 +226,7 @@ export function BloodBankView({
   );
 
   const closeRequest = React.useCallback(() => {
-    setPendingAction(null);
+    setUnitAction(null);
     setSelectedRequest(null);
   }, []);
 
@@ -231,7 +235,7 @@ export function BloodBankView({
       const row = donorRowById.get(id);
 
       if (row) {
-        setPendingAction(null);
+        setUnitAction(null);
         setSelectedDonor(row);
       }
     },
@@ -239,7 +243,7 @@ export function BloodBankView({
   );
 
   const closeDonor = React.useCallback(() => {
-    setPendingAction(null);
+    setUnitAction(null);
     setSelectedDonor(null);
   }, []);
 
@@ -711,15 +715,6 @@ export function BloodBankView({
               `${row.request_number} ${row.patient_name} ${row.patient_mrn} ${row.blood_type} ${row.component} ${row.requested_by_name} ${row.department_name}`
             }
             filters={requestFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="Create Request"
-                description="Create a blood request and route it to the blood bank."
-                size="sm"
-                variant="secondary"
-                icon={<ClipboardListIcon className="size-4" aria-hidden="true" />}
-              />
-            }
             emptyTitle="No blood requests found"
             emptyDescription="There are no blood requests matching your selected filters."
             emptyIcon={
@@ -740,15 +735,6 @@ export function BloodBankView({
               `${row.donor_number} ${row.full_name} ${row.blood_type} ${row.contact_number ?? ""}`
             }
             filters={donorFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="Register Donor"
-                description="Register a blood donor and record eligibility screening."
-                size="sm"
-                variant="secondary"
-                icon={<UserRoundedIcon className="size-4" aria-hidden="true" />}
-              />
-            }
             emptyTitle="No donors found"
             emptyDescription="There are no donors matching your selected filters."
             emptyIcon={<UserRoundedIcon className="size-5" aria-hidden="true" />}
@@ -889,12 +875,6 @@ export function BloodBankView({
       >
         {selectedUnit ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Unit number">
                 <span className="font-mono text-xs">
@@ -1012,30 +992,16 @@ export function BloodBankView({
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => setPendingAction("Reserve unit")}
-                  >
-                    Reserve unit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Crossmatch unit")}
+                    onClick={() => setUnitAction("crossmatch")}
                   >
                     Crossmatch
                   </Button>
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => setPendingAction("Issue unit")}
+                    onClick={() => setUnitAction("issue")}
                   >
                     Issue unit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setPendingAction("Discard unit")}
-                  >
-                    Discard unit
                   </Button>
                 </div>
               </>
@@ -1062,12 +1028,6 @@ export function BloodBankView({
       >
         {selectedRequest ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Patient">
                 <div className="flex flex-wrap items-baseline gap-2">
@@ -1235,36 +1195,10 @@ export function BloodBankView({
                   )}
                 </section>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Reserve unit")}
-                  >
-                    Reserve unit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Crossmatch request")}
-                  >
-                    Crossmatch
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Issue unit")}
-                  >
-                    Issue unit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setPendingAction("Record transfusion")}
-                  >
-                    Record transfusion
-                  </Button>
-                </div>
+                <p className="text-[11px] text-hospital-text-muted">
+                  Crossmatch and issue are performed from the blood unit
+                  workspace so the unit and request stay linked.
+                </p>
               </>
             ) : null}
           </div>
@@ -1289,12 +1223,6 @@ export function BloodBankView({
       >
         {selectedDonor ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Donor number">
                 <span className="font-mono text-xs">
@@ -1408,27 +1336,31 @@ export function BloodBankView({
                   )}
                 </section>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Record donation")}
-                  >
-                    Record donation
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Update eligibility")}
-                  >
-                    Update eligibility
-                  </Button>
-                </div>
+                <p className="text-[11px] text-hospital-text-muted">
+                  Record a donation from the Blood Bank header once the donor
+                  is eligible.
+                </p>
               </>
             ) : null}
           </div>
         ) : null}
       </Modal>
+
+      {unitAction === "crossmatch" && selectedUnit ? (
+        <CrossmatchUnitDialog
+          unit={selectedUnit}
+          requests={requests}
+          onClose={() => setUnitAction(null)}
+        />
+      ) : null}
+
+      {unitAction === "issue" && selectedUnit ? (
+        <IssueUnitDialog
+          unit={selectedUnit}
+          requests={requests}
+          onClose={() => setUnitAction(null)}
+        />
+      ) : null}
     </>
   );
 }
