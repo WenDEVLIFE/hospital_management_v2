@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 39 / 55 | In progress (6.3 complete; patient, appointment, admission/transfer/discharge, finalize-note, and lab-verify mutations live; remaining pharmacy, billing, inventory mutations and preview decommission) |
+| 6 | Frontend ↔ backend integration | 40 / 55 | In progress (6.3 complete; patient, appointment, admission/transfer/discharge, finalize-note, lab-verify, and dispensing mutations live; remaining billing, inventory mutations and preview decommission) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **171 / 284** | |
+| **Total** | | **172 / 284** | |
 
 ---
 
@@ -384,7 +384,7 @@
 - [x] Admission / transfer / discharge → RPCs — 2026-11-17, applied and verified end-to-end; ADM-2026-0004 admitted to W3-302-A, transferred to W3-302-B, discharged; bed states, assignment history, and audit rows verified
 - [x] Clinical note finalize → `finalize_clinical_note` — 2026-11-17, applied and verified; draft note for ENC-2026-0003 became finalized with timestamps, updated_by, and audit row
 - [x] Lab result verify → `verify_laboratory_result` — 2026-11-17, applied and verified; pending CBC result for LAB-2026-0002 became verified, item completed, order stayed processing, and audit row created
-- [ ] Dispensing → `dispense_prescription` — code complete; migration applied, but the pharmacist probe returned `42501` because the RPC gated on `can_access_patient` (pharmacists are not care-assigned). Apply `supabase/migrations/20261117000600_fix_dispense_prescription.sql` and verify
+- [x] Dispensing → `dispense_prescription` — 2026-11-17, applied and verified; RX-2026-0003 (30 Losartan) and RX-2026-0002 (20 Paracetamol remaining) became dispensed, batches went 420→390 and 1200→1180, `stock_transactions` + audit rows written, repeat call rejected with 22023. Fixed the `can_access_patient` gate in migration 029 that blocked pharmacists.
 - [ ] Payment / refund → `record_payment` / `refund_payment`
 - [ ] Stock movements → `adjust_inventory`
 - [ ] Delete every `UnavailableAction` call site and `components/module/unavailable-action.tsx`
@@ -459,7 +459,7 @@
 - [ ] Patient transfer closes the previous assignment
 - [ ] Clinical note finalization is irreversible without amendment
 - [ ] Laboratory result verification is permission-gated
-- [ ] Prescription dispensing decrements inventory atomically
+- [ ] Prescription dispensing decrements inventory atomically — verified live for single-batch items (420→390, 1200→1180) and for a partially dispensed prescription; multi-batch FIFO and mid-loop rollback not exercised because fixture inserts are blocked by the `prescriptions` insert policy
 - [ ] Inventory cannot go negative
 - [ ] Duplicate payment submission rejected
 - [ ] Refund preserves the original payment record
