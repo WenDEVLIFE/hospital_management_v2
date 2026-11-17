@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 43 / 67 | In progress (6.3 complete; mutations live for patients, appointments, admissions, notes, labs, pharmacy, billing, inventory, patient records, nursing; 11 fixture-only module backends queued in 6.7) |
+| 6 | Frontend ↔ backend integration | 45 / 67 | In progress (6.7: emergency and surgery verified; HR awaiting the overnight-shift fix. 8 fixture modules remain) |
 | 7 | QA & security verification | 8 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **178 / 296** | |
+| **Total** | | **180 / 296** | |
 
 ---
 
@@ -408,9 +408,9 @@
 
 ### 6.7 Fixture-only module backends
 
-- [ ] Emergency — migration 035 adds `emergency_visits`, permissions, RLS, `start_emergency_visit`, and a real data layer; apply `20261117001200_emergency_visits.sql` and verify
-- [ ] Surgery — migration 036 adds `operating_rooms`, `surgery_cases`, permissions, RLS, `register_operating_room` and `schedule_surgery_case`, plus a real data layer and dialogs; apply `20261117001300_surgery.sql` and verify
-- [ ] HR
+- [x] Emergency — 2026-11-17, applied and verified; start triage created ER-2026-0001 with encounter ENC-2026-0007, duplicate active visits rejected, and the board renders real data
+- [x] Surgery — 2026-11-17, applied and verified; registered an OR, scheduled a case, and an overlapping slot was rejected with 23P01 (verification records cleaned up). Demo rooms/cases arrive with the seed block
+- [ ] HR — applied; leave filing and review verified (3-day request, approved, repeat review rejected). Overnight shifts were rejected by an ordering bug, fixed in `20261117001600_overnight_shifts.sql` — apply and verify a 23:00–07:00 shift. Payroll processing still needs a salary model
 - [ ] Insurance
 - [ ] Blood bank
 - [ ] Ambulance

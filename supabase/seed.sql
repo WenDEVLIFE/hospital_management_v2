@@ -1503,3 +1503,128 @@ values
    '11111111-1111-4111-8111-000000000004')
 on conflict (id) do nothing;
 
+
+-- ============================================================================
+-- HUMAN RESOURCES
+-- ============================================================================
+
+insert into public.hr_employee_details (
+  staff_profile_id, position, employment_status, hire_date,
+  license_expiry, leave_balance, created_by
+)
+select
+  sp.id,
+  coalesce(
+    (
+      select r.name
+      from public.user_roles ur
+      join public.roles r on r.id = ur.role_id
+      where ur.user_id = sp.user_id
+      limit 1
+    ),
+    'Staff'
+  ),
+  'active',
+  sp.created_at::date,
+  case
+    when exists (
+      select 1
+      from public.user_roles ur
+      join public.roles r on r.id = ur.role_id
+      where ur.user_id = sp.user_id
+        and r.slug = 'physician'
+    )
+    then current_date + 45
+    else null
+  end,
+  15,
+  '11111111-1111-4111-8111-000000000002'
+from public.staff_profiles sp
+on conflict (staff_profile_id) do nothing;
+
+insert into public.hr_credentials (
+  id, staff_profile_id, credential_type, credential_number,
+  issued_at, expires_at, status
+)
+values (
+  'a4000000-0000-4000-8000-000000000001',
+  (select id from public.staff_profiles where staff_number = 'SPMC-2026-0001'),
+  'PRC License',
+  'PRC-0091823',
+  current_date - interval '2 years',
+  current_date + interval '45 days',
+  'expiring'
+)
+on conflict (id) do nothing;
+
+insert into public.hr_shifts (
+  id, staff_profile_id, shift_date, shift_type, start_time, end_time, created_by
+)
+values
+  ('a5000000-0000-4000-8000-000000000001',
+   (select id from public.staff_profiles where staff_number = 'SPMC-2026-0006'),
+   current_date, 'morning', '07:00', '15:00',
+   '11111111-1111-4111-8111-000000000002'),
+  ('a5000000-0000-4000-8000-000000000002',
+   (select id from public.staff_profiles where staff_number = 'SPMC-2026-0010'),
+   current_date, 'afternoon', '15:00', '23:00',
+   '11111111-1111-4111-8111-000000000002')
+on conflict (id) do nothing;
+
+insert into public.hr_attendance (
+  id, staff_profile_id, attendance_date, time_in, time_out,
+  status, overtime_minutes, note
+)
+values
+  ('a6000000-0000-4000-8000-000000000001',
+   (select id from public.staff_profiles where staff_number = 'SPMC-2026-0006'),
+   current_date, '06:58', '15:05', 'present', 5, null),
+  ('a6000000-0000-4000-8000-000000000002',
+   (select id from public.staff_profiles where staff_number = 'SPMC-2026-0010'),
+   current_date, '15:22', null, 'late', 0, 'Arrived late')
+on conflict (id) do nothing;
+
+insert into public.hr_leave_requests (
+  id, staff_profile_id, leave_type, start_date, end_date,
+  days, status, reason, requested_by
+)
+values (
+  'a7000000-0000-4000-8000-000000000001',
+  (select id from public.staff_profiles where staff_number = 'SPMC-2026-0012'),
+  'vacation',
+  current_date + 7,
+  current_date + 9,
+  3,
+  'pending',
+  'Family trip.',
+  '11111111-1111-4111-8111-000000000002'
+)
+on conflict (id) do nothing;
+
+insert into public.hr_payroll_periods (
+  id, period_start, period_end, pay_date, status, created_by
+)
+values (
+  'a8000000-0000-4000-8000-000000000001',
+  date_trunc('month', current_date - interval '1 month')::date,
+  (date_trunc('month', current_date) - interval '1 day')::date,
+  (date_trunc('month', current_date) + interval '4 days')::date,
+  'paid',
+  '11111111-1111-4111-8111-000000000002'
+)
+on conflict (id) do nothing;
+
+insert into public.hr_payroll_entries (
+  id, payroll_period_id, staff_profile_id, position,
+  basic_pay, allowances, overtime_pay, gross_pay, deductions, net_pay, status
+)
+values
+  ('a9000000-0000-4000-8000-000000000001',
+   'a8000000-0000-4000-8000-000000000001',
+   (select id from public.staff_profiles where staff_number = 'SPMC-2026-0006'),
+   'Nurse', 32000, 2500, 800, 35300, 4200, 31100, 'paid'),
+  ('a9000000-0000-4000-8000-000000000002',
+   'a8000000-0000-4000-8000-000000000001',
+   (select id from public.staff_profiles where staff_number = 'SPMC-2026-0010'),
+   'Pharmacist', 30000, 2000, 0, 32000, 4000, 28000, 'paid')
+on conflict (id) do nothing;

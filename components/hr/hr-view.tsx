@@ -26,6 +26,10 @@ import {
   type FilterConfig,
 } from "@/components/module/record-table";
 import { UnavailableAction, UNAVAILABLE_MESSAGE } from "@/components/module/unavailable-action";
+import {
+  FileLeaveAction,
+  ScheduleShiftAction,
+} from "@/components/hr/hr-actions";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -660,13 +664,7 @@ export function HrView({
             }
             filters={attendanceFilters}
             toolbarActions={
-              <UnavailableAction
-                label="Schedule Shift"
-                description="Assign an employee to a shift and publish the schedule."
-                size="sm"
-                variant="secondary"
-                icon={<ClockCircleIcon className="size-4" aria-hidden="true" />}
-              />
+              <ScheduleShiftAction employees={employees} />
             }
             emptyTitle="No attendance records"
             emptyDescription="No employees have attendance records for today."
@@ -687,13 +685,7 @@ export function HrView({
             }
             filters={leaveFilters}
             toolbarActions={
-              <UnavailableAction
-                label="File Leave"
-                description="File a leave request for an employee and route it for review."
-                size="sm"
-                variant="secondary"
-                icon={<CaseIcon className="size-4" aria-hidden="true" />}
-              />
+              <FileLeaveAction employees={employees} />
             }
             emptyTitle="No leave requests"
             emptyDescription="There are no leave requests matching your selected filters."
