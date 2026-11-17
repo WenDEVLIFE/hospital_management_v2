@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 35 / 55 | In progress (6.3 data layer complete; patient registration mutation live; remaining mutations, storage/realtime, roles, and preview decommission) |
+| 6 | Frontend ↔ backend integration | 36 / 55 | In progress (6.3 complete; patient registration and appointment scheduling live; remaining 6.4 mutations, storage/realtime, roles, and preview decommission) |
 | 7 | QA & security verification | 5 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **167 / 284** | |
+| **Total** | | **168 / 284** | |
 
 ---
 
@@ -380,7 +380,7 @@
 
 - [ ] Zod schemas in `lib/validations/*` for every form — patient and appointment schemas added; remaining forms pending
 - [x] Patient registration → `register_patient` RPC — 2026-11-17, RPC applied and verified end-to-end; created MRN-2026-0011 with emergency contact and audit row, and the patient list shows it
-- [ ] Appointment creation → `create_appointment` RPC — code complete; apply `supabase/migrations/20261117000100_create_appointment.sql` before testing
+- [x] Appointment creation → `create_appointment` RPC — 2026-11-17, RPC applied and verified end-to-end; created APT-2026-0007 with audit row, conflict probe returned 23P01, and the appointment list shows it
 - [ ] Admission / transfer / discharge → RPCs
 - [ ] Clinical note finalize → `finalize_clinical_note`
 - [ ] Lab result verify → `verify_laboratory_result`
