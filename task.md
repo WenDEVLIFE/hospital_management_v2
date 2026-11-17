@@ -378,8 +378,8 @@
 
 ### 6.4 Mutations
 
-- [ ] Zod schemas in `lib/validations/*` for every form
-- [ ] Patient registration → `register_patient` RPC
+- [ ] Zod schemas in `lib/validations/*` for every form — patient registration schema added (`lib/validations/patient.ts`); remaining forms pending
+- [ ] Patient registration → `register_patient` RPC — code complete; apply `supabase/migrations/20261117000000_register_patient.sql` before testing
 - [ ] Appointment creation → `create_appointment` RPC
 - [ ] Admission / transfer / discharge → RPCs
 - [ ] Clinical note finalize → `finalize_clinical_note`
@@ -388,7 +388,7 @@
 - [ ] Payment / refund → `record_payment` / `refund_payment`
 - [ ] Stock movements → `adjust_inventory`
 - [ ] Delete every `UnavailableAction` call site and `components/module/unavailable-action.tsx`
-- [ ] Mount `<ToastProvider>` and replace success alerts with toasts
+- [ ] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted in the workspace layout; patient registration uses a success toast; other forms pending
 
 ### 6.5 Files, realtime, roles
 

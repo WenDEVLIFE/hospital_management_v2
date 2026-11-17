@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { PageSection } from "@/components/layout/page-section";
 import { Alert } from "@/components/ui/alert";
@@ -11,6 +12,9 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useToast } from "@/components/ui/toast";
+import { registerPatientAction } from "@/app/(workspace)/patients/new/actions";
+import { patientRegistrationSchema } from "@/lib/validations/patient";
 
 type FormValues = {
   first_name: string;
@@ -83,75 +87,40 @@ const RELATIONSHIP_OPTIONS = [
   { label: "Other", value: "Other" },
 ];
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CONTACT_CHARACTER_PATTERN = /^[\d\s+-]+$/;
+function validate(values: FormValues): FormErrors {
+  const result = patientRegistrationSchema.safeParse(values);
 
-function isValidContactNumber(value: string): boolean {
-  if (!CONTACT_CHARACTER_PATTERN.test(value)) {
-    return false;
+  if (result.success) {
+    return {};
   }
 
-  const digits = value.replace(/\D/g, "");
-
-  return digits.length >= 7 && digits.length <= 15;
-}
-
-function validate(values: FormValues): FormErrors {
   const errors: FormErrors = {};
 
-  if (!values.first_name.trim()) {
-    errors.first_name = "First name is required.";
-  }
+  for (const issue of result.error.issues) {
+    const field = issue.path[0];
 
-  if (!values.last_name.trim()) {
-    errors.last_name = "Last name is required.";
-  }
-
-  if (!values.sex) {
-    errors.sex = "Sex is required.";
-  }
-
-  if (!values.date_of_birth) {
-    errors.date_of_birth = "Date of birth is required.";
-  }
-
-  if (!values.emergency_full_name.trim()) {
-    errors.emergency_full_name = "Emergency contact name is required.";
-  }
-
-  if (!values.emergency_contact_number.trim()) {
-    errors.emergency_contact_number = "Emergency contact number is required.";
-  } else if (!isValidContactNumber(values.emergency_contact_number.trim())) {
-    errors.emergency_contact_number =
-      "Enter a valid contact number (7-15 digits).";
-  }
-
-  if (
-    values.contact_number.trim() &&
-    !isValidContactNumber(values.contact_number.trim())
-  ) {
-    errors.contact_number = "Enter a valid contact number (7-15 digits).";
-  }
-
-  if (values.email.trim() && !EMAIL_PATTERN.test(values.email.trim())) {
-    errors.email = "Enter a valid email address.";
+    if (typeof field === "string" && !errors[field as keyof FormValues]) {
+      errors[field as keyof FormValues] = issue.message;
+    }
   }
 
   return errors;
 }
 
 export function PatientRegistrationForm() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [values, setValues] = React.useState<FormValues>(INITIAL_VALUES);
   const [errors, setErrors] = React.useState<FormErrors>({});
   const [submitting, setSubmitting] = React.useState(false);
-  const [showNotice, setShowNotice] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
 
   function setField<K extends keyof FormValues>(
     field: K,
     value: FormValues[K]
   ) {
     setValues((current) => ({ ...current, [field]: value }));
-    setShowNotice(false);
+    setFormError(null);
     setErrors((current) => {
       if (!current[field]) {
         return current;
@@ -173,31 +142,58 @@ export function PatientRegistrationForm() {
 
     const nextErrors = validate(values);
     setErrors(nextErrors);
+    setFormError(null);
 
     if (Object.keys(nextErrors).length > 0) {
-      setShowNotice(false);
       return;
     }
 
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    setSubmitting(false);
-    setShowNotice(true);
+
+    try {
+      const result = await registerPatientAction(values);
+
+      if (!result.ok) {
+        if (result.fieldErrors) {
+          setErrors(result.fieldErrors as FormErrors);
+        }
+
+        if (result.formError) {
+          setFormError(result.formError);
+        }
+
+        return;
+      }
+
+      toast({
+        title: "Patient registered",
+        description: "The patient record was created successfully.",
+        variant: "success",
+      });
+
+      router.push(`/patients/${result.patientId}`);
+      router.refresh();
+    } catch {
+      setFormError(
+        "We could not register the patient. Check your connection and try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleReset() {
     setValues(INITIAL_VALUES);
     setErrors({});
-    setShowNotice(false);
+    setFormError(null);
     setSubmitting(false);
   }
 
   return (
     <form noValidate onSubmit={handleSubmit} className="space-y-4">
-      {showNotice ? (
-        <Alert variant="info" title="Registration is not connected yet">
-          The form validated successfully. Patient registration will be saved
-          once the Supabase backend is connected.
+      {formError ? (
+        <Alert variant="danger" title="Unable to register patient">
+          {formError}
         </Alert>
       ) : null}
 
