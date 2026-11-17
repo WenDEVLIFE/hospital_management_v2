@@ -1,4 +1,8 @@
-import type { StaffListRow, StaffStats } from "@/types/hospital";
+import type {
+  PhysicianOption,
+  StaffListRow,
+  StaffStats,
+} from "@/types/hospital";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizePagination, sanitizeSearchTerm } from "./query";
 import { toDataError, type DataResult, type PagedResult } from "./result";
@@ -77,6 +81,47 @@ function isAccountActive(row: StaffJoinRow): boolean {
   const profile = firstRelation(row.profiles);
 
   return row.is_active && (profile?.is_active ?? true);
+}
+
+type PhysicianJoinRow = {
+  id: string;
+  specialty: string | null;
+  is_available: boolean;
+  staff_profiles: Relation<{
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+  }>;
+};
+
+export async function listPhysicians(): Promise<
+  DataResult<PhysicianOption[]>
+> {
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("physicians")
+    .select(
+      "id, specialty, is_available, staff_profiles(first_name, middle_name, last_name)"
+    );
+
+  if (error) {
+    return { data: null, error: toDataError(error) };
+  }
+
+  const rows = ((data ?? []) as PhysicianJoinRow[])
+    .map((row) => {
+      const staff = firstRelation(row.staff_profiles);
+
+      return {
+        id: row.id,
+        full_name: staff ? fullName(staff) : "Unknown physician",
+        specialty: row.specialty,
+        is_available: row.is_available,
+      };
+    })
+    .sort((left, right) => left.full_name.localeCompare(right.full_name));
+
+  return { data: rows, error: null };
 }
 
 export async function listStaff(

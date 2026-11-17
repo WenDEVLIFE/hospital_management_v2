@@ -71,8 +71,17 @@ if (path.startsWith("/patients/")) {
   checks.push("Allergies", "Appointments", "Prescriptions");
 }
 
-if (path.startsWith("/appointments")) {
+if (path === "/appointments") {
   checks.push("APT-2026-0001", "Total appointments", "Daily Schedule");
+}
+
+if (path === "/appointments/new") {
+  checks.push(
+    "Schedule Appointment",
+    "Date and time",
+    "Visit details",
+    "Select patient"
+  );
 }
 
 if (path === "/admissions") {

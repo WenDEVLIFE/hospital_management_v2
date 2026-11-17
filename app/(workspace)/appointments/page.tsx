@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import Link from "next/link";
 import {
   CalendarMarkIcon,
   CalendarMinimalisticIcon,
@@ -12,7 +13,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
 import { AppointmentsView } from "@/components/appointments/appointments-view";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { Button } from "@/components/ui/button";
 import { getAppointmentStats, listAppointments } from "@/lib/data/appointments";
 
 export const metadata = {
@@ -48,11 +49,12 @@ export default async function AppointmentsPage() {
         title="Appointments"
         description="Schedule and track outpatient consultations."
         actions={
-          <UnavailableAction
-            label="Schedule Appointment"
-            description="Create a new outpatient consultation appointment for a patient."
-            icon={<CalendarMarkIcon className="size-4" aria-hidden="true" />}
-          />
+          <Link href="/appointments/new">
+            <Button>
+              <CalendarMarkIcon className="size-4" aria-hidden="true" />
+              Schedule Appointment
+            </Button>
+          </Link>
         }
       />
 

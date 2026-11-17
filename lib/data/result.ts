@@ -20,6 +20,8 @@ const PG_ERROR_MESSAGES: Record<string, string> = {
   "23514":
     "The provided information does not meet the required validation rules.",
   "22P02": "The provided identifier is not valid.",
+  "23P01":
+    "The selected schedule conflicts with an existing appointment.",
 };
 
 const GENERIC_ERROR_MESSAGE =

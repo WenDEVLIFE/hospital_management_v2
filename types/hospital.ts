@@ -625,6 +625,13 @@ export type StaffListRow = {
   is_active: boolean;
 };
 
+export type PhysicianOption = {
+  id: string;
+  full_name: string;
+  specialty: string | null;
+  is_available: boolean;
+};
+
 export type EncounterListRow = {
   id: string;
   encounter_number: string;
