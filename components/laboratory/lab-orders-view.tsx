@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { TestTubeIcon } from "@solar-icons/react/linear";
 
 import { RecordTable, type Column } from "@/components/module/record-table";
@@ -10,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useToast } from "@/components/ui/toast";
 import { formatDateTime } from "@/lib/format";
+import { verifyLaboratoryOrderAction } from "@/app/(workspace)/laboratory/actions";
 import type { LabOrderListRow } from "@/types/hospital";
 
 const STATUS_OPTIONS = [
@@ -64,15 +67,56 @@ export interface LabOrdersViewProps {
 }
 
 export function LabOrdersView({ rows }: LabOrdersViewProps) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [selected, setSelected] = React.useState<LabOrderListRow | null>(null);
   const [verifyTarget, setVerifyTarget] =
     React.useState<LabOrderListRow | null>(null);
-  const [verifyAcknowledged, setVerifyAcknowledged] = React.useState(false);
+  const [verifying, setVerifying] = React.useState(false);
+  const [verifyError, setVerifyError] = React.useState<string | null>(null);
 
   const closeVerify = React.useCallback(() => {
     setVerifyTarget(null);
-    setVerifyAcknowledged(false);
+    setVerifyError(null);
+    setVerifying(false);
   }, []);
+
+  async function handleVerify() {
+    if (!verifyTarget || verifying) {
+      return;
+    }
+
+    setVerifying(true);
+    setVerifyError(null);
+
+    try {
+      const result = await verifyLaboratoryOrderAction({
+        orderId: verifyTarget.id,
+      });
+
+      if (!result.ok) {
+        setVerifyError(result.formError);
+        return;
+      }
+
+      toast({
+        title: "Laboratory result verified",
+        description: `${result.verified} ${
+          result.verified === 1 ? "result" : "results"
+        } verified.`,
+        variant: "success",
+      });
+
+      closeVerify();
+      router.refresh();
+    } catch {
+      setVerifyError(
+        "We could not verify the result. Check your connection and try again."
+      );
+    } finally {
+      setVerifying(false);
+    }
+  }
 
   const columns = React.useMemo<Column<LabOrderListRow>[]>(
     () => [
@@ -224,9 +268,9 @@ export function LabOrdersView({ rows }: LabOrdersViewProps) {
               </Button>
               <Button
                 onClick={() => {
+                  setVerifyError(null);
                   setVerifyTarget(selected);
                   setSelected(null);
-                  setVerifyAcknowledged(false);
                 }}
               >
                 Verify result
@@ -355,44 +399,43 @@ export function LabOrdersView({ rows }: LabOrdersViewProps) {
         }
         size="md"
         footer={
-          verifyAcknowledged ? (
-            <Button variant="secondary" onClick={closeVerify}>
-              Close
+          <>
+            <Button
+              variant="secondary"
+              onClick={closeVerify}
+              disabled={verifying}
+            >
+              Cancel
             </Button>
-          ) : (
-            <>
-              <Button variant="secondary" onClick={closeVerify}>
-                Cancel
-              </Button>
-              <Button onClick={() => setVerifyAcknowledged(true)}>
-                Verify result
-              </Button>
-            </>
-          )
+            <Button onClick={handleVerify} loading={verifying}>
+              Verify result
+            </Button>
+          </>
         }
       >
-        {verifyAcknowledged ? (
-          <Alert variant="info">
+        {verifyError ? (
+          <Alert
+            variant="danger"
+            title="Unable to verify result"
+            className="mb-3"
+          >
+            {verifyError}
+          </Alert>
+        ) : null}
+
+        <div className="space-y-3">
+          <p className="text-sm leading-relaxed text-hospital-text-muted">
+            Verifying a result finalizes it for the requesting clinician.
+            Confirm that you are authorized to release this result before
+            continuing.
+          </p>
+          <Alert variant="warning" title="Authorization required">
             <p>
-              This action is not available yet because the Supabase backend is
-              not connected.
+              Unverified results are not final. Only authorized laboratory
+              personnel may verify results.
             </p>
           </Alert>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm leading-relaxed text-hospital-text-muted">
-              Verifying a result finalizes it for the requesting clinician.
-              Confirm that you are authorized to release this result before
-              continuing.
-            </p>
-            <Alert variant="warning" title="Authorization required">
-              <p>
-                Unverified results are not final. Only authorized laboratory
-                personnel may verify results.
-              </p>
-            </Alert>
-          </div>
-        )}
+        </div>
       </Modal>
     </>
   );

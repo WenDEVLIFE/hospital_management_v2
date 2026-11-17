@@ -128,6 +128,7 @@ export function PrescriptionQueue({ rows }: PrescriptionQueueProps) {
       />
 
       <DispenseDialog
+        key={selected?.id ?? "dispense-dialog"}
         open={selected !== null}
         onClose={() => setSelected(null)}
         prescription={selected}

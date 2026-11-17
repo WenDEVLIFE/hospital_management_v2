@@ -16,7 +16,7 @@ import {
 import { toDataError, type DataResult, type PagedResult } from "./result";
 
 const PRESCRIPTION_COLUMNS =
-  "*, patients(first_name, middle_name, last_name, suffix, medical_record_number), profiles!prescriptions_prescribed_by_fkey(full_name), prescription_items(medications(generic_name))";
+  "*, patients(first_name, middle_name, last_name, suffix, medical_record_number), profiles!prescriptions_prescribed_by_fkey(full_name), prescription_items(id, medication_id, dosage, frequency, duration_days, quantity, medications(generic_name), medication_dispenses(quantity_dispensed))";
 
 type Relation<T> = T | T[] | null;
 
@@ -30,7 +30,14 @@ type PrescriptionJoinRow = Prescription & {
   }>;
   profiles: Relation<{ full_name: string }>;
   prescription_items: Array<{
+    id: string;
+    medication_id: string;
+    dosage: string;
+    frequency: string;
+    duration_days: number | null;
+    quantity: number;
     medications: Relation<{ generic_name: string }>;
+    medication_dispenses: Array<{ quantity_dispensed: number }> | null;
   }> | null;
 };
 
@@ -236,12 +243,29 @@ export async function listPrescriptions(
     const patient = firstRelation(row.patients);
     const prescriber = firstRelation(row.profiles);
     const items = row.prescription_items ?? [];
+    const dispenseItems = items.map((item) => {
+      const medication = firstRelation(item.medications);
+      const dispensedQuantity = (item.medication_dispenses ?? []).reduce(
+        (total, dispense) =>
+          total + Number(dispense.quantity_dispensed ?? 0),
+        0
+      );
+      const quantity = Number(item.quantity);
+
+      return {
+        id: item.id,
+        medication_id: item.medication_id,
+        medication_name: medication?.generic_name ?? "Unknown medication",
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration_days: item.duration_days,
+        quantity,
+        dispensed_quantity: dispensedQuantity,
+        remaining_quantity: Math.max(quantity - dispensedQuantity, 0),
+      };
+    });
     const medications = Array.from(
-      new Set(
-        items
-          .map((item) => firstRelation(item.medications)?.generic_name)
-          .filter((name): name is string => Boolean(name))
-      )
+      new Set(dispenseItems.map((item) => item.medication_name))
     );
 
     return {
@@ -256,6 +280,7 @@ export async function listPrescriptions(
       status: row.status,
       item_count: items.length,
       medications,
+      items: dispenseItems,
     };
   });
 

@@ -2186,6 +2186,19 @@ export type PrescriptionListRow = {
   status: Prescription["status"];
   item_count: number;
   medications: string[];
+  items?: PrescriptionDispenseItem[];
+};
+
+export type PrescriptionDispenseItem = {
+  id: string;
+  medication_id: string;
+  medication_name: string;
+  dosage: string;
+  frequency: string;
+  duration_days: number | null;
+  quantity: number;
+  dispensed_quantity: number;
+  remaining_quantity: number;
 };
 
 export type MedicationStockRow = {
