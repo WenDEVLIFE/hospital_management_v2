@@ -74,7 +74,7 @@
 - [x] Seed 8 departments (ER, OPD, IPD, LAB, RAD, PHARM, BILL, ADMIN)
 - [x] Seed 10 system roles
 - [x] Seed 73 permissions across 12 modules
-- [ ] Seed `role_permissions` — **blocked by: Phase 0 approval**
+- [ ] Seed `role_permissions` — 2026-11-17: the live matrix already holds 285 grants (admins 82, physician 38, nurse 25, receptionist 16, lab 9, radiology 8, pharmacist 8, billing 10, inventory 7). Migration 040 makes it authoritative and idempotent, and closes the audit gaps: physician could not admit, transfer, or schedule follow-ups; nurse could not transfer. Apply `20261117001700_role_permission_matrix.sql` and re-check per-role counts
 - [x] Seed laboratory test catalog (`laboratory_tests`) — 2026-11-12, 8 tests from PROJECT.MD §16 in migration 022
 - [x] Seed medication catalog (`medications`) — 2026-11-12, 12 starter medications in migration 022 (pharmacy review required before production)
 - [x] Seed inventory categories — 2026-11-12, 5 categories in migration 022
