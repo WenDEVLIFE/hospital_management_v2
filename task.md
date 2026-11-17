@@ -23,11 +23,11 @@
 | 3 | UI modules | 46 / 48 | In progress (all listed modules delivered; 2 role-based access items remain) |
 | 4 | Row Level Security | 22 / 25 | Implemented, runtime verification pending |
 | 5 | Backend services | 0 / 29 | Not started |
-| 6 | Frontend ↔ backend integration | 43 / 56 | In progress (6.3 complete; patient, appointment, admission/transfer/discharge, finalize-note, lab-verify, dispensing, payment/refund, stock-movement, invoice, patient-record, and nursing mutations live; remaining placeholders and preview decommission) |
+| 6 | Frontend ↔ backend integration | 43 / 67 | In progress (6.3 complete; mutations live for patients, appointments, admissions, notes, labs, pharmacy, billing, inventory, patient records, nursing; 11 fixture-only module backends queued in 6.7) |
 | 7 | QA & security verification | 8 / 40 | Partial |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **178 / 285** | |
+| **Total** | | **178 / 296** | |
 
 ---
 
@@ -405,6 +405,20 @@
 - [ ] Delete `lib/data/config.ts` preview flag
 - [ ] Delete `components/layout/preview-notice.tsx`
 - [ ] Set `NEXT_PUBLIC_UI_PREVIEW` out of the codebase entirely
+
+### 6.7 Fixture-only module backends
+
+- [ ] Emergency — migration 035 adds `emergency_visits`, permissions, RLS, `start_emergency_visit`, and a real data layer; apply and verify
+- [ ] Surgery
+- [ ] HR
+- [ ] Insurance
+- [ ] Blood bank
+- [ ] Ambulance
+- [ ] Dietary
+- [ ] Housekeeping
+- [ ] Equipment
+- [ ] Mortuary
+- [ ] Notifications
 
 ---
 

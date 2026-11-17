@@ -1409,7 +1409,8 @@ values
   ('RAD', 3),
   ('RX', 3),
   ('INV', 4),
-  ('PAY', 3)
+  ('PAY', 3),
+  ('ER', 1)
 on conflict (prefix) do update
 set last_value = greatest(seq.last_value, excluded.last_value),
     updated_at = now();
@@ -1431,4 +1432,26 @@ commit;
 -- union all select 'invoices', count(*) from public.invoices
 -- union all select 'notifications', count(*) from public.notifications
 -- union all select 'audit_logs', count(*) from public.audit_logs;
+
+
+-- ============================================================================
+-- EMERGENCY VISITS
+-- ============================================================================
+
+insert into public.emergency_visits (
+  id, visit_number, encounter_id, patient_id, arrival_at, arrival_mode,
+  triage_level, triage_note, triaged_at, chief_complaint, status,
+  attending_physician_id, triage_nurse_id, treatment_area, disposition,
+  disposition_at, created_by
+)
+values
+  ('e1000000-0000-4000-8000-000000000001', 'ER-2026-0001',
+   'f0000000-0000-4000-8000-000000000003',
+   '66666666-6666-4666-8666-000000000003',
+   now() - interval '45 minutes', 'walk_in',
+   'urgent', 'Abdominal pain with guarding on palpation.',
+   now() - interval '40 minutes', 'Abdominal pain and vomiting', 'triage',
+   '33333333-3333-4333-8333-000000000002', null, 'ER Bay 2', null,
+   null, '11111111-1111-4111-8111-000000000005')
+on conflict (id) do nothing;
 

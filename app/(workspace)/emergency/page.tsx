@@ -1,4 +1,6 @@
+import * as React from "react";
 import { connection } from "next/server";
+import Link from "next/link";
 import {
   CheckCircleIcon,
   ClipboardListIcon,
@@ -13,7 +15,9 @@ import { EmergencyWorkflowStrip } from "@/components/emergency/emergency-workflo
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { StartTriageAction } from "@/components/emergency/start-triage-dialog";
+import { Button } from "@/components/ui/button";
+import { listPatients } from "@/lib/data/patients";
 import {
   getEmergencyStats,
   getEmergencyVisitDetails,
@@ -27,11 +31,13 @@ export const metadata = {
 export default async function EmergencyPage() {
   await connection();
 
-  const [statsResult, listResult, detailsResult] = await Promise.all([
-    getEmergencyStats(),
-    listEmergencyVisits({ pageSize: 200 }),
-    getEmergencyVisitDetails(),
-  ]);
+  const [statsResult, listResult, detailsResult, patientResult] =
+    await Promise.all([
+      getEmergencyStats(),
+      listEmergencyVisits({ pageSize: 200 }),
+      getEmergencyVisitDetails(),
+      listPatients({ pageSize: 300 }),
+    ]);
 
   return (
     <div className="space-y-6">
@@ -40,17 +46,19 @@ export default async function EmergencyPage() {
         description="Triage, treat, and disposition emergency patients."
         actions={
           <>
-            <UnavailableAction
-              label="Start Triage"
-              description="Record triage level, initial vital signs, and assign the emergency care team."
-              variant="secondary"
-              icon={<HeartPulseIcon className="size-4" aria-hidden="true" />}
+            <StartTriageAction
+              patients={(patientResult.data?.rows ?? []).map((patient) => ({
+                id: patient.id,
+                full_name: patient.full_name,
+                medical_record_number: patient.medical_record_number,
+              }))}
             />
-            <UnavailableAction
-              label="Register Emergency Patient"
-              description="Create an emergency encounter and add the patient to the triage queue."
-              icon={<UserRoundedIcon className="size-4" aria-hidden="true" />}
-            />
+            <Link href="/patients/new">
+              <Button>
+                <UserRoundedIcon className="size-4" aria-hidden="true" />
+                Register Emergency Patient
+              </Button>
+            </Link>
           </>
         }
       />
