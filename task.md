@@ -23,11 +23,11 @@
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
-| 6 | Frontend → backend integration | 66 / 67 | In progress (preview mode decommissioned; Add Staff remains) |
+| 6 | Frontend → backend integration | 67 / 67 | Complete |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **242 / 295** | **82%** |
+| **Total** | | **243 / 295** | **82%** |
 
 ---
 
@@ -330,7 +330,7 @@
 
 **Goal:** The UI reads and writes real data through Supabase, with the same components.
 **Depends on:** Phases 4 and 5.
-**Definition of done:** preview mode is off, no fixture is reachable, and every mutation goes through RLS or an RPC.
+**Definition of done:** preview mode is off, no fixture is reachable, and every mutation goes through RLS or an RPC. — met 2026-11-19
 
 ### 6.1 Client setup
 
@@ -388,7 +388,7 @@
 - [x] Payment / refund → `record_payment` / `refund_payment` — 2026-11-17, applied and verified; INV-2026-0003 collected 2,000 then 2,200 (PAY-2026-0004/0005) and became paid, overpayment and post-paid payments rejected, PAY-2026-0002 refunded and INV-2026-0002 returned to unpaid with an 18,000 balance, duplicate refund rejected, audit rows written. Migration 031 fixed the 42804 enum cast failure.
 - [x] Stock movements → `adjust_inventory` — 2026-11-17, applied and verified; received a 50-unit batch on ITM-0001, issued 90 units FIFO across two batches (80 + 10), an over-issue of 1,000 was rejected with no quantity change, a count adjustment of 40→38 wrote a delta of 2, a count above the received quantity was rejected, a missing reason was rejected, and audit rows were written
 - [x] Replace `UnavailableAction` in modules with a live backend — 2026-11-17, applied and verified; invoice INV-2026-0005 (850 − 50 = 800, unpaid) with itemized charges, patient edit plus archive/restore, a severe penicillin allergy, vitals on ADM-2026-0001/ENC-2026-0004, and a nursing note, all with audit rows and validation rejections
-- [ ] Remove the remaining placeholders — 2026-11-19: all 11 fixture-only modules now have real backends and are verified (emergency, surgery, HR, insurance, blood bank, ambulance, dietary, housekeeping, equipment, mortuary, notifications). Still open: the Add Staff dialog. Staff creation is no longer blocked on a service-role key — `admin-users` / `admin-role-assignment` Edge Functions cover it server-side — but they must be deployed, and a `create_staff_record` RPC is still needed to write `staff_profiles` after the Auth user exists
+- [x] Remove the remaining placeholders — 2026-11-19, all 11 fixture-only modules have real verified backends and the Add Staff dialog is live. `admin-users` and `admin-role-assignment` were deployed to production and verified (anonymous 401, nurse 403). Staff creation verified 18/18: account created through the function, `create_staff_record` wrote the employment record and nurse role, staff number/department/licence stored, duplicate email 409, duplicate staff number 23505 with no row committed, a hospital_admin trying to grant hospital_admin got 42501 with the record rolled back, a nurse calling the RPC got 42501, and user.create/staff.create/role.grant audit rows were written. If the staff write fails, the action deactivates the new account instead of leaving an active orphan
 - [x] Mount `<ToastProvider>` and replace success alerts with toasts — provider mounted in the workspace tree; every mutation flow confirms with a success toast, including password change. The only remaining success-styled alert is "Already dispensed", which is a persistent state notice, not a transient confirmation
 
 ### 6.5 Files, realtime, roles
