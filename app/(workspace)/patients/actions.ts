@@ -50,6 +50,13 @@ function patientErrorMessage(error: {
     return "Enter a valid date of birth.";
   }
 
+  if (
+    message.includes("already registered") ||
+    message.includes("idx_patients_identity_unique")
+  ) {
+    return "A patient with this name and date of birth is already registered.";
+  }
+
   return pgErrorMessage(error.code ?? "UNKNOWN");
 }
 

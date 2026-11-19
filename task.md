@@ -321,7 +321,7 @@
 
 ### 5.5 Provisioning
 
-- [ ] Initial administrator created through a documented, non-public process — 2026-11-19: `docs/ADMIN_BOOTSTRAP.md` plus `bootstrap_administrator(email)` in migration 20261119000200, executable by `service_role` only (revoked from anon/authenticated), refuses accounts that already hold a role and audits the grant. Apply the migration and run it once for the production admin
+- [ ] Initial administrator created through a documented, non-public process — 2026-11-19, documented and implemented but NOT executed: the live `audit_logs` has no `user.bootstrap_admin` row and the only super admin is the seeded `superadmin@spmc.test`. Needs a new Auth account email and one SQL editor call to `bootstrap_administrator(email)`
 - [x] Signup flow does not grant any privileged role — there is no public signup route; accounts exist only through seeded `auth.users` rows or an admin process, so no self-service role grant path exists
 
 ---
@@ -469,14 +469,14 @@ Run with `npm run verify:security` (live probe against the seeded demo project; 
 
 ### 7.5 Clinical integrity tests (`SUPABASE.MD` §33.4)
 
-- [ ] Duplicate patient registration rejected
+- [ ] Duplicate patient registration rejected — 2026-11-19, migration 20261119002200 guards `register_patient` by normalized first name + last name + date of birth and adds a unique expression index for concurrent registrations (apply it, then verify)
 - [x] Invalid appointment scheduling rejected — 2026-11-17, an overlapping physician slot returned `23P01`; past-dated slots are rejected by migration 043 (apply it to close the remaining half)
 - [x] Concurrent bed allocation cannot double-book — 2026-11-17, two parallel `create_admission` calls raced for ER-1-A; one won, the other got `22023 Bed is not available`
 - [x] Discharge releases the bed exactly once — 2026-11-17, discharging an already discharged admission returns `22023 Only admitted patients can be discharged`, and the bed returns to available
 - [x] Patient transfer closes the previous assignment — 2026-11-17, ADM-2026-0001 moved W3-301-A → W3-301-B: the old assignment is released, exactly one assignment stays active, the old bed returns to available and the new one becomes occupied
 - [x] Clinical note finalization is irreversible without amendment — 2026-11-17, finalizing a finalized note returns `22023 Only draft notes can be finalized`
 - [x] Laboratory result verification is permission-gated — 2026-11-17, billing staff calling `verify_laboratory_result` get `42501`; laboratory staff succeed
-- [ ] Prescription dispensing decrements inventory atomically — verified live for single-batch items (420→390, 1200→1180) and for a partially dispensed prescription; multi-batch FIFO and mid-loop rollback not exercised because fixture inserts are blocked by the `prescriptions` insert policy
+- [x] Prescription dispensing decrements inventory atomically — 2026-11-19, verified 13/13 on multi-batch stock: a prescription for 5 took 2 from the earliest-expiring batch and 3 from the next, writing one stock transaction per batch; a two-item prescription whose second medication had zero stock returned 22023 and rolled the first item back completely (batch unchanged, no transactions, no dispense rows, prescription still pending). Authorization is `prescription.dispense` only, as fixed in migration 029
 - [x] Inventory cannot go negative
 - [x] Duplicate payment submission rejected
 - [x] Refund preserves the original payment record
