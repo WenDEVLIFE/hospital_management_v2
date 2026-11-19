@@ -23,8 +23,8 @@ import {
   type Column,
   type FilterConfig,
 } from "@/components/module/record-table";
-import { UNAVAILABLE_MESSAGE, UnavailableAction } from "@/components/module/unavailable-action";
-import { Alert } from "@/components/ui/alert";
+import { UnavailableAction } from "@/components/module/unavailable-action";
+import { TripActions } from "./ambulance-actions";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -157,7 +157,7 @@ export function AmbulanceView({
     React.useState<AmbulanceVehicleListRow | null>(null);
   const [selectedTrip, setSelectedTrip] =
     React.useState<AmbulanceTripListRow | null>(null);
-  const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  
 
   const activeDispatches = React.useMemo(
     () => trips.filter((trip) => ACTIVE_DISPATCH_STATUSES.has(trip.status)),
@@ -178,7 +178,7 @@ export function AmbulanceView({
       const row = vehicleRowById.get(id);
 
       if (row) {
-        setPendingAction(null);
+        
         setSelectedVehicle(row);
       }
     },
@@ -186,7 +186,7 @@ export function AmbulanceView({
   );
 
   const closeVehicle = React.useCallback(() => {
-    setPendingAction(null);
+    
     setSelectedVehicle(null);
   }, []);
 
@@ -195,7 +195,7 @@ export function AmbulanceView({
       const row = tripRowById.get(id);
 
       if (row) {
-        setPendingAction(null);
+        
         setSelectedTrip(row);
       }
     },
@@ -203,7 +203,7 @@ export function AmbulanceView({
   );
 
   const closeTrip = React.useCallback(() => {
-    setPendingAction(null);
+    
     setSelectedTrip(null);
   }, []);
 
@@ -594,15 +594,6 @@ export function AmbulanceView({
               `${row.trip_number} ${row.patient_name} ${row.patient_mrn} ${row.pickup_location} ${row.destination} ${row.vehicle_number ?? ""}`
             }
             filters={dispatchFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="Dispatch Ambulance"
-                description="Assign an available ambulance and medical crew to a transport request."
-                size="sm"
-                variant="secondary"
-                icon={<SirenRoundedIcon className="size-4" aria-hidden="true" />}
-              />
-            }
             emptyTitle="No active dispatches"
             emptyDescription="There are no active ambulance dispatches."
             emptyIcon={<SirenRoundedIcon className="size-5" aria-hidden="true" />}
@@ -621,15 +612,6 @@ export function AmbulanceView({
               `${row.vehicle_number} ${row.plate_number} ${row.type} ${row.driver_name ?? ""} ${row.crew_names.join(" ")} ${row.location}`
             }
             filters={vehicleFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="Register Ambulance"
-                description="Register a vehicle, plate number, equipment level, and crew assignment."
-                size="sm"
-                variant="secondary"
-                icon={<BusIcon className="size-4" aria-hidden="true" />}
-              />
-            }
             emptyTitle="No ambulances found"
             emptyDescription="There are no vehicles matching your selected filters."
             emptyIcon={<BusIcon className="size-5" aria-hidden="true" />}
@@ -783,12 +765,6 @@ export function AmbulanceView({
       >
         {selectedVehicle ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Vehicle">
                 {selectedVehicle.vehicle_number} ·{" "}
@@ -946,29 +922,10 @@ export function AmbulanceView({
                   )}
                 </section>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Assign driver and crew")}
-                  >
-                    Assign crew
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Record maintenance")}
-                  >
-                    Record maintenance
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setPendingAction("Record fuel")}
-                  >
-                    Record fuel
-                  </Button>
-                </div>
+                <p className="text-[11px] text-hospital-text-muted">
+                  Crew assignment, maintenance and fuel logging are recorded
+                  from the fleet register once those workflows ship.
+                </p>
               </>
             ) : null}
           </div>
@@ -993,12 +950,6 @@ export function AmbulanceView({
       >
         {selectedTrip ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Patient">
                 <div className="flex flex-wrap items-baseline gap-2">
@@ -1107,43 +1058,9 @@ export function AmbulanceView({
                   </ol>
                 </section>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Dispatch ambulance")}
-                  >
-                    Dispatch
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Mark en route")}
-                  >
-                    En route
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Mark arrived at pickup")}
-                  >
-                    Arrive pickup
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Complete trip")}
-                  >
-                    Complete trip
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setPendingAction("Cancel trip")}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                {selectedTrip ? (
+                  <TripActions trip={selectedTrip} vehicles={vehicles} />
+                ) : null}
               </>
             ) : null}
           </div>

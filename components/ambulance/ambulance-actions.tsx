@@ -13,11 +13,17 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useCan } from "@/components/providers/permission-provider";
+import type {
+  AmbulanceTripListRow,
+  AmbulanceVehicleListRow,
+} from "@/types/hospital";
 import {
+  advanceAmbulanceTripAction,
   dispatchAmbulanceAction,
   registerAmbulanceAction,
 } from "@/app/(workspace)/ambulance/actions";
 import {
+  advanceAmbulanceTripSchema,
   dispatchAmbulanceSchema,
   registerAmbulanceSchema,
 } from "@/lib/validations/ambulance";
@@ -339,6 +345,145 @@ export function DispatchAmbulanceAction({
               onChange={(event) => setValues((c) => ({ ...c, notes: event.target.value }))}
             />
           </FormField>
+        </form>
+      </Modal>
+    </>
+  );
+}
+
+const TRIP_NEXT: Record<
+  string,
+  { action: string; label: string } | undefined
+> = {
+  requested: { action: "assign", label: "Dispatch ambulance" },
+  assigned: { action: "en_route", label: "Mark en route" },
+  en_route: { action: "on_scene", label: "Mark arrived at pickup" },
+  on_scene: { action: "transporting", label: "Start transport" },
+  transporting: { action: "complete", label: "Complete trip" },
+};
+
+export function TripActions({
+  trip,
+  vehicles,
+}: {
+  trip: AmbulanceTripListRow;
+  vehicles: AmbulanceVehicleListRow[];
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const can = useCan();
+  const [open, setOpen] = React.useState(false);
+  const [vehicleId, setVehicleId] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  if (!can("ambulance.manage")) {
+    return null;
+  }
+
+  const next = TRIP_NEXT[trip.status];
+
+  if (!next) {
+    return null;
+  }
+
+  const action = next;
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
+
+    const parsed = advanceAmbulanceTripSchema.safeParse({
+      tripId: trip.id,
+      action: action.action,
+      vehicleId,
+    });
+
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Check the dispatch action.");
+      return;
+    }
+
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const result = await advanceAmbulanceTripAction(parsed.data);
+
+      if (!result.ok) {
+        setError(result.formError);
+        return;
+      }
+
+      toast({
+        title: action.label,
+        description: `${trip.trip_number} updated.`,
+        variant: "success",
+      });
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setError("We could not update the dispatch. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+        {action.label}
+      </Button>
+
+      <Modal
+        open={open}
+        onClose={() => !submitting && setOpen(false)}
+        title={action.label}
+        description={`${trip.trip_number} · ${trip.patient_name}`}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" form="trip-action-form" loading={submitting}>
+              {action.label}
+            </Button>
+          </>
+        }
+      >
+        <form id="trip-action-form" noValidate onSubmit={handleSubmit} className="space-y-4">
+          {error ? (
+            <Alert variant="danger" title="Unable to update dispatch">
+              {error}
+            </Alert>
+          ) : null}
+
+          {action.action === "assign" ? (
+            <FormField label="Ambulance" htmlFor="trip_vehicle" required>
+              <Select
+                id="trip_vehicle"
+                value={vehicleId}
+                onChange={(event) => setVehicleId(event.target.value)}
+              >
+                <option value="">Select available ambulance</option>
+                {vehicles
+                  .filter((vehicle) => vehicle.status === "available")
+                  .map((vehicle) => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.vehicle_number} · {vehicle.plate_number} ·{" "}
+                      {vehicle.location}
+                    </option>
+                  ))}
+              </Select>
+            </FormField>
+          ) : (
+            <p className="text-sm text-hospital-text-muted">
+              This records the next step of the dispatch timeline.
+            </p>
+          )}
         </form>
       </Modal>
     </>

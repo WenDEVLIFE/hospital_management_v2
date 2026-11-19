@@ -23,11 +23,11 @@
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
-| 6 | Frontend → backend integration | 57 / 67 | In progress (6.5 complete; insurance and housekeeping verified; 5 fixture modules remain in 6.7) |
+| 6 | Frontend → backend integration | 58 / 67 | In progress (6.5 complete; emergency, surgery, HR, insurance, blood bank, housekeeping and ambulance verified; 4 fixture modules remain) |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **233 / 295** | **79%** |
+| **Total** | | **234 / 295** | **79%** |
 
 ---
 
@@ -413,7 +413,7 @@
 - [x] HR — 2026-11-17, applied and verified; leave filing/review worked (repeat review rejected), overnight 23:00–07:00 shift now accepted by migration 038 with `overnight: true` in the audit metadata, and equal start/end times rejected. Payroll processing still needs a salary model
 - [x] Insurance — 2026-11-19, applied and verified: provider (duplicate code 23505), policy (bad dates 22023, duplicate policy number 23505), coverage verification sets the policy to verified with a payer reference, claim prepared as CLM-2026-0001 with two lines and an event, over-claim rejected, and an expired policy is refused by migration 20261119000300. `/insurance` renders the real policy and both dialogs
 - [x] Blood bank — 2026-11-17, applied and verified end to end: donor → 2-unit donation → crossmatch refused before screening → negative screening passes / positive screening discards → request → crossmatch refused before screening cleared → compatible crossmatch → issue → request completed → re-issue refused. Incompatible crossmatch returns the unit to available and leaves the request pending. Audit rows written for all six actions
-- [ ] Ambulance — migration 20261119000600 adds fleet, dispatch, maintenance and fuel records, `ambulance.view/manage`, RLS and `register_ambulance_vehicle` / `create_ambulance_trip` / `advance_ambulance_trip`; data layer rewritten and the Register / Dispatch dialogs wired. Apply `20261119000600_ambulance.sql`, then verify a dispatch, the unavailable-vehicle rejection and the vehicle returning to available. Trip status buttons inside the detail dialog are still to wire
+- [x] Ambulance — 2026-11-19, applied and verified 14/14: two vehicles registered, dispatch created (AMB-2026-0001), assigned → en route → on scene → transporting → completed, vehicle status followed dispatched → on_trip → available with location updated, assigning a busy vehicle rejected, reopening a completed dispatch rejected, six audit actions. Register and Dispatch dialogs plus the trip lifecycle dialog are wired
 - [ ] Dietary
 - [x] Housekeeping — 2026-11-19, applied and verified 11/11: staff creation (on duty), request creation, assign → start → complete with a disinfection record (chemical, 10-minute contact time) → verify; completion without a contact time is refused, reopening a verified request is refused, `completed_today` incremented, and five audit rows written
 - [ ] Equipment
