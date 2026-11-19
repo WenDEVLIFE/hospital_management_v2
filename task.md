@@ -317,11 +317,11 @@
 - [x] `send-notification`
 - [x] `generate-document`
 - [x] `scheduled-maintenance`
-- [ ] Secrets configured via `supabase secrets set` (never in the frontend)
+- [ ] Secrets configured via `supabase secrets set` (never in the frontend) — 2026-11-19: required keys documented in `supabase/functions/README.md` and `.env.example` (HMS_NOTIFICATION_TOKEN, HMS_MAINTENANCE_TOKEN, HMS_SMTP_USER, HMS_SMTP_APP_PASSWORD), and the app tree is verified free of any `SERVICE_ROLE` / `service_role` reference. Still requires `supabase secrets set` with the CLI access token
 
 ### 5.5 Provisioning
 
-- [ ] Initial administrator created through a documented, non-public process
+- [ ] Initial administrator created through a documented, non-public process — 2026-11-19: `docs/ADMIN_BOOTSTRAP.md` plus `bootstrap_administrator(email)` in migration 20261119000200, executable by `service_role` only (revoked from anon/authenticated), refuses accounts that already hold a role and audits the grant. Apply the migration and run it once for the production admin
 - [x] Signup flow does not grant any privileged role — there is no public signup route; accounts exist only through seeded `auth.users` rows or an admin process, so no self-service role grant path exists
 
 ---
