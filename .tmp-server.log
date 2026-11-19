@@ -1,0 +1,12 @@
+
+> hospital_management_v2@0.1.0 start
+> next start -p 3101
+
+▲ Next.js 16.4.6
+- Local:         http://localhost:3101
+- Network:       http://192.168.1.4:3101
+✓ Ready in 261ms
+⚠ Warning: Next.js ignored package-lock.json in E:\web_projects because it is outside the current Git repository (E:\web_projects\hospital_management_v2).
+ To use this directory, set `outputFileTracingRoot` in your Next.js config.
+
+✓ Running next.config.ts took 61ms

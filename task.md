@@ -23,11 +23,11 @@
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
-| 6 | Frontend → backend integration | 61 / 67 | In progress (10 modules verified; notifications remains) |
+| 6 | Frontend → backend integration | 62 / 67 | In progress (11 modules verified; fixture-only backends complete) |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **237 / 295** | **80%** |
+| **Total** | | **238 / 295** | **81%** |
 
 ---
 
@@ -418,7 +418,7 @@
 - [x] Housekeeping — 2026-11-19, applied and verified 11/11: staff creation (on duty), request creation, assign → start → complete with a disinfection record (chemical, 10-minute contact time) → verify; completion without a contact time is refused, reopening a verified request is refused, `completed_today` incremented, and five audit rows written
 - [x] Equipment — 2026-11-19, applied and verified 13/13: asset registered against the category catalogue (duplicate serial 23505), raising a work order moved the asset to maintenance, completion was refused without a resolution, completing wrote maintenance history and returned the asset to available, a passed calibration moved the next due date, a failed calibration set the asset out of service, and five audit rows were written. Register asset, create work order, complete and record calibration dialogs are wired
 - [x] Mortuary — 2026-11-19, applied and verified 12/12: case MOR-2026-0001 admitted into MU-01 (unit occupied), duplicate body tag rejected, a discrepancy case blocked from release, release without a document rejected, release completed with recipient and document freeing the unit, second release rejected, access log and audit rows written. Admission and release dialogs are wired
-- [ ] Notifications
+- [x] Notifications — 2026-11-19, applied and verified 18/18: one notification marked read (read_at stamped), another user's notification refused with 22023, mark-all-read cleared the unread set, a nurse publishing an announcement was refused with 42501, a nurses-only announcement published and notified the two nurses (admin excluded), a nurse who turned off announcement preferences was skipped on the next publish, archive succeeded and republishing an archived announcement was refused with 22023, and create/publish/archive audit rows were written. Inbox mark-read/mark-all-read, announcement creation, publish/archive and preferences are wired
 
 ---
 
