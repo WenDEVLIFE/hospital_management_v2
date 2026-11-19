@@ -12,6 +12,10 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
 import { InsuranceActions } from "@/components/insurance/insurance-actions";
+import {
+  AddPolicyAction,
+  AddProviderAction,
+} from "@/components/insurance/insurance-intake-actions";
 import { InsuranceView } from "@/components/insurance/insurance-view";
 import { InsuranceWorkflowStrip } from "@/components/insurance/insurance-workflow-strip";
 import { Alert } from "@/components/ui/alert";
@@ -25,6 +29,7 @@ import {
   listInsurancePolicies,
   listInsuranceProviders,
 } from "@/lib/data/insurance";
+import { listPatients } from "@/lib/data/patients";
 import { formatCurrency } from "@/lib/format";
 
 export const metadata = {
@@ -33,6 +38,8 @@ export const metadata = {
 
 export default async function InsurancePage() {
   await connection();
+
+  const patientResult = await listPatients({ pageSize: 300 });
 
   const [
     statsResult,
@@ -60,6 +67,19 @@ export default async function InsurancePage() {
         title="Insurance & PhilHealth"
         description="Patient policies, coverage verification, authorizations, and claims."
         actions={
+          <>
+          <AddProviderAction />
+          <AddPolicyAction
+            patients={(patientResult.data?.rows ?? []).map((patient) => ({
+              id: patient.id,
+              full_name: patient.full_name,
+              medical_record_number: patient.medical_record_number,
+            }))}
+            providers={(providersResult.data ?? []).map((provider) => ({
+              id: provider.id,
+              name: provider.name,
+            }))}
+          />
           <InsuranceActions
             policies={(policiesResult.data?.rows ?? []).map((policy) => ({
               id: policy.id,
@@ -69,6 +89,7 @@ export default async function InsurancePage() {
               status: policy.status,
             }))}
           />
+          </>
         }
       />
 
