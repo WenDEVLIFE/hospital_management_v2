@@ -29,6 +29,11 @@ import {
   FileLeaveAction,
   ScheduleShiftAction,
 } from "@/components/hr/hr-actions";
+import {
+  RecordAttendanceDialog,
+  SetSalaryDialog,
+} from "@/components/hr/hr-employment-actions";
+import { useCan } from "@/components/providers/permission-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -179,6 +184,11 @@ export function HrView({
     React.useState<EmployeeListRow | null>(null);
   const [selectedPeriod, setSelectedPeriod] =
     React.useState<PayrollPeriod | null>(null);
+  const [attendanceTarget, setAttendanceTarget] =
+    React.useState<EmployeeListRow | null>(null);
+  const [salaryTarget, setSalaryTarget] =
+    React.useState<EmployeeListRow | null>(null);
+  const can = useCan();
 
   const employeeRowById = React.useMemo(
     () => new Map(employees.map((employee) => [employee.id, employee])),
@@ -966,6 +976,33 @@ export function HrView({
                     </p>
                   )}
                 </section>
+
+                <div className="flex flex-wrap gap-2">
+                  {can("hr.manage") ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setAttendanceTarget(selectedEmployee);
+                        setSelectedEmployee(null);
+                      }}
+                    >
+                      Record attendance
+                    </Button>
+                  ) : null}
+                  {can("hr.payroll") ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setSalaryTarget(selectedEmployee);
+                        setSelectedEmployee(null);
+                      }}
+                    >
+                      Set salary
+                    </Button>
+                  ) : null}
+                </div>
               </>
             ) : (
               <p className="text-sm text-hospital-text-muted">
@@ -1061,6 +1098,19 @@ export function HrView({
           </div>
         ) : null}
       </Modal>
+
+      <RecordAttendanceDialog
+        employee={attendanceTarget}
+        open={attendanceTarget !== null}
+        onClose={() => setAttendanceTarget(null)}
+      />
+
+      <SetSalaryDialog
+        key={salaryTarget?.id ?? "none"}
+        employee={salaryTarget}
+        open={salaryTarget !== null}
+        onClose={() => setSalaryTarget(null)}
+      />
     </>
   );
 }

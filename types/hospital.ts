@@ -977,6 +977,7 @@ export type EmployeeListRow = Employee & {
   current_shift: string | null;
   attendance_rate: number;
   leave_balance: number;
+  monthly_rate: number;
 };
 
 export type Credential = {

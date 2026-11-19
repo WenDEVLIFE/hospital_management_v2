@@ -17,8 +17,11 @@ import { useToast } from "@/components/ui/toast";
 import { useCan } from "@/components/providers/permission-provider";
 import {
   createEmployeeAction,
+  recordAttendanceAction,
   runPayrollAction,
+  setEmployeeSalaryAction,
 } from "@/app/(workspace)/hr/actions";
+import type { EmployeeListRow } from "@/types/hospital";
 
 type Option = { id: string; name: string };
 
@@ -516,5 +519,333 @@ export function RunPayrollAction() {
         </form>
       </Modal>
     </>
+  );
+}
+
+function todayManila(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+const emptyAttendance = {
+  attendanceDate: "",
+  status: "present",
+  timeIn: "",
+  timeOut: "",
+  overtimeMinutes: "0",
+  note: "",
+};
+
+export function RecordAttendanceDialog({
+  employee,
+  open,
+  onClose,
+}: {
+  employee: EmployeeListRow | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [values, setValues] = React.useState({
+    ...emptyAttendance,
+    attendanceDate: todayManila(),
+  });
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  function close() {
+    if (submitting) {
+      return;
+    }
+
+    setFormError(null);
+    onClose();
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (submitting || !employee) {
+      return;
+    }
+
+    setFormError(null);
+    setSubmitting(true);
+
+    try {
+      const result = await recordAttendanceAction({
+        staffProfileId: employee.id,
+        ...values,
+      });
+
+      if (!result.ok) {
+        setFormError(result.formError);
+        return;
+      }
+
+      toast({
+        title: "Attendance recorded",
+        description: `${employee.full_name} · ${values.attendanceDate}`,
+        variant: "success",
+      });
+      setValues({ ...emptyAttendance, attendanceDate: todayManila() });
+      onClose();
+      router.refresh();
+    } catch {
+      setFormError("We could not record attendance. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={close}
+      title={
+        employee ? `Record attendance · ${employee.full_name}` : "Record attendance"
+      }
+      description="Attendance feeds the overtime component of payroll."
+      footer={
+        <>
+          <Button variant="secondary" onClick={close} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button type="submit" form="hr-attendance-form" loading={submitting}>
+            Save attendance
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="hr-attendance-form"
+        noValidate
+        onSubmit={handleSubmit}
+        className="space-y-4"
+      >
+        {formError ? (
+          <Alert variant="danger" title="Unable to save">
+            {formError}
+          </Alert>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Date" htmlFor="att_date" required>
+            <Input
+              id="att_date"
+              type="date"
+              value={values.attendanceDate}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  attendanceDate: event.target.value,
+                }))
+              }
+            />
+          </FormField>
+
+          <FormField label="Status" htmlFor="att_status" required>
+            <Select
+              id="att_status"
+              value={values.status}
+              onChange={(event) =>
+                setValues((current) => ({ ...current, status: event.target.value }))
+              }
+              options={[
+                { label: "Present", value: "present" },
+                { label: "Late", value: "late" },
+                { label: "Absent", value: "absent" },
+                { label: "Leave", value: "leave" },
+                { label: "Holiday", value: "holiday" },
+              ]}
+            />
+          </FormField>
+
+          <FormField label="Time in" htmlFor="att_in">
+            <Input
+              id="att_in"
+              type="time"
+              value={values.timeIn}
+              onChange={(event) =>
+                setValues((current) => ({ ...current, timeIn: event.target.value }))
+              }
+            />
+          </FormField>
+
+          <FormField label="Time out" htmlFor="att_out">
+            <Input
+              id="att_out"
+              type="time"
+              value={values.timeOut}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  timeOut: event.target.value,
+                }))
+              }
+            />
+          </FormField>
+
+          <FormField
+            label="Overtime (minutes)"
+            htmlFor="att_overtime"
+            hint="Paid at 1.25× in the next payroll run."
+          >
+            <Input
+              id="att_overtime"
+              type="number"
+              min="0"
+              max="1440"
+              step="1"
+              value={values.overtimeMinutes}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  overtimeMinutes: event.target.value,
+                }))
+              }
+            />
+          </FormField>
+
+          <FormField label="Note" htmlFor="att_note" hint="Optional.">
+            <Input
+              id="att_note"
+              value={values.note}
+              onChange={(event) =>
+                setValues((current) => ({ ...current, note: event.target.value }))
+              }
+            />
+          </FormField>
+        </div>
+
+        <Alert variant="info" title="One record per day">
+          Saving the same date again updates that day instead of adding a second
+          row.
+        </Alert>
+      </form>
+    </Modal>
+  );
+}
+
+export function SetSalaryDialog({
+  employee,
+  open,
+  onClose,
+}: {
+  employee: EmployeeListRow | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [rate, setRate] = React.useState(
+    employee && employee.monthly_rate > 0 ? String(employee.monthly_rate) : ""
+  );
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  function close() {
+    if (submitting) {
+      return;
+    }
+
+    setFormError(null);
+    onClose();
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (submitting || !employee) {
+      return;
+    }
+
+    setFormError(null);
+    setSubmitting(true);
+
+    try {
+      const result = await setEmployeeSalaryAction({
+        staffProfileId: employee.id,
+        monthlyRate: rate,
+      });
+
+      if (!result.ok) {
+        setFormError(result.formError);
+        return;
+      }
+
+      toast({
+        title: "Salary updated",
+        description: `${employee.full_name} · monthly rate saved.`,
+        variant: "success",
+      });
+      onClose();
+      router.refresh();
+    } catch {
+      setFormError("We could not save the salary. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={close}
+      title={employee ? `Set salary · ${employee.full_name}` : "Set salary"}
+      description="The monthly rate drives basic pay on the next payroll run."
+      size="md"
+      footer={
+        <>
+          <Button variant="secondary" onClick={close} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button type="submit" form="hr-salary-form" loading={submitting}>
+            Save rate
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="hr-salary-form"
+        noValidate
+        onSubmit={handleSubmit}
+        className="space-y-4"
+      >
+        {formError ? (
+          <Alert variant="danger" title="Unable to save">
+            {formError}
+          </Alert>
+        ) : null}
+
+        <FormField
+          label="Monthly rate"
+          htmlFor="salary_rate"
+          hint="Philippine pesos. Basic pay = rate / 30 × period days."
+          required
+        >
+          <Input
+            id="salary_rate"
+            type="number"
+            min="0"
+            step="0.01"
+            value={rate}
+            onChange={(event) => setRate(event.target.value)}
+          />
+        </FormField>
+
+        <p className="text-[11px] text-hospital-text-muted">
+          Current rate:{" "}
+          {employee && employee.monthly_rate > 0
+            ? `₱${employee.monthly_rate.toLocaleString()}`
+            : "not set"}
+        </p>
+      </form>
+    </Modal>
   );
 }

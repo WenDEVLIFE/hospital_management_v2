@@ -184,3 +184,76 @@ export const runPayrollSchema = z.object({
 });
 
 export type RunPayrollInput = z.infer<typeof runPayrollSchema>;
+
+export const recordAttendanceSchema = z
+  .object({
+    staffProfileId: z
+      .string()
+      .trim()
+      .regex(UUID_PATTERN, "Select an employee."),
+    attendanceDate: z
+      .string()
+      .trim()
+      .refine((value) => DATE_PATTERN.test(value), "Select the attendance date."),
+    status: z
+      .string()
+      .trim()
+      .refine(
+        (value) =>
+          ["present", "late", "absent", "leave", "holiday"].includes(value),
+        "Select an attendance status."
+      ),
+    timeIn: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || TIME_PATTERN.test(value),
+        "Enter a start time."
+      ),
+    timeOut: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || TIME_PATTERN.test(value),
+        "Enter an end time."
+      ),
+    overtimeMinutes: z
+      .string()
+      .trim()
+      .refine(
+        (value) =>
+          value === "" ||
+          (Number.isInteger(Number(value)) &&
+            Number(value) >= 0 &&
+            Number(value) <= 1440),
+        "Enter overtime between 0 and 1440 minutes."
+      ),
+    note: z.string().trim().max(500, "Keep the note under 500 characters."),
+  })
+  .refine((value) => value.timeIn !== "" || value.timeOut === "", {
+    path: ["timeIn"],
+    message: "Enter a time in before a time out.",
+  })
+  .refine(
+    (value) =>
+      value.timeIn === "" || value.timeOut === "" || value.timeOut > value.timeIn,
+    {
+      path: ["timeOut"],
+      message: "Time out must be after time in.",
+    }
+  );
+
+export type RecordAttendanceInput = z.infer<typeof recordAttendanceSchema>;
+
+export const setSalarySchema = z.object({
+  staffProfileId: z.string().trim().regex(UUID_PATTERN, "Select an employee."),
+  monthlyRate: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0,
+      "Enter a monthly rate."
+    ),
+});
+
+export type SetSalaryInput = z.infer<typeof setSalarySchema>;

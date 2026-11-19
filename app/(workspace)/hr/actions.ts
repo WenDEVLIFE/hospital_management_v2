@@ -8,12 +8,16 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createEmployeeSchema,
   fileLeaveSchema,
+  recordAttendanceSchema,
   runPayrollSchema,
   scheduleShiftSchema,
+  setSalarySchema,
   type CreateEmployeeInput,
   type FileLeaveInput,
+  type RecordAttendanceInput,
   type RunPayrollInput,
   type ScheduleShiftInput,
+  type SetSalaryInput,
 } from "@/lib/validations/hr";
 
 export type HrWriteResult = { ok: true; id?: string } | { ok: false; formError: string };
@@ -316,6 +320,106 @@ export async function runPayrollAction(
 
   revalidatePath("/hr");
   revalidatePath("/dashboard");
+
+  return { ok: true, id: data ? String(data) : undefined };
+}
+
+export async function recordAttendanceAction(
+  input: RecordAttendanceInput
+): Promise<HrWriteResult> {
+  const parsed = recordAttendanceSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError:
+        parsed.error.issues[0]?.message ?? "Check the attendance details.",
+    };
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("record_attendance", {
+    p_staff_profile_id: value.staffProfileId,
+    p_attendance_date: value.attendanceDate,
+    p_status: value.status,
+    p_time_in: value.timeIn || null,
+    p_time_out: value.timeOut || null,
+    p_overtime_minutes:
+      value.overtimeMinutes === "" ? 0 : Number(value.overtimeMinutes),
+    p_note: value.note || null,
+  });
+
+  if (error) {
+    const message = (error.message ?? "").toLowerCase();
+
+    if (message.includes("time out must be after")) {
+      return { ok: false, formError: "Time out must be after time in." };
+    }
+
+    if (message.includes("staff record not found")) {
+      return { ok: false, formError: "The employee record could not be found." };
+    }
+
+    if (message.includes("overtime must be")) {
+      return {
+        ok: false,
+        formError: "Overtime must be between 0 and 1440 minutes.",
+      };
+    }
+
+    return { ok: false, formError: hrErrorMessage(error) };
+  }
+
+  revalidateHr();
+
+  return { ok: true, id: data ? String(data) : undefined };
+}
+
+export async function setEmployeeSalaryAction(
+  input: SetSalaryInput
+): Promise<HrWriteResult> {
+  const parsed = setSalarySchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Check the salary details.",
+    };
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("set_employee_salary", {
+    p_staff_profile_id: value.staffProfileId,
+    p_monthly_rate: Number(value.monthlyRate),
+  });
+
+  if (error) {
+    if (error.code === "42501") {
+      return {
+        ok: false,
+        formError: "Only payroll staff can set a monthly rate.",
+      };
+    }
+
+    const message = (error.message ?? "").toLowerCase();
+
+    if (message.includes("create the employee record")) {
+      return {
+        ok: false,
+        formError: "Create the employee record before setting a salary.",
+      };
+    }
+
+    if (message.includes("cannot be negative")) {
+      return { ok: false, formError: "The monthly rate cannot be negative." };
+    }
+
+    return { ok: false, formError: hrErrorMessage(error) };
+  }
+
+  revalidateHr();
 
   return { ok: true, id: data ? String(data) : undefined };
 }

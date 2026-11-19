@@ -19,7 +19,7 @@ import { manilaDate, pageSlice, sanitizeSearchTerm } from "./query";
 import { toDataError, type DataResult, type PagedResult } from "./result";
 
 const EMPLOYEE_COLUMNS =
-  "*, profiles!staff_profiles_user_id_fkey(email, contact_number, is_active), departments(name), hr_employee_details(position, employment_status, hire_date, license_expiry, leave_balance)";
+  "*, profiles!staff_profiles_user_id_fkey(email, contact_number, is_active), departments(name), hr_employee_details(position, employment_status, hire_date, license_expiry, leave_balance, monthly_rate)";
 
 const LEAVE_COLUMNS =
   "*, staff_profiles!hr_leave_requests_staff_profile_id_fkey(first_name, middle_name, last_name, staff_number)";
@@ -50,6 +50,7 @@ type EmployeeJoinRow = {
     hire_date: string;
     license_expiry: string | null;
     leave_balance: number;
+    monthly_rate: number;
   }>;
 };
 
@@ -334,6 +335,7 @@ export async function listEmployees(
             ? Math.round((present / employeeAttendance.length) * 100)
             : 0,
         leave_balance: Number(detail?.leave_balance ?? 0),
+        monthly_rate: Number(detail?.monthly_rate ?? 0),
       };
     });
 
