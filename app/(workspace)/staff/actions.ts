@@ -188,8 +188,6 @@ export async function setStaffActiveAction(input: {
   return { ok: true };
 }
 
-type EdgeFailure = { error?: string };
-
 async function callAdminUsers(
   body: Record<string, unknown>,
   accessToken: string
@@ -205,22 +203,24 @@ async function callAdminUsers(
     body: JSON.stringify(body),
   });
 
-  const payload = (await response.json().catch(() => ({}))) as
-    | Record<string, unknown>
-    | EdgeFailure;
+  const payload = (await response.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
 
   if (!response.ok) {
-    return {
-      ok: false,
-      status: response.status,
-      code:
-        typeof (payload as EdgeFailure).error === "string"
-          ? (payload as EdgeFailure).error!
-          : "request_failed",
-    };
+    const rawError = payload.error;
+    const code =
+      typeof rawError === "string"
+        ? rawError
+        : rawError && typeof rawError === "object" && "code" in rawError
+          ? String((rawError as { code?: unknown }).code ?? "request_failed")
+          : "request_failed";
+
+    return { ok: false, status: response.status, code };
   }
 
-  return { ok: true, data: payload as Record<string, unknown> };
+  return { ok: true, data: payload };
 }
 
 function accountErrorMessage(status: number, code: string): string {
