@@ -23,11 +23,11 @@
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
-| 6 | Frontend → backend integration | 58 / 67 | In progress (7 modules verified; dietary built pending migration; 3 fixture modules remain) |
+| 6 | Frontend → backend integration | 59 / 67 | In progress (8 modules verified; 3 fixture modules remain: equipment, mortuary, notifications) |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **234 / 295** | **79%** |
+| **Total** | | **235 / 295** | **79%** |
 
 ---
 
@@ -414,7 +414,7 @@
 - [x] Insurance — 2026-11-19, applied and verified: provider (duplicate code 23505), policy (bad dates 22023, duplicate policy number 23505), coverage verification sets the policy to verified with a payer reference, claim prepared as CLM-2026-0001 with two lines and an event, over-claim rejected, and an expired policy is refused by migration 20261119000300. `/insurance` renders the real policy and both dialogs
 - [x] Blood bank — 2026-11-17, applied and verified end to end: donor → 2-unit donation → crossmatch refused before screening → negative screening passes / positive screening discards → request → crossmatch refused before screening cleared → compatible crossmatch → issue → request completed → re-issue refused. Incompatible crossmatch returns the unit to available and leaves the request pending. Audit rows written for all six actions
 - [x] Ambulance — 2026-11-19, applied and verified 14/14: two vehicles registered, dispatch created (AMB-2026-0001), assigned → en route → on scene → transporting → completed, vehicle status followed dispatched → on_trip → available with location updated, assigning a busy vehicle rejected, reopening a completed dispatch rejected, six audit actions. Register and Dispatch dialogs plus the trip lifecycle dialog are wired
-- [ ] Dietary — migration 20261119000700 adds diet categories, therapeutic diets, dietary orders and meal orders, plus `dietary.view/manage`, RLS, `create_dietary_order` (generates today's trays and copies allergens) and `advance_meal_order`; data layer rewritten, New Dietary Assessment dialog and the meal status action wired. Apply `20261119000700_dietary.sql` + the diet seed, then verify assessment → tray generation → preparing → ready → delivered
+- [x] Dietary — 2026-11-19, applied and verified 12/12: catalogue shipped by migration 20261119000800, assessment DIET-2026-0001 created with two allergies, three trays generated with the allergens copied and slots at 07:00/12:00/18:00, unsupported meal type rejected, tray advanced preparing → ready → delivered with prepared/delivered stamped, re-delivery rejected, four audit rows
 - [x] Housekeeping — 2026-11-19, applied and verified 11/11: staff creation (on duty), request creation, assign → start → complete with a disinfection record (chemical, 10-minute contact time) → verify; completion without a contact time is refused, reopening a verified request is refused, `completed_today` incremented, and five audit rows written
 - [ ] Equipment
 - [ ] Mortuary
