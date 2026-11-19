@@ -23,11 +23,11 @@
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
-| 6 | Frontend → backend integration | 55 / 67 | In progress (6.5 complete: upload UI, signed-URL viewer and realtime consumers live; 7 fixture modules remain in 6.7) |
+| 6 | Frontend → backend integration | 56 / 67 | In progress (6.5 complete; insurance verified; 6 fixture modules remain in 6.7) |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **231 / 295** | **78%** |
+| **Total** | | **232 / 295** | **79%** |
 
 ---
 
@@ -411,7 +411,7 @@
 - [x] Emergency — 2026-11-17, applied and verified; start triage created ER-2026-0001 with encounter ENC-2026-0007, duplicate active visits rejected, and the board renders real data
 - [x] Surgery — 2026-11-17, applied and verified; registered an OR, scheduled a case, and an overlapping slot was rejected with 23P01 (verification records cleaned up). Demo rooms/cases arrive with the seed block
 - [x] HR — 2026-11-17, applied and verified; leave filing/review worked (repeat review rejected), overnight 23:00–07:00 shift now accepted by migration 038 with `overnight: true` in the audit metadata, and equal start/end times rejected. Payroll processing still needs a salary model
-- [ ] Insurance — migration 044 applied (tables present, empty). Migration 047 adds `create_insurance_provider` / `create_insurance_policy` plus Add Provider / Add Policy dialogs, because the module previously had no way to register a payer or policy from the UI. Apply `20261117002400_insurance_intake.sql`, then verify provider → policy → coverage check → claim
+- [x] Insurance — 2026-11-19, applied and verified: provider (duplicate code 23505), policy (bad dates 22023, duplicate policy number 23505), coverage verification sets the policy to verified with a payer reference, claim prepared as CLM-2026-0001 with two lines and an event, over-claim rejected, and an expired policy is refused by migration 20261119000300. `/insurance` renders the real policy and both dialogs
 - [x] Blood bank — 2026-11-17, applied and verified end to end: donor → 2-unit donation → crossmatch refused before screening → negative screening passes / positive screening discards → request → crossmatch refused before screening cleared → compatible crossmatch → issue → request completed → re-issue refused. Incompatible crossmatch returns the unit to available and leaves the request pending. Audit rows written for all six actions
 - [ ] Ambulance
 - [ ] Dietary
