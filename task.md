@@ -24,10 +24,10 @@
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
 | 6 | Frontend → backend integration | 67 / 67 | Complete |
-| 7 | QA & security verification | 25 / 40 | In progress (security suite 11/11 passed) |
+| 7 | QA & security verification | 29 / 40 | In progress (security, storage and realtime suites passed) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **260 / 295** | **88%** |
+| **Total** | | **265 / 295** | **90%** |
 
 ---
 
@@ -483,10 +483,10 @@ Run with `npm run verify:security` (live probe against the seeded demo project; 
 
 ### 7.6 Storage & realtime tests (`SUPABASE.MD` §33.5)
 
-- [ ] Private buckets are not publicly reachable
-- [ ] Unauthorized uploads and deletes are rejected
-- [ ] Signed URLs expire
-- [ ] Realtime payloads respect RLS
+- [x] Private buckets are not publicly reachable — 2026-11-19, all three existing buckets (`patient-documents`, `laboratory-attachments`, `radiology-files`) return 400 on their public object URL; a real PNG uploaded in each was unreachable without a signed URL. The five buckets in migration 20261119002100 are still pending
+- [x] Unauthorized uploads and deletes are rejected — 2026-11-19, billing staff uploading to `patient-documents` gets `new row violates row-level security policy`; a laboratory user deleting another department's object gets an empty result and the object remains readable until an authorized user deletes it
+- [x] Signed URLs expire — 2026-11-19, a 2-second signed URL returned 200 immediately and 400 after 4 seconds
+- [x] Realtime payloads respect RLS — 2026-11-19, an admin payment insert reached the billing subscriber (1 event) and never reached the laboratory subscriber (0 events); the payment was refunded afterwards
 
 ---
 
