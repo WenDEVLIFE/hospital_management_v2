@@ -2295,6 +2295,9 @@ export type UserListRow = {
   contact_number: string | null;
   role_slugs: string[];
   role_names: string[];
+  role_ids: string[];
+  staff_id: string | null;
+  department_id: string | null;
   department_name: string | null;
   is_active: boolean;
   last_activity: string | null;

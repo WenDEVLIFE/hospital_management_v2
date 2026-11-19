@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { pgErrorMessage } from "@/lib/data/result";
-import { getSupabaseEnv } from "@/lib/supabase/env";
+import { invokeEdgeFunction } from "@/lib/supabase/functions";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   departmentSchema,
@@ -188,41 +188,6 @@ export async function setStaffActiveAction(input: {
   return { ok: true };
 }
 
-async function callAdminUsers(
-  body: Record<string, unknown>,
-  accessToken: string
-): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; status: number; code: string }> {
-  const { url, publishableKey } = getSupabaseEnv();
-  const response = await fetch(`${url}/functions/v1/admin-users`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: publishableKey,
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const payload = (await response.json().catch(() => ({}))) as Record<
-    string,
-    unknown
-  >;
-
-  if (!response.ok) {
-    const rawError = payload.error;
-    const code =
-      typeof rawError === "string"
-        ? rawError
-        : rawError && typeof rawError === "object" && "code" in rawError
-          ? String((rawError as { code?: unknown }).code ?? "request_failed")
-          : "request_failed";
-
-    return { ok: false, status: response.status, code };
-  }
-
-  return { ok: true, data: payload };
-}
-
 function accountErrorMessage(status: number, code: string): string {
   if (status === 401) {
     return "Your session expired. Sign in again.";
@@ -268,7 +233,8 @@ export async function createStaffAction(
     };
   }
 
-  const account = await callAdminUsers(
+  const account = await invokeEdgeFunction(
+    "admin-users",
     {
       action: "create",
       email: value.email,
@@ -309,7 +275,8 @@ export async function createStaffAction(
   if (error) {
     // The Auth account already exists, so deactivate it rather than leave an
     // active account with no staff record. The transaction rolled the record back.
-    await callAdminUsers(
+    await invokeEdgeFunction(
+      "admin-users",
       { action: "set-active", userId, active: false },
       session.access_token
     );

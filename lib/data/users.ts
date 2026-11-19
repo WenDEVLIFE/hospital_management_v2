@@ -4,7 +4,7 @@ import { normalizePagination, sanitizeSearchTerm } from "./query";
 import { toDataError, type DataResult, type PagedResult } from "./result";
 
 const PROFILE_COLUMNS =
-  "id, email, full_name, avatar_path, contact_number, is_active, created_at, updated_at, user_roles!user_roles_user_id_fkey(roles(id, slug, name)), staff_profiles!staff_profiles_user_id_fkey(departments(name))";
+  "id, email, full_name, avatar_path, contact_number, is_active, created_at, updated_at, user_roles!user_roles_user_id_fkey(roles(id, slug, name)), staff_profiles!staff_profiles_user_id_fkey(id, department_id, departments(name))";
 
 type Relation<T> = T | T[] | null;
 
@@ -21,6 +21,8 @@ type ProfileJoinRow = {
     roles: Relation<{ id: string; slug: string; name: string }>;
   }> | null;
   staff_profiles: Relation<{
+    id: string;
+    department_id: string | null;
     departments: Relation<{ name: string }>;
   }>;
 };
@@ -61,6 +63,9 @@ function toUserListRow(row: ProfileJoinRow): UserListRow {
     contact_number: row.contact_number,
     role_slugs: roles.map((role) => role.slug),
     role_names: roles.map((role) => role.name),
+    role_ids: roles.map((role) => role.id),
+    staff_id: staff?.id ?? null,
+    department_id: staff?.department_id ?? null,
     department_name: department?.name ?? null,
     is_active: row.is_active,
     // Auth last_sign_in_at is not exposed through the public schema.

@@ -34,14 +34,6 @@ export default async function UserManagementPage() {
     (department) => ({ id: department.id, name: department.name })
   );
 
-  const departments = Array.from(
-    new Set(
-      rows
-        .map((row) => row.department_name)
-        .filter((name): name is string => Boolean(name))
-    )
-  ).sort((a, b) => a.localeCompare(b));
-
   const administrators =
     statsResult.data?.byRole
       .filter((entry) => entry.role.toLowerCase().includes("administrator"))
@@ -106,7 +98,11 @@ export default async function UserManagementPage() {
         {listResult.error ? (
           <ErrorState error={listResult.error} />
         ) : (
-          <UsersTable rows={rows} roles={roles} departments={departments} />
+          <UsersTable
+            rows={rows}
+            roles={roles}
+            departments={departmentOptions}
+          />
         )}
       </PageSection>
 

@@ -21,6 +21,10 @@ const input = z.discriminatedUnion("action", [
     userId: z.uuid(),
     active: z.boolean(),
   }),
+  z.strictObject({
+    action: z.literal("delete"),
+    userId: z.uuid(),
+  }),
 ]);
 
 serve(async (request) => {
@@ -57,6 +61,44 @@ serve(async (request) => {
   if (error?.code === "42501") throw new HttpError(403, "forbidden");
   if (error?.code === "P0002") throw new HttpError(404, "user_not_found");
   if (error) throw new HttpError(500, "authorization_failed");
+
+  if (args.action === "delete") {
+    const { error: deleteError } = await service.auth.admin.deleteUser(
+      args.userId,
+    );
+
+    if (deleteError?.status === 404) throw new HttpError(404, "user_not_found");
+
+    if (deleteError) {
+      const detail = `${deleteError.message ?? ""} ${deleteError.code ?? ""}`
+        .toLowerCase();
+
+      // A foreign key such as audit_logs.actor_id blocks deletion of an account
+      // that created or approved records. The database rolls the whole delete
+      // back, so the account and its data stay intact.
+      if (
+        detail.includes("database error") ||
+        detail.includes("foreign key") ||
+        detail.includes("violates")
+      ) {
+        throw new HttpError(409, "user_has_records");
+      }
+
+      throw new HttpError(500, "account_delete_failed");
+    }
+
+    const { error: auditError } = await service.from("audit_logs").insert({
+      actor_id: actorId,
+      action: "user.delete",
+      entity_type: "profile",
+      entity_id: args.userId,
+      description: "Deleted a staff account and its auth identity.",
+      metadata: { source: "admin-users" },
+    });
+    if (auditError) throw new HttpError(500, "account_delete_audit_failed");
+
+    return Response.json({ userId: args.userId, deleted: true });
+  }
 
   const { error: updateError } = await service.auth.admin.updateUserById(
     args.userId,
