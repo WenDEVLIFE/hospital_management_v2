@@ -2,7 +2,6 @@ import { connection } from "next/server";
 import {
   CaseIcon,
   DiplomaIcon,
-  UserPlusRoundedIcon,
   UserRoundedIcon,
   UsersGroupTwoRoundedIcon,
   WalletMoneyIcon,
@@ -11,9 +10,10 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { AddEmployeeAction, RunPayrollAction } from "@/components/hr/hr-actions";
 import { HrView } from "@/components/hr/hr-view";
 import { HrWorkflowStrip } from "@/components/hr/hr-workflow-strip";
+import { listDepartments } from "@/lib/data/departments";
 import {
   getEmployeeDetails,
   getHrStats,
@@ -23,6 +23,7 @@ import {
   listPayrollPeriods,
   listTodayAttendance,
 } from "@/lib/data/hr";
+import { listRoles } from "@/lib/data/users";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 export const metadata = {
@@ -40,6 +41,8 @@ export default async function HumanResourcesPage() {
     leaveResult,
     periodsResult,
     entriesResult,
+    departmentResult,
+    roleResult,
   ] = await Promise.all([
     getHrStats(),
     listEmployees({ pageSize: 200 }),
@@ -48,7 +51,18 @@ export default async function HumanResourcesPage() {
     listLeaveRequests({ pageSize: 200 }),
     listPayrollPeriods(),
     getPayrollEntries(),
+    listDepartments({ pageSize: 200, isActive: true }),
+    listRoles(),
   ]);
+
+  const departments = (departmentResult.data?.rows ?? []).map((department) => ({
+    id: department.id,
+    name: department.name,
+  }));
+  const roles = (roleResult.data ?? []).map((role) => ({
+    id: role.id,
+    name: role.name,
+  }));
 
   const payrollPeriods = periodsResult.error ? [] : periodsResult.data;
   const currentPeriod =
@@ -66,17 +80,8 @@ export default async function HumanResourcesPage() {
         description="Manage employee records, attendance, leave, and payroll."
         actions={
           <>
-            <UnavailableAction
-              label="Run Payroll"
-              description="Process the current payroll period and calculate statutory deductions."
-              variant="secondary"
-              icon={<WalletMoneyIcon className="size-4" aria-hidden="true" />}
-            />
-            <UnavailableAction
-              label="Add Employee"
-              description="Create an employee record, assign a department and position, and record professional credentials."
-              icon={<UserPlusRoundedIcon className="size-4" aria-hidden="true" />}
-            />
+            <RunPayrollAction />
+            <AddEmployeeAction departments={departments} roles={roles} />
           </>
         }
       />

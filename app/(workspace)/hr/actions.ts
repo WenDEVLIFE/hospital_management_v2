@@ -3,11 +3,16 @@
 import { revalidatePath } from "next/cache";
 
 import { pgErrorMessage } from "@/lib/data/result";
+import { invokeEdgeFunction } from "@/lib/supabase/functions";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  createEmployeeSchema,
   fileLeaveSchema,
+  runPayrollSchema,
   scheduleShiftSchema,
+  type CreateEmployeeInput,
   type FileLeaveInput,
+  type RunPayrollInput,
   type ScheduleShiftInput,
 } from "@/lib/validations/hr";
 
@@ -118,6 +123,199 @@ export async function fileLeaveAction(
   }
 
   revalidateHr();
+
+  return { ok: true, id: data ? String(data) : undefined };
+}
+
+function accountErrorMessage(status: number, code: string): string {
+  if (status === 401) {
+    return "Your session expired. Sign in again.";
+  }
+
+  if (status === 403 || code === "forbidden") {
+    return "Only a hospital administrator can create employee accounts.";
+  }
+
+  if (status === 409 || code === "account_exists") {
+    return "An account with that email already exists.";
+  }
+
+  if (status === 400 || code === "invalid_account") {
+    return "Use a valid email and a password of at least 12 characters.";
+  }
+
+  return "The account could not be created. Try again.";
+}
+
+export async function createEmployeeAction(
+  input: CreateEmployeeInput
+): Promise<HrWriteResult> {
+  const parsed = createEmployeeSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Check the employee details.",
+    };
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return { ok: false, formError: "Your session expired. Sign in again." };
+  }
+
+  const account = await invokeEdgeFunction(
+    "admin-users",
+    {
+      action: "create",
+      email: value.email,
+      password: value.password,
+      fullName: value.fullName,
+    },
+    session.access_token
+  );
+
+  if (!account.ok) {
+    return {
+      ok: false,
+      formError: accountErrorMessage(account.status, account.code),
+    };
+  }
+
+  const userId = String(account.data.userId ?? "");
+
+  if (!userId) {
+    return {
+      ok: false,
+      formError:
+        "The account was created but no user id was returned. Check Settings → Users.",
+    };
+  }
+
+  const { data: staffId, error } = await supabase.rpc("create_employee_record", {
+    p_user_id: userId,
+    p_staff_number: value.staffNumber,
+    p_first_name: value.firstName,
+    p_last_name: value.lastName,
+    p_position: value.position,
+    p_hire_date: value.hireDate,
+    p_middle_name: value.middleName || null,
+    p_department_id: value.departmentId || null,
+    p_employment_type: value.employmentType || null,
+    p_professional_license_number: value.licenseNumber || null,
+    p_role_id: value.roleId || null,
+    p_monthly_rate: Number(value.monthlyRate),
+    p_license_expiry: value.licenseExpiry || null,
+    p_leave_balance: value.leaveBalance === "" ? 0 : Number(value.leaveBalance),
+  });
+
+  if (error) {
+    await invokeEdgeFunction(
+      "admin-users",
+      { action: "set-active", userId, active: false },
+      session.access_token
+    );
+
+    const message = (error.message ?? "").toLowerCase();
+
+    if (error.code === "42501" && value.roleId) {
+      return {
+        ok: false,
+        formError:
+          "That role cannot be assigned by you. Administrator roles require a super administrator. The account was created and deactivated.",
+      };
+    }
+
+    if (message.includes("already has a staff record")) {
+      return {
+        ok: false,
+        formError:
+          "That account already has a staff record. The account was created and deactivated.",
+      };
+    }
+
+    if (message.includes("enter the employee position")) {
+      return { ok: false, formError: "Enter the employee position." };
+    }
+
+    return {
+      ok: false,
+      formError:
+        error.code === "23505"
+          ? "That employee number is already in use. The account was created and deactivated."
+          : `${pgErrorMessage(error.code ?? "UNKNOWN")} The account was created and deactivated.`,
+    };
+  }
+
+  revalidateHr();
+  revalidatePath("/settings/users");
+
+  return { ok: true, id: staffId ? String(staffId) : userId };
+}
+
+export async function runPayrollAction(
+  input: RunPayrollInput
+): Promise<HrWriteResult> {
+  const parsed = runPayrollSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Check the payroll details.",
+    };
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("run_payroll", {
+    p_period_start: value.periodStart,
+    p_period_end: value.periodEnd,
+    p_pay_date: value.payDate,
+    p_deduction_rate: Number(value.deductionRate),
+  });
+
+  if (error) {
+    const message = (error.message ?? "").toLowerCase();
+
+    if (message.includes("overlaps an existing run")) {
+      return {
+        ok: false,
+        formError: "A payroll period overlaps an existing run.",
+      };
+    }
+
+    if (message.includes("no active employee has a monthly rate")) {
+      return {
+        ok: false,
+        formError:
+          "No active employee has a monthly rate. Add a salary to an employee before running payroll.",
+      };
+    }
+
+    if (message.includes("period end cannot be before")) {
+      return {
+        ok: false,
+        formError: "The period end cannot be before the start.",
+      };
+    }
+
+    if (message.includes("deduction rate")) {
+      return {
+        ok: false,
+        formError: "Enter a deduction rate between 0 and 100.",
+      };
+    }
+
+    return { ok: false, formError: hrErrorMessage(error) };
+  }
+
+  revalidatePath("/hr");
+  revalidatePath("/dashboard");
 
   return { ok: true, id: data ? String(data) : undefined };
 }

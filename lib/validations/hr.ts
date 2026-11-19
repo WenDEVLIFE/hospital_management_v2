@@ -81,3 +81,106 @@ export const fileLeaveSchema = z
   });
 
 export type FileLeaveInput = z.infer<typeof fileLeaveSchema>;
+
+export const createEmployeeSchema = z
+  .object({
+    fullName: z
+      .string()
+      .trim()
+      .min(2, "Enter the employee's full name.")
+      .max(200, "Keep the full name under 200 characters."),
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .pipe(z.email("Enter a valid email address.")),
+    password: z
+      .string()
+      .min(12, "Use at least 12 characters.")
+      .max(72, "Keep the password under 72 characters."),
+    confirmPassword: z.string(),
+    staffNumber: z
+      .string()
+      .trim()
+      .min(2, "Enter the employee number.")
+      .max(40, "Keep the employee number under 40 characters."),
+    firstName: z.string().trim().min(1, "First name is required."),
+    middleName: z.string().trim().max(80, "Keep the middle name short."),
+    lastName: z.string().trim().min(1, "Last name is required."),
+    departmentId: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || UUID_PATTERN.test(value),
+        "Select a valid department."
+      ),
+    employmentType: z.string().trim().max(60, "Keep the employment type short."),
+    licenseNumber: z.string().trim().max(60, "Keep the license number short."),
+    roleId: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || UUID_PATTERN.test(value),
+        "Select a valid role."
+      ),
+    position: z
+      .string()
+      .trim()
+      .min(2, "Enter the position.")
+      .max(120, "Keep the position under 120 characters."),
+    hireDate: z
+      .string()
+      .trim()
+      .refine((value) => DATE_PATTERN.test(value), "Select the hire date."),
+    monthlyRate: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value !== "" && Number(value) >= 0 && Number.isFinite(Number(value)),
+        "Enter the monthly rate."
+      ),
+    licenseExpiry: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || DATE_PATTERN.test(value),
+        "Select a valid expiry date."
+      ),
+    leaveBalance: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || (Number(value) >= 0 && Number.isFinite(Number(value))),
+        "Enter the leave balance."
+      ),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "The passwords do not match.",
+  });
+
+export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
+
+export const runPayrollSchema = z.object({
+  periodStart: z
+    .string()
+    .trim()
+    .refine((value) => DATE_PATTERN.test(value), "Select the period start."),
+  periodEnd: z
+    .string()
+    .trim()
+    .refine((value) => DATE_PATTERN.test(value), "Select the period end."),
+  payDate: z
+    .string()
+    .trim()
+    .refine((value) => DATE_PATTERN.test(value), "Select the pay date."),
+  deductionRate: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value !== "" && Number(value) >= 0 && Number(value) <= 100,
+      "Enter a deduction rate between 0 and 100."
+    ),
+});
+
+export type RunPayrollInput = z.infer<typeof runPayrollSchema>;

@@ -25,12 +25,10 @@ import {
   type Column,
   type FilterConfig,
 } from "@/components/module/record-table";
-import { UnavailableAction, UNAVAILABLE_MESSAGE } from "@/components/module/unavailable-action";
 import {
   FileLeaveAction,
   ScheduleShiftAction,
 } from "@/components/hr/hr-actions";
-import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -181,7 +179,6 @@ export function HrView({
     React.useState<EmployeeListRow | null>(null);
   const [selectedPeriod, setSelectedPeriod] =
     React.useState<PayrollPeriod | null>(null);
-  const [pendingAction, setPendingAction] = React.useState<string | null>(null);
 
   const employeeRowById = React.useMemo(
     () => new Map(employees.map((employee) => [employee.id, employee])),
@@ -205,7 +202,6 @@ export function HrView({
       const employee = employeeRowById.get(id);
 
       if (employee) {
-        setPendingAction(null);
         setSelectedEmployee(employee);
       }
     },
@@ -213,17 +209,14 @@ export function HrView({
   );
 
   const closeEmployee = React.useCallback(() => {
-    setPendingAction(null);
     setSelectedEmployee(null);
   }, []);
 
   const openPeriod = React.useCallback((period: PayrollPeriod) => {
-    setPendingAction(null);
     setSelectedPeriod(period);
   }, []);
 
   const closePeriod = React.useCallback(() => {
-    setPendingAction(null);
     setSelectedPeriod(null);
   }, []);
 
@@ -710,17 +703,6 @@ export function HrView({
                 `${formatDate(row.period_start)} ${formatDate(row.period_end)} ${row.status}`
               }
               filters={payrollFilters}
-              toolbarActions={
-                <UnavailableAction
-                  label="Process Payroll"
-                  description="Process payroll for the current period and calculate statutory deductions."
-                  size="sm"
-                  variant="secondary"
-                  icon={
-                    <WalletMoneyIcon className="size-4" aria-hidden="true" />
-                  }
-                />
-              }
               emptyTitle="No payroll periods"
               emptyDescription="There are no payroll periods matching your selected filters."
               emptyIcon={<BillListIcon className="size-5" aria-hidden="true" />}
@@ -748,12 +730,6 @@ export function HrView({
       >
         {selectedEmployee ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Full name">
                 {selectedEmployee.full_name}
@@ -990,30 +966,6 @@ export function HrView({
                     </p>
                   )}
                 </section>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Edit employee")}
-                  >
-                    Edit employee
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Record attendance")}
-                  >
-                    Record attendance
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setPendingAction("Generate payslip")}
-                  >
-                    Generate payslip
-                  </Button>
-                </div>
               </>
             ) : (
               <p className="text-sm text-hospital-text-muted">
@@ -1042,12 +994,6 @@ export function HrView({
       >
         {selectedPeriod ? (
           <div className="space-y-4">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-3 sm:grid-cols-2">
               <DetailField label="Pay date">
                 {formatDate(selectedPeriod.pay_date)}
@@ -1112,30 +1058,6 @@ export function HrView({
                 ))}
               </TableBody>
             </Table>
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Process payroll")}
-              >
-                Process payroll
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Approve payroll")}
-              >
-                Approve payroll
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setPendingAction("Generate payslips")}
-              >
-                Generate payslips
-              </Button>
-            </div>
           </div>
         ) : null}
       </Modal>
