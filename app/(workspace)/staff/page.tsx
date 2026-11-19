@@ -13,20 +13,32 @@ import { StaffAddAction } from "@/components/staff/staff-add-action";
 import { StaffTable } from "@/components/staff/staff-table";
 import { listDepartments } from "@/lib/data/departments";
 import { getStaffStats, listStaff } from "@/lib/data/staff";
+import { listRoles } from "@/lib/data/users";
 
 export default async function StaffPage() {
-  const [listResult, statsResult, departmentResult] = await Promise.all([
-    listStaff({ pageSize: 100 }),
-    getStaffStats(),
-    listDepartments({ pageSize: 100 }),
-  ]);
+  const [listResult, statsResult, departmentResult, roleResult] =
+    await Promise.all([
+      listStaff({ pageSize: 100 }),
+      getStaffStats(),
+      listDepartments({ pageSize: 100 }),
+      listRoles(),
+    ]);
+
+  const departments = (departmentResult.data?.rows ?? []).map((department) => ({
+    id: department.id,
+    name: department.name,
+  }));
+  const roles = (roleResult.data ?? []).map((role) => ({
+    id: role.id,
+    name: role.name,
+  }));
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="Doctors & Staff"
         description="Staff accounts, roles and department assignments."
-        actions={<StaffAddAction />}
+        actions={<StaffAddAction departments={departments} roles={roles} />}
       />
 
       {statsResult.error ? (
@@ -68,9 +80,7 @@ export default async function StaffPage() {
         ) : listResult.data ? (
           <StaffTable
             rows={listResult.data.rows}
-            departments={(departmentResult.data?.rows ?? []).map(
-              (department) => ({ id: department.id, name: department.name })
-            )}
+            departments={departments}
           />
         ) : null}
       </PageSection>

@@ -3,13 +3,16 @@
 import { revalidatePath } from "next/cache";
 
 import { pgErrorMessage } from "@/lib/data/result";
+import { getSupabaseEnv } from "@/lib/supabase/env";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   departmentSchema,
   roomSchema,
+  staffCreateSchema,
   staffUpdateSchema,
   type DepartmentInput,
   type RoomInput,
+  type StaffCreateInput,
   type StaffUpdateInput,
 } from "@/lib/validations/organisation";
 
@@ -183,4 +186,169 @@ export async function setStaffActiveAction(input: {
   revalidatePath("/settings/users");
 
   return { ok: true };
+}
+
+type EdgeFailure = { error?: string };
+
+async function callAdminUsers(
+  body: Record<string, unknown>,
+  accessToken: string
+): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; status: number; code: string }> {
+  const { url, publishableKey } = getSupabaseEnv();
+  const response = await fetch(`${url}/functions/v1/admin-users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: publishableKey,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as
+    | Record<string, unknown>
+    | EdgeFailure;
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      code:
+        typeof (payload as EdgeFailure).error === "string"
+          ? (payload as EdgeFailure).error!
+          : "request_failed",
+    };
+  }
+
+  return { ok: true, data: payload as Record<string, unknown> };
+}
+
+function accountErrorMessage(status: number, code: string): string {
+  if (status === 401) {
+    return "Your session expired. Sign in again.";
+  }
+
+  if (status === 403 || code === "forbidden") {
+    return "Only a hospital administrator can create staff accounts.";
+  }
+
+  if (status === 409 || code === "account_exists") {
+    return "An account with that email already exists.";
+  }
+
+  if (status === 400 || code === "invalid_account") {
+    return "Use a valid email and a password of at least 12 characters.";
+  }
+
+  return "The account could not be created. Try again.";
+}
+
+export async function createStaffAction(
+  input: StaffCreateInput
+): Promise<OrganisationWriteResult> {
+  const parsed = staffCreateSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Check the staff details.",
+    };
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return {
+      ok: false,
+      formError: "Your session expired. Sign in again.",
+    };
+  }
+
+  const account = await callAdminUsers(
+    {
+      action: "create",
+      email: value.email,
+      password: value.password,
+      fullName: value.fullName,
+    },
+    session.access_token
+  );
+
+  if (!account.ok) {
+    return {
+      ok: false,
+      formError: accountErrorMessage(account.status, account.code),
+    };
+  }
+
+  const userId = String(account.data.userId ?? "");
+
+  if (!userId) {
+    return {
+      ok: false,
+      formError: "The account was created but no user id was returned. Check Settings → Users.",
+    };
+  }
+
+  const { data: staffId, error } = await supabase.rpc("create_staff_record", {
+    p_user_id: userId,
+    p_staff_number: value.staffNumber,
+    p_first_name: value.firstName,
+    p_last_name: value.lastName,
+    p_middle_name: value.middleName || null,
+    p_department_id: value.departmentId || null,
+    p_employment_type: value.employmentType || null,
+    p_professional_license_number: value.licenseNumber || null,
+    p_role_id: value.roleId || null,
+  });
+
+  if (error) {
+    // The Auth account already exists, so deactivate it rather than leave an
+    // active account with no staff record. The transaction rolled the record back.
+    await callAdminUsers(
+      { action: "set-active", userId, active: false },
+      session.access_token
+    );
+
+    const message = (error.message ?? "").toLowerCase();
+
+    if (message.includes("already has a staff record")) {
+      return {
+        ok: false,
+        formError: "That account already has a staff record.",
+      };
+    }
+
+    if (message.includes("staff number, first name and last name")) {
+      return {
+        ok: false,
+        formError: "Staff number, first name and last name are required.",
+      };
+    }
+
+    if (error.code === "42501" && value.roleId) {
+      return {
+        ok: false,
+        formError:
+          "That role cannot be assigned by you. Administrator roles require a super administrator. The account was created and deactivated.",
+      };
+    }
+
+    return {
+      ok: false,
+      formError:
+        error.code === "23505"
+          ? "That staff number is already in use. The account was created and deactivated."
+          : `${pgErrorMessage(error.code ?? "UNKNOWN")} The account was created and deactivated.`,
+    };
+  }
+
+  revalidatePath("/staff");
+  revalidatePath("/settings/users");
+
+  return { ok: true, id: staffId ? String(staffId) : userId };
 }
