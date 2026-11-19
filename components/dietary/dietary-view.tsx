@@ -20,7 +20,7 @@ import {
   type Column,
   type FilterConfig,
 } from "@/components/module/record-table";
-import { UNAVAILABLE_MESSAGE, UnavailableAction } from "@/components/module/unavailable-action";
+import { MealStatusAction } from "./dietary-actions";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -136,7 +136,7 @@ export function DietaryView({
     React.useState<MealOrderListRow | null>(null);
   const [selectedOrder, setSelectedOrder] =
     React.useState<DietaryOrderListRow | null>(null);
-  const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  
 
   const mealById = React.useMemo(
     () => new Map(meals.map((meal) => [meal.id, meal])),
@@ -152,7 +152,7 @@ export function DietaryView({
       const row = mealById.get(id);
 
       if (row) {
-        setPendingAction(null);
+        
         setSelectedMeal(row);
       }
     },
@@ -160,7 +160,7 @@ export function DietaryView({
   );
 
   const closeMeal = React.useCallback(() => {
-    setPendingAction(null);
+    
     setSelectedMeal(null);
   }, []);
 
@@ -169,7 +169,7 @@ export function DietaryView({
       const row = orderById.get(id);
 
       if (row) {
-        setPendingAction(null);
+        
         setSelectedOrder(row);
       }
     },
@@ -177,7 +177,7 @@ export function DietaryView({
   );
 
   const closeOrder = React.useCallback(() => {
-    setPendingAction(null);
+    
     setSelectedOrder(null);
   }, []);
 
@@ -450,20 +450,6 @@ export function DietaryView({
                 `${row.meal_number} ${row.patient_name} ${row.patient_mrn} ${row.diet_name} ${row.ward} ${row.room} ${row.bed}`
               }
               filters={mealFilters}
-              toolbarActions={
-                <UnavailableAction
-                  label="Create Meal Order"
-                  description="Create a meal order from an active dietary order."
-                  size="sm"
-                  variant="secondary"
-                  icon={
-                    <ChefHatMinimalisticIcon
-                      className="size-4"
-                      aria-hidden="true"
-                    />
-                  }
-                />
-              }
               emptyTitle="No meals scheduled"
               emptyDescription="There are no meal orders matching your selected filters."
               emptyIcon={
@@ -488,15 +474,6 @@ export function DietaryView({
               `${row.order_number} ${row.patient_name} ${row.patient_mrn} ${row.diet_name} ${row.category_name} ${row.allergies.join(" ")} ${row.restrictions.join(" ")}`
             }
             filters={orderFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="New Dietary Assessment"
-                description="Record a dietary assessment, allergies, restrictions, and a therapeutic diet order."
-                size="sm"
-                variant="secondary"
-                icon={<ClipboardListIcon className="size-4" aria-hidden="true" />}
-              />
-            }
             emptyTitle="No dietary orders found"
             emptyDescription="There are no dietary orders matching your selected filters."
             emptyIcon={
@@ -597,12 +574,6 @@ export function DietaryView({
       >
         {selectedMeal ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             {selectedMeal.allergens.length > 0 ? (
               <Alert variant="warning" title="Allergy alert">
                 This tray must avoid cross-contact with:{" "}
@@ -693,29 +664,7 @@ export function DietaryView({
               </section>
             ) : null}
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Mark meal preparing")}
-              >
-                Mark preparing
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Mark meal ready")}
-              >
-                Mark ready
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Confirm meal delivery")}
-              >
-                Confirm delivery
-              </Button>
-            </div>
+            {selectedMeal ? <MealStatusAction meal={selectedMeal} /> : null}
           </div>
         ) : null}
       </Modal>
@@ -738,12 +687,6 @@ export function DietaryView({
       >
         {selectedOrder ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             {selectedOrder.allergies.length > 0 ? (
               <Alert variant="warning" title="Allergy alert">
                 {selectedOrder.allergies.join(", ")}.
@@ -851,29 +794,10 @@ export function DietaryView({
               </section>
             ) : null}
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Update dietary order")}
-              >
-                Update order
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Discontinue dietary order")}
-              >
-                Discontinue
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setPendingAction("Create meal order")}
-              >
-                Create meal order
-              </Button>
-            </div>
+            <p className="text-[11px] text-hospital-text-muted">
+              Recording a new assessment supersedes the current diet; meals are
+              generated from the assessment schedule.
+            </p>
           </div>
         ) : null}
       </Modal>

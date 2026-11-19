@@ -2,7 +2,6 @@ import { connection } from "next/server";
 import {
   CheckCircleIcon,
   ChefHatMinimalisticIcon,
-  ClipboardListIcon,
   ClockCircleIcon,
   DangerCircleIcon,
   PlateIcon,
@@ -14,7 +13,7 @@ import { DietaryView } from "@/components/dietary/dietary-view";
 import { DietaryWorkflowStrip } from "@/components/dietary/dietary-workflow-strip";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { NewDietaryAssessmentAction } from "@/components/dietary/dietary-actions";
 import { Alert } from "@/components/ui/alert";
 import {
   getDietaryCatalog,
@@ -24,6 +23,7 @@ import {
   listDietaryOrders,
   listMealOrders,
 } from "@/lib/data/dietary";
+import { listPatients } from "@/lib/data/patients";
 
 export const metadata = {
   title: "Dietary",
@@ -39,6 +39,7 @@ export default async function DietaryPage() {
     ordersResult,
     orderDetailsResult,
     catalogResult,
+    patientResult,
   ] = await Promise.all([
     getDietaryStats(),
     listMealOrders({ pageSize: 200 }),
@@ -46,6 +47,7 @@ export default async function DietaryPage() {
     listDietaryOrders({ pageSize: 200 }),
     getDietaryOrderDetails(),
     getDietaryCatalog(),
+    listPatients({ pageSize: 300 }),
   ]);
 
   return (
@@ -54,19 +56,15 @@ export default async function DietaryPage() {
         title="Dietary"
         description="Dietary assessments, therapeutic diets, meal preparation, and delivery."
         actions={
-          <>
-            <UnavailableAction
-              label="New Dietary Assessment"
-              description="Record a dietary assessment, allergies, restrictions, and a therapeutic diet order."
-              variant="secondary"
-              icon={<ClipboardListIcon className="size-4" aria-hidden="true" />}
-            />
-            <UnavailableAction
-              label="Create Meal Order"
-              description="Create a meal tray order from an active dietary order."
-              icon={<ChefHatMinimalisticIcon className="size-4" aria-hidden="true" />}
-            />
-          </>
+          <NewDietaryAssessmentAction
+            patients={(patientResult.data?.rows ?? []).map((patient) => ({
+              id: patient.id,
+              full_name: patient.full_name,
+              medical_record_number: patient.medical_record_number,
+            }))}
+            diets={catalogResult.data?.diets ?? []}
+            categories={catalogResult.data?.categories ?? []}
+          />
         }
       />
 
