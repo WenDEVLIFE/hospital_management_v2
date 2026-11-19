@@ -10,7 +10,7 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { AddEmployeeAction, RunPayrollAction } from "@/components/hr/hr-actions";
+import { AddEmployeeAction, RunPayrollAction } from "@/components/hr/hr-employment-actions";
 import { HrView } from "@/components/hr/hr-view";
 import { HrWorkflowStrip } from "@/components/hr/hr-workflow-strip";
 import { listDepartments } from "@/lib/data/departments";
