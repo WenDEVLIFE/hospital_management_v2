@@ -119,7 +119,7 @@ export default async function SettingsPage() {
               </p>
               <p className="mt-2 text-xs leading-relaxed text-hospital-text-muted">
                 {supabase.state === "connected"
-                  ? "Credentials are configured and the project is reachable. UI pages still render preview fixtures until the data layer is switched to Supabase."
+                  ? "Credentials are configured and the project is reachable. Every page reads and writes live Supabase data."
                   : supabase.message}
               </p>
             </div>

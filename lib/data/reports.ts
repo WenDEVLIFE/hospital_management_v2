@@ -3,8 +3,8 @@ import type { DataResult } from "./result";
 
 /**
  * Report categories are product configuration, not hospital records. The
- * schema has no report_categories table; keeping the catalogue here removes
- * the fixture dependency while the date range is computed at request time.
+ * schema has no report_categories table; the catalogue lives here and the date
+ * range is computed at request time.
  */
 const REPORT_CARDS: ReportCard[] = [
   {

@@ -2,9 +2,7 @@ import * as React from "react";
 import { HospitalHeader } from "./hospital-header";
 import { HospitalSidebar } from "./hospital-sidebar";
 import { Breadcrumbs } from "./breadcrumbs";
-import { PreviewNotice } from "./preview-notice";
 import { SidebarProvider } from "./sidebar-provider";
-import { isPreviewMode } from "@/lib/data/config";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -20,8 +18,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           <HospitalHeader />
         </React.Suspense>
-
-        {isPreviewMode ? <PreviewNotice /> : null}
 
         <div className="flex flex-1 overflow-hidden">
           <React.Suspense

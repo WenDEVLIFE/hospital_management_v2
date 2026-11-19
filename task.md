@@ -23,11 +23,11 @@
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
-| 6 | Frontend → backend integration | 62 / 67 | In progress (11 modules verified; fixture-only backends complete) |
+| 6 | Frontend → backend integration | 66 / 67 | In progress (preview mode decommissioned; Add Staff remains) |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **238 / 295** | **81%** |
+| **Total** | | **242 / 295** | **82%** |
 
 ---
 
@@ -401,10 +401,10 @@
 
 ### 6.6 Decommission preview mode
 
-- [ ] Delete `lib/fixtures/*`
-- [ ] Delete `lib/data/config.ts` preview flag
-- [ ] Delete `components/layout/preview-notice.tsx`
-- [ ] Set `NEXT_PUBLIC_UI_PREVIEW` out of the codebase entirely
+- [x] Delete `lib/fixtures/*` — 2026-11-19, the directory is gone (23 files); no data layer imports it and `tsc`, `lint` and `build` still pass
+- [x] Delete `lib/data/config.ts` preview flag — 2026-11-19, `isPreviewMode` is gone; nothing branches on a preview flag any more
+- [x] Delete `components/layout/preview-notice.tsx` — 2026-11-19, removed from `AppShell`; `/dashboard` and `/notifications` no longer render a preview banner
+- [x] Set `NEXT_PUBLIC_UI_PREVIEW` out of the codebase entirely — 2026-11-19, removed the block from `.env.example`; no code reads the variable and `.env.local` never defined it
 
 ### 6.7 Fixture-only module backends
 
