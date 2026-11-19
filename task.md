@@ -19,7 +19,7 @@
 |---|---|---|---|
 | 0 | Specification & design authority | 8 / 8 | Complete |
 | 1 | Database schema | 29 / 29 | Complete |
-| 2 | UI foundation | 31 / 33 | Complete (2 follow-ups) |
+| 2 | UI foundation | 33 / 33 | Complete |
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
@@ -27,7 +27,7 @@
 | 7 | QA & security verification | 25 / 40 | In progress (security suite 11/11 passed) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **257 / 295** | **87%** |
+| **Total** | | **260 / 295** | **88%** |
 
 ---
 
@@ -153,8 +153,8 @@
 
 ### 2.6 Follow-ups
 
-- [ ] Remove `export const instant = false` from `app/(workspace)/layout.tsx` — **blocked by: wrapping `usePathname()` consumers in `<Suspense>`**
-- [ ] Verify the collapsed sidebar and drawer against `THEME.MD` §5.3 breakpoints in a real browser
+- [x] Remove `export const instant = false` from `app/(workspace)/layout.tsx` — 2026-11-19, the access read moved behind a `<Suspense>` boundary in the layout and `app/(workspace)/loading.tsx` gives the page segment a placeholder. The build now passes without the opt-out (routes render as Partial Prerender) and anonymous `/dashboard` still redirects to `/login` (307)
+- [x] Verify the collapsed sidebar and drawer against `THEME.MD` §5.3 breakpoints in a real browser — 2026-11-19, headless Chrome against the production build: 1280px sidebar 256px and collapses to 72px, 800px persistent sidebar with no mobile trigger, 375px persistent sidebar hidden with an off-canvas drawer that opens to x=0 and closes on Escape, and `aria-expanded` tracks both states (15/15 checks)
 
 ---
 
@@ -502,7 +502,7 @@ Run with `npm run verify:security` (live probe against the seeded demo project; 
 - [ ] Align report category labels with `THEME.MD` §8.13 wording
 - [ ] Extend data types for fields the UI currently reports as missing: `EncounterDetail.prescriptions`, `VitalSigns.verification_status`, `InvoiceListRow.line_items`, `StaffListRow.work_schedule`
 - [ ] Add a medication stock table (currently synthesized from `inventory_batches` / `stock_transactions`)
-- [ ] Remove `export const instant = false` from `app/(workspace)/layout.tsx` once pathname consumers are wrapped in `<Suspense>`
+- [x] Remove `export const instant = false` from `app/(workspace)/layout.tsx` — 2026-11-19, the layout suspends the access read and the workspace has a `loading.tsx`; no opt-out remains
 - [ ] Remove the localStorage session key `spmc_auth_session` and `spmc_password_reset_request` remnants after Phase 6
 - [ ] Add `turbopack.root` to `next.config.ts` to silence the `package-lock.json outside Git repository` warning
 
