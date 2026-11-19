@@ -18,7 +18,7 @@
 | Phase | Scope | Done | Status |
 |---|---|---|---|
 | 0 | Specification & design authority | 8 / 8 | Complete |
-| 1 | Database schema | 28 / 29 | In progress (live schema verified; `db lint` pending) |
+| 1 | Database schema | 29 / 29 | Complete |
 | 2 | UI foundation | 31 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
@@ -27,7 +27,7 @@
 | 7 | QA & security verification | 25 / 40 | In progress (security suite 11/11 passed) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **254 / 295** | **86%** |
+| **Total** | | **257 / 295** | **87%** |
 
 ---
 
@@ -92,7 +92,7 @@
 
 - [x] `npx supabase init` → create `supabase/config.toml` — 2026-11-12, `supabase/config.toml` + `supabase/.gitignore`
 - [x] Split `schema.sql` into the 22 timestamped migrations listed in `SUPABASE.MD` §31.3 — 2026-11-12, `supabase/migrations/20261110000100` … `20261110002200`; 47 tables and 16 enums verified in dependency order
-- [ ] Apply to a live project and run `npx supabase db lint` — 2026-11-19, the CLI now lints the live project without a database password. First run found one real error: `advance_cleaning_request` compared a text column to a uuid in the cancel branch (`42883`), fixed by migration 20261119001900 (apply it, then re-run). Remaining warnings: unused `v_policy` in `verify_coverage`, shadowed/unused `v_index` in `record_blood_donation`
+- [x] Apply to a live project and run `npx supabase db lint` — 2026-11-19, `supabase db lint --remote` runs against the live project without a database password and returns `No schema errors found` at warning level. The first run found a real 42883 (text = uuid) in `advance_cleaning_request`, fixed by migration 20261119001900; unused and shadowed variables in `verify_coverage` and `record_blood_donation` were cleared by migration 20261119002000
 - [x] Run `npx supabase db reset` on a clean local database — **blocked by: Docker/PostgreSQL not installed**
 - [x] Generate types: `npx supabase gen types typescript --schema public > types/supabase.ts` — **blocked by: requires a running database**
 - [x] Replace hand-written `types/hospital.ts` usage with the generated `Database` types (keep view models on top) — **blocked by: generated types above**
