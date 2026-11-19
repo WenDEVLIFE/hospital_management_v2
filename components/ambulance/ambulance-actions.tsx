@@ -2,7 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { BusIcon, SirenRoundedIcon } from "@solar-icons/react/linear";
+import {
+  BusIcon,
+  FuelIcon,
+  SettingsIcon,
+  SirenRoundedIcon,
+} from "@solar-icons/react/linear";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -20,6 +25,8 @@ import type {
 import {
   advanceAmbulanceTripAction,
   dispatchAmbulanceAction,
+  recordFuelAction,
+  recordMaintenanceAction,
   registerAmbulanceAction,
 } from "@/app/(workspace)/ambulance/actions";
 import {
@@ -484,6 +491,460 @@ export function TripActions({
               This records the next step of the dispatch timeline.
             </p>
           )}
+        </form>
+      </Modal>
+    </>
+  );
+}
+
+type VehicleOption = Pick<
+  AmbulanceVehicleListRow,
+  "id" | "vehicle_number" | "odometer_km" | "status"
+>;
+
+function localDateTimeValue(): string {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+const emptyMaintenance = {
+  vehicleId: "",
+  maintenanceType: "Preventive service",
+  performedAt: "",
+  cost: "",
+  nextDueDate: "",
+  notes: "",
+};
+
+export function RecordMaintenanceAction({
+  vehicles,
+}: {
+  vehicles: VehicleOption[];
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const can = useCan();
+  const [open, setOpen] = React.useState(false);
+  const [values, setValues] = React.useState({
+    ...emptyMaintenance,
+    performedAt: localDateTimeValue(),
+  });
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  if (!can("ambulance.manage")) {
+    return null;
+  }
+
+  function close() {
+    if (submitting) {
+      return;
+    }
+
+    setFormError(null);
+    setOpen(false);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
+
+    setFormError(null);
+    setSubmitting(true);
+
+    try {
+      const result = await recordMaintenanceAction(values);
+
+      if (!result.ok) {
+        setFormError(result.formError);
+        return;
+      }
+
+      toast({
+        title: "Maintenance recorded",
+        description: "Service history and the next due date were updated.",
+        variant: "success",
+      });
+      setValues({ ...emptyMaintenance, performedAt: localDateTimeValue() });
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setFormError("We could not record the maintenance. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={() => setOpen(true)}
+      >
+        <SettingsIcon className="size-4" aria-hidden="true" />
+        Record Maintenance
+      </Button>
+
+      <Modal
+        open={open}
+        onClose={close}
+        title="Record maintenance"
+        description="Log the service and, optionally, the next service date."
+        footer={
+          <>
+            <Button variant="secondary" onClick={close} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" form="amb-maintenance-form" loading={submitting}>
+              Save maintenance
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="amb-maintenance-form"
+          noValidate
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
+          {formError ? (
+            <Alert variant="danger" title="Unable to save">
+              {formError}
+            </Alert>
+          ) : null}
+
+          <FormField label="Ambulance" htmlFor="maint_vehicle" required>
+            <Select
+              id="maint_vehicle"
+              value={values.vehicleId}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  vehicleId: event.target.value,
+                }))
+              }
+            >
+              <option value="">Select ambulance</option>
+              {vehicles.map((vehicle) => (
+                <option key={vehicle.id} value={vehicle.id}>
+                  {vehicle.vehicle_number} · {vehicle.status}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Maintenance type" htmlFor="maint_type" required>
+              <Select
+                id="maint_type"
+                value={values.maintenanceType}
+                onChange={(event) =>
+                  setValues((current) => ({
+                    ...current,
+                    maintenanceType: event.target.value,
+                  }))
+                }
+                options={[
+                  { label: "Preventive service", value: "Preventive service" },
+                  { label: "Repair", value: "Repair" },
+                  { label: "Inspection", value: "Inspection" },
+                  { label: "Oil change", value: "Oil change" },
+                  { label: "Tire replacement", value: "Tire replacement" },
+                ]}
+              />
+            </FormField>
+
+            <FormField label="Performed at" htmlFor="maint_performed" required>
+              <Input
+                id="maint_performed"
+                type="datetime-local"
+                value={values.performedAt}
+                onChange={(event) =>
+                  setValues((current) => ({
+                    ...current,
+                    performedAt: event.target.value,
+                  }))
+                }
+              />
+            </FormField>
+
+            <FormField label="Cost" htmlFor="maint_cost" hint="Philippine pesos.">
+              <Input
+                id="maint_cost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={values.cost}
+                onChange={(event) =>
+                  setValues((current) => ({ ...current, cost: event.target.value }))
+                }
+              />
+            </FormField>
+
+            <FormField
+              label="Next service due"
+              htmlFor="maint_next"
+              hint="Optional."
+            >
+              <Input
+                id="maint_next"
+                type="date"
+                value={values.nextDueDate}
+                onChange={(event) =>
+                  setValues((current) => ({
+                    ...current,
+                    nextDueDate: event.target.value,
+                  }))
+                }
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Notes" htmlFor="maint_notes" hint="Optional.">
+            <Textarea
+              id="maint_notes"
+              rows={2}
+              value={values.notes}
+              onChange={(event) =>
+                setValues((current) => ({ ...current, notes: event.target.value }))
+              }
+            />
+          </FormField>
+
+          <Alert variant="info" title="Fleet record updated">
+            Saving sets the vehicle’s last service date and stores the next due
+            date when you provide one.
+          </Alert>
+        </form>
+      </Modal>
+    </>
+  );
+}
+
+const emptyFuel = {
+  vehicleId: "",
+  fueledAt: "",
+  liters: "",
+  cost: "",
+  odometerKm: "",
+  fuelLevel: "100",
+};
+
+export function RecordFuelAction({ vehicles }: { vehicles: VehicleOption[] }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const can = useCan();
+  const [open, setOpen] = React.useState(false);
+  const [values, setValues] = React.useState({
+    ...emptyFuel,
+    fueledAt: localDateTimeValue(),
+  });
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  if (!can("ambulance.manage")) {
+    return null;
+  }
+
+  const selected = vehicles.find((vehicle) => vehicle.id === values.vehicleId);
+
+  function close() {
+    if (submitting) {
+      return;
+    }
+
+    setFormError(null);
+    setOpen(false);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
+
+    setFormError(null);
+    setSubmitting(true);
+
+    try {
+      const result = await recordFuelAction(values);
+
+      if (!result.ok) {
+        setFormError(result.formError);
+        return;
+      }
+
+      toast({
+        title: "Fuel recorded",
+        description: "Odometer and tank level were updated.",
+        variant: "success",
+      });
+      setValues({ ...emptyFuel, fueledAt: localDateTimeValue() });
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setFormError("We could not record the fuel purchase. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+        <FuelIcon className="size-4" aria-hidden="true" />
+        Record Fuel
+      </Button>
+
+      <Modal
+        open={open}
+        onClose={close}
+        title="Record fuel"
+        description="Log liters, cost, odometer and the tank level after refuelling."
+        footer={
+          <>
+            <Button variant="secondary" onClick={close} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" form="amb-fuel-form" loading={submitting}>
+              Save fuel record
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="amb-fuel-form"
+          noValidate
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
+          {formError ? (
+            <Alert variant="danger" title="Unable to save">
+              {formError}
+            </Alert>
+          ) : null}
+
+          <FormField label="Ambulance" htmlFor="fuel_vehicle" required>
+            <Select
+              id="fuel_vehicle"
+              value={values.vehicleId}
+              onChange={(event) => {
+                const vehicle = vehicles.find(
+                  (row) => row.id === event.target.value
+                );
+
+                setValues((current) => ({
+                  ...current,
+                  vehicleId: event.target.value,
+                  odometerKm: vehicle ? String(vehicle.odometer_km) : "",
+                }));
+              }}
+            >
+              <option value="">Select ambulance</option>
+              {vehicles.map((vehicle) => (
+                <option key={vehicle.id} value={vehicle.id}>
+                  {vehicle.vehicle_number} · {vehicle.odometer_km} km
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Fueled at" htmlFor="fuel_at" required>
+              <Input
+                id="fuel_at"
+                type="datetime-local"
+                value={values.fueledAt}
+                onChange={(event) =>
+                  setValues((current) => ({
+                    ...current,
+                    fueledAt: event.target.value,
+                  }))
+                }
+              />
+            </FormField>
+
+            <FormField label="Liters" htmlFor="fuel_liters" required>
+              <Input
+                id="fuel_liters"
+                type="number"
+                min="0"
+                step="0.01"
+                value={values.liters}
+                onChange={(event) =>
+                  setValues((current) => ({
+                    ...current,
+                    liters: event.target.value,
+                  }))
+                }
+              />
+            </FormField>
+
+            <FormField label="Cost" htmlFor="fuel_cost" hint="Philippine pesos.">
+              <Input
+                id="fuel_cost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={values.cost}
+                onChange={(event) =>
+                  setValues((current) => ({ ...current, cost: event.target.value }))
+                }
+              />
+            </FormField>
+
+            <FormField
+              label="Odometer (km)"
+              htmlFor="fuel_odometer"
+              hint={
+                selected
+                  ? `Last reading: ${selected.odometer_km} km`
+                  : "Cannot be lower than the last reading."
+              }
+              required
+            >
+              <Input
+                id="fuel_odometer"
+                type="number"
+                min="0"
+                step="0.01"
+                value={values.odometerKm}
+                onChange={(event) =>
+                  setValues((current) => ({
+                    ...current,
+                    odometerKm: event.target.value,
+                  }))
+                }
+              />
+            </FormField>
+
+            <FormField
+              label="Tank level after (%)"
+              htmlFor="fuel_level"
+              hint="Defaults to 100 after a fill-up."
+            >
+              <Input
+                id="fuel_level"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={values.fuelLevel}
+                onChange={(event) =>
+                  setValues((current) => ({
+                    ...current,
+                    fuelLevel: event.target.value,
+                  }))
+                }
+              />
+            </FormField>
+          </div>
         </form>
       </Modal>
     </>

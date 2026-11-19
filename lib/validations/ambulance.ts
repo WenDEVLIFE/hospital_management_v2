@@ -88,3 +88,70 @@ export const advanceAmbulanceTripSchema = z
 export type AdvanceAmbulanceTripInput = z.infer<
   typeof advanceAmbulanceTripSchema
 >;
+
+export const recordMaintenanceSchema = z.object({
+  vehicleId: z.string().trim().regex(UUID_PATTERN, "Select an ambulance."),
+  maintenanceType: z
+    .string()
+    .trim()
+    .min(2, "Enter the maintenance type.")
+    .max(80, "Keep the maintenance type short."),
+  performedAt: z
+    .string()
+    .trim()
+    .min(1, "Select when the service was performed."),
+  cost: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || (Number.isFinite(Number(value)) && Number(value) >= 0),
+      "Enter a valid cost."
+    ),
+  nextDueDate: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || DATE_PATTERN.test(value),
+      "Select a valid next service date."
+    ),
+  notes: z.string().trim().max(500, "Keep notes under 500 characters."),
+});
+
+export type RecordMaintenanceInput = z.infer<typeof recordMaintenanceSchema>;
+
+export const recordFuelSchema = z.object({
+  vehicleId: z.string().trim().regex(UUID_PATTERN, "Select an ambulance."),
+  fueledAt: z.string().trim().min(1, "Select when the vehicle was fueled."),
+  liters: z
+    .string()
+    .trim()
+    .refine(
+      (value) => Number.isFinite(Number(value)) && Number(value) > 0,
+      "Enter the liters purchased."
+    ),
+  cost: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || (Number.isFinite(Number(value)) && Number(value) >= 0),
+      "Enter a valid cost."
+    ),
+  odometerKm: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0,
+      "Enter the odometer reading."
+    ),
+  fuelLevel: z
+    .string()
+    .trim()
+    .refine(
+      (value) =>
+        value === "" ||
+        (Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100),
+      "Enter a tank level between 0 and 100."
+    ),
+});
+
+export type RecordFuelInput = z.infer<typeof recordFuelSchema>;

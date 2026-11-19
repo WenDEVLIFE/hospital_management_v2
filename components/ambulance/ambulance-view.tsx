@@ -23,8 +23,11 @@ import {
   type Column,
   type FilterConfig,
 } from "@/components/module/record-table";
-import { UnavailableAction } from "@/components/module/unavailable-action";
-import { TripActions } from "./ambulance-actions";
+import {
+  RecordFuelAction,
+  RecordMaintenanceAction,
+  TripActions,
+} from "./ambulance-actions";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -640,20 +643,8 @@ export function AmbulanceView({
         {tab === "maintenance" ? (
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              <UnavailableAction
-                label="Record Maintenance"
-                description="Record vehicle maintenance and schedule the next service."
-                size="sm"
-                variant="secondary"
-                icon={<SettingsIcon className="size-4" aria-hidden="true" />}
-              />
-              <UnavailableAction
-                label="Record Fuel"
-                description="Record fuel purchase, liters, cost, and odometer reading."
-                size="sm"
-                variant="secondary"
-                icon={<FuelIcon className="size-4" aria-hidden="true" />}
-              />
+              <RecordMaintenanceAction vehicles={vehicles} />
+              <RecordFuelAction vehicles={vehicles} />
             </div>
 
             <section className="space-y-2">

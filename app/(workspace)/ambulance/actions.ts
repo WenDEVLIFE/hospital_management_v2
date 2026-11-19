@@ -7,9 +7,13 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   advanceAmbulanceTripSchema,
   dispatchAmbulanceSchema,
+  recordFuelSchema,
+  recordMaintenanceSchema,
   registerAmbulanceSchema,
   type AdvanceAmbulanceTripInput,
   type DispatchAmbulanceInput,
+  type RecordFuelInput,
+  type RecordMaintenanceInput,
   type RegisterAmbulanceInput,
 } from "@/lib/validations/ambulance";
 
@@ -147,6 +151,124 @@ export async function advanceAmbulanceTripAction(
   });
 
   if (error) {
+    return { ok: false, formError: ambulanceErrorMessage(error) };
+  }
+
+  revalidateAmbulance();
+
+  return { ok: true, id: data ? String(data) : undefined };
+}
+
+export async function recordMaintenanceAction(
+  input: RecordMaintenanceInput
+): Promise<AmbulanceWriteResult> {
+  const parsed = recordMaintenanceSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError:
+        parsed.error.issues[0]?.message ?? "Check the maintenance details.",
+    };
+  }
+
+  const value = parsed.data;
+  const performedAt = new Date(value.performedAt);
+
+  if (Number.isNaN(performedAt.getTime())) {
+    return { ok: false, formError: "Select when the service was performed." };
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("record_ambulance_maintenance", {
+    p_vehicle_id: value.vehicleId,
+    p_maintenance_type: value.maintenanceType,
+    p_performed_at: performedAt.toISOString(),
+    p_cost: value.cost === "" ? 0 : Number(value.cost),
+    p_notes: value.notes || null,
+    p_next_due_date: value.nextDueDate || null,
+  });
+
+  if (error) {
+    const message = (error.message ?? "").toLowerCase();
+
+    if (message.includes("next service date cannot be before")) {
+      return {
+        ok: false,
+        formError: "The next service date cannot be before the service date.",
+      };
+    }
+
+    if (message.includes("enter the maintenance type")) {
+      return { ok: false, formError: "Enter the maintenance type." };
+    }
+
+    if (message.includes("ambulance not found")) {
+      return { ok: false, formError: "The ambulance could not be found." };
+    }
+
+    return { ok: false, formError: ambulanceErrorMessage(error) };
+  }
+
+  revalidateAmbulance();
+
+  return { ok: true, id: data ? String(data) : undefined };
+}
+
+export async function recordFuelAction(
+  input: RecordFuelInput
+): Promise<AmbulanceWriteResult> {
+  const parsed = recordFuelSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Check the fuel details.",
+    };
+  }
+
+  const value = parsed.data;
+  const fueledAt = new Date(value.fueledAt);
+
+  if (Number.isNaN(fueledAt.getTime())) {
+    return { ok: false, formError: "Select when the vehicle was fueled." };
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("record_ambulance_fuel", {
+    p_vehicle_id: value.vehicleId,
+    p_liters: Number(value.liters),
+    p_cost: value.cost === "" ? 0 : Number(value.cost),
+    p_odometer_km: Number(value.odometerKm),
+    p_fuel_level: value.fuelLevel === "" ? null : Number(value.fuelLevel),
+    p_fueled_at: fueledAt.toISOString(),
+  });
+
+  if (error) {
+    const message = (error.message ?? "").toLowerCase();
+
+    if (message.includes("odometer cannot go backwards")) {
+      return {
+        ok: false,
+        formError: "The odometer cannot be lower than the last reading.",
+      };
+    }
+
+    if (message.includes("enter the liters")) {
+      return { ok: false, formError: "Enter the liters purchased." };
+    }
+
+    if (message.includes("fuel level must be between")) {
+      return {
+        ok: false,
+        formError: "The tank level must be between 0 and 100.",
+      };
+    }
+
+    if (message.includes("ambulance not found")) {
+      return { ok: false, formError: "The ambulance could not be found." };
+    }
+
     return { ok: false, formError: ambulanceErrorMessage(error) };
   }
 
