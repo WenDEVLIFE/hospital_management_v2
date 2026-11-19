@@ -415,7 +415,7 @@
 - [x] Blood bank — 2026-11-17, applied and verified end to end: donor → 2-unit donation → crossmatch refused before screening → negative screening passes / positive screening discards → request → crossmatch refused before screening cleared → compatible crossmatch → issue → request completed → re-issue refused. Incompatible crossmatch returns the unit to available and leaves the request pending. Audit rows written for all six actions
 - [ ] Ambulance
 - [ ] Dietary
-- [ ] Housekeeping
+- [ ] Housekeeping — migration 20261119000400 adds housekeeping staff, cleaning requests and disinfection records, plus `housekeeping.view/manage`, RLS and `create_cleaning_request` / `advance_cleaning_request`; data layer, creation dialog and status dialog wired. Apply `20261119000400_housekeeping.sql` and verify the lifecycle (assign → start → complete with disinfection → verify)
 - [ ] Equipment
 - [ ] Mortuary
 - [ ] Notifications
