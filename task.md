@@ -24,10 +24,10 @@
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
 | 6 | Frontend → backend integration | 67 / 67 | Complete |
-| 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
+| 7 | QA & security verification | 25 / 40 | In progress (security suite 11/11 passed) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **243 / 295** | **82%** |
+| **Total** | | **254 / 295** | **86%** |
 
 ---
 
@@ -453,17 +453,17 @@
 
 ### 7.4 Security tests (`SUPABASE.MD` §33.3)
 
-- [ ] Anonymous user cannot read patient records
-- [ ] Receptionist cannot read restricted clinical notes
-- [ ] Physician cannot access administrative functions
-- [ ] Nurse cannot modify finalized physician documentation
-- [ ] Laboratory staff cannot access billing administration
-- [ ] Pharmacist cannot assign administrator roles
-- [ ] Billing staff cannot modify clinical diagnoses
-- [ ] Inventory staff cannot read unrestricted medical records
-- [ ] Ordinary users cannot read audit logs
-- [ ] Users cannot change their own roles
-- [ ] Users cannot bypass authorization by changing record IDs
+- [x] Anonymous user cannot read patient records — 2026-11-19, the anon key returns 42501 for patients and clinical_notes (0 rows)
+- [x] Receptionist cannot read restricted clinical notes — 2026-11-19, receptionist reads 0 clinical notes and 0 diagnoses
+- [x] Physician cannot access administrative functions — 2026-11-19, create_department and create_staff_record return 42501 and audit_logs returns 0 rows
+- [x] Nurse cannot modify finalized physician documentation — 2026-11-19, a nurse update against a finalized note matched 0 rows and the content was unchanged
+- [x] Laboratory staff cannot access billing administration — 2026-11-19, lab reads 0 invoices and 0 payments and record_payment returns 42501
+- [x] Pharmacist cannot assign administrator roles — 2026-11-19, set_edge_user_role returns 42501, the admin-role-assignment function returns 403 and a direct user_roles insert is denied
+- [x] Billing staff cannot modify clinical diagnoses — 2026-11-19, billing reads 0 diagnoses and an update matched 0 rows, leaving the value intact
+- [x] Inventory staff cannot read unrestricted medical records — 2026-11-19, inventory reads 0 patients, 0 clinical notes and 0 diagnoses
+- [x] Ordinary users cannot read audit logs — 2026-11-19, nurse and laboratory accounts read 0 audit rows
+- [x] Users cannot change their own roles — 2026-11-19, a nurse self-grant fails at the table (42501), at set_edge_user_role (42501) and leaves no admin role
+- [x] Users cannot bypass authorization by changing record IDs — 2026-11-19, nurse2 read and updated 0 rows for a finalized note belonging to an unassigned patient
 
 ### 7.5 Clinical integrity tests (`SUPABASE.MD` §33.4)
 
