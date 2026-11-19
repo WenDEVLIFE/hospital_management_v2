@@ -9,28 +9,16 @@ export interface NotificationsWorkflowStripProps {
 export function NotificationsWorkflowStrip({
   stats,
 }: NotificationsWorkflowStripProps) {
-  const delivered = Math.max(0, stats.total - stats.queued - stats.failed);
-  const read = Math.max(0, stats.total - stats.unread);
   const stages = [
     {
-      key: "event",
-      label: "Event notification",
+      key: "inbox",
+      label: "Inbox",
       countLabel: `${stats.total} total`,
     },
     {
-      key: "queued",
-      label: "Queued",
-      countLabel: `${stats.queued} queued`,
-    },
-    {
-      key: "delivery",
-      label: "Channel delivery",
-      countLabel: `${delivered} in delivery`,
-    },
-    {
-      key: "read",
-      label: "Read / acknowledged",
-      countLabel: `${read} read`,
+      key: "unread",
+      label: "Unread",
+      countLabel: `${stats.unread} unread`,
     },
     {
       key: "critical",
@@ -38,9 +26,14 @@ export function NotificationsWorkflowStrip({
       countLabel: `${stats.critical} critical`,
     },
     {
-      key: "failed",
-      label: "Delivery failures",
-      countLabel: `${stats.failed} failed`,
+      key: "read",
+      label: "Read / acknowledged",
+      countLabel: `${stats.read} read`,
+    },
+    {
+      key: "announcements",
+      label: "Published announcements",
+      countLabel: `${stats.announcements} published`,
     },
   ];
 

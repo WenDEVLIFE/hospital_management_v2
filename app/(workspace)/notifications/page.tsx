@@ -2,19 +2,18 @@ import { connection } from "next/server";
 import {
   BellIcon,
   CheckCircleIcon,
-  ClockCircleIcon,
   DangerCircleIcon,
   DocumentTextIcon,
-  SpeakerIcon,
 } from "@solar-icons/react/linear";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import { NewAnnouncementAction } from "@/components/notifications/notification-actions";
 import { NotificationsView } from "@/components/notifications/notifications-view";
 import { NotificationsWorkflowStrip } from "@/components/notifications/notifications-workflow-strip";
 import { Alert } from "@/components/ui/alert";
+import { listDepartments } from "@/lib/data/departments";
 import {
   getNotificationStats,
   listAnnouncements,
@@ -30,42 +29,40 @@ export const metadata = {
 export default async function NotificationsPage() {
   await connection();
 
-  const [statsResult, inboxResult, logResult, announcementsResult, preferencesResult] =
-    await Promise.all([
-      getNotificationStats(),
-      listInboxNotifications({ pageSize: 200 }),
-      listNotifications({ pageSize: 200 }),
-      listAnnouncements({ pageSize: 200 }),
-      listNotificationPreferences(),
-    ]);
+  const [
+    statsResult,
+    inboxResult,
+    logResult,
+    announcementsResult,
+    preferencesResult,
+    departmentsResult,
+  ] = await Promise.all([
+    getNotificationStats(),
+    listInboxNotifications({ pageSize: 200 }),
+    listNotifications({ pageSize: 200 }),
+    listAnnouncements({ pageSize: 200 }),
+    listNotificationPreferences(),
+    listDepartments({ pageSize: 200, isActive: true }),
+  ]);
+
+  const departments = (departmentsResult.data?.rows ?? []).map((department) => ({
+    id: department.id,
+    name: department.name,
+  }));
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Notifications"
         description="Internal notifications, delivery log, staff announcements, and notification preferences."
-        actions={
-          <>
-            <UnavailableAction
-              label="Notification Preferences"
-              description="Configure which events are delivered through in-app, email, and SMS channels."
-              variant="secondary"
-              icon={<ClockCircleIcon className="size-4" aria-hidden="true" />}
-            />
-            <UnavailableAction
-              label="New Announcement"
-              description="Draft a staff announcement and choose its audience and delivery channels."
-              icon={<SpeakerIcon className="size-4" aria-hidden="true" />}
-            />
-          </>
-        }
+        actions={<NewAnnouncementAction departments={departments} />}
       />
 
-      <Alert variant="warning" title="Delivery integrations not connected">
-        Email and SMS delivery is not connected in this preview. In-app updates
-        will use Supabase Realtime when the backend is connected, and realtime
-        delivery is currently pending. Notification content references related
-        records only and does not expose sensitive patient details.
+      <Alert variant="info" title="In-app notifications">
+        This module stores in-app notifications and publishes staff
+        announcements. Email delivery is handled by the send-notification
+        function and is not enabled in this environment. Notification content
+        references related records without exposing patient identifiers.
       </Alert>
 
       {statsResult.error ? (
@@ -94,17 +91,11 @@ export default async function NotificationsPage() {
               icon={<DangerCircleIcon className="size-4" aria-hidden="true" />}
             />
             <StatCard
-              label="Queued"
-              value={statsResult.data.queued}
-              hint="Awaiting delivery"
-              icon={<ClockCircleIcon className="size-4" aria-hidden="true" />}
-            />
-            <StatCard
-              label="Failed"
-              value={statsResult.data.failed}
-              hint="Delivery failures"
-              tone="danger"
-              icon={<DangerCircleIcon className="size-4" aria-hidden="true" />}
+              label="Read"
+              value={statsResult.data.read}
+              hint="Acknowledged"
+              tone="success"
+              icon={<CheckCircleIcon className="size-4" aria-hidden="true" />}
             />
             <StatCard
               label="Announcements"
@@ -129,6 +120,7 @@ export default async function NotificationsPage() {
             announcementsResult.error ? [] : announcementsResult.data.rows
           }
           preferences={preferencesResult.error ? [] : preferencesResult.data}
+          departments={departments}
         />
       )}
     </div>

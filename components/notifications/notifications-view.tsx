@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   BellIcon,
   DocumentTextIcon,
-  SettingsIcon,
   SpeakerIcon,
 } from "@solar-icons/react/linear";
 
@@ -18,7 +17,13 @@ import {
   type Column,
   type FilterConfig,
 } from "@/components/module/record-table";
-import { UNAVAILABLE_MESSAGE, UnavailableAction } from "@/components/module/unavailable-action";
+import {
+  AnnouncementStatusActions,
+  MarkAllReadAction,
+  MarkReadAction,
+  NewAnnouncementAction,
+  SavePreferencesAction,
+} from "@/components/notifications/notification-actions";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,18 +48,9 @@ const SEVERITY_OPTIONS = [
   { value: "critical", label: "Critical" },
 ];
 
-const STATUS_OPTIONS = [
-  { value: "queued", label: "Queued" },
-  { value: "sent", label: "Sent" },
-  { value: "delivered", label: "Delivered" },
+const READ_OPTIONS = [
+  { value: "unread", label: "Unread" },
   { value: "read", label: "Read" },
-  { value: "failed", label: "Failed" },
-];
-
-const CHANNEL_OPTIONS = [
-  { value: "in_app", label: "In-app" },
-  { value: "email", label: "Email" },
-  { value: "sms", label: "SMS" },
 ];
 
 const ANNOUNCEMENT_STATUS_OPTIONS = [
@@ -63,10 +59,11 @@ const ANNOUNCEMENT_STATUS_OPTIONS = [
   { value: "archived", label: "Archived" },
 ];
 
-const CHANNEL_LABELS: Record<string, string> = {
-  in_app: "In-app",
-  email: "Email",
-  sms: "SMS",
+const AUDIENCE_LABELS: Record<string, string> = {
+  all_staff: "All staff",
+  physicians: "Physicians",
+  nurses: "Nurses",
+  department: "Department",
 };
 
 export interface NotificationsViewProps {
@@ -74,6 +71,7 @@ export interface NotificationsViewProps {
   notifications: AppNotification[];
   announcements: StaffAnnouncement[];
   preferences: NotificationPreference[];
+  departments: Array<{ id: string; name: string }>;
 }
 
 function humanize(value: string): string {
@@ -106,17 +104,16 @@ export function NotificationsView({
   notifications,
   announcements,
   preferences,
+  departments,
 }: NotificationsViewProps) {
   const [tab, setTab] = React.useState("inbox");
   const [selectedNotification, setSelectedNotification] =
     React.useState<AppNotification | null>(null);
   const [selectedAnnouncement, setSelectedAnnouncement] =
     React.useState<StaffAnnouncement | null>(null);
-  const [pendingAction, setPendingAction] = React.useState<string | null>(null);
   const [preferenceState, setPreferenceState] = React.useState(() =>
     preferences.map((preference) => ({ ...preference }))
   );
-  const [preferencesSaved, setPreferencesSaved] = React.useState(false);
 
   const notificationById = React.useMemo(
     () =>
@@ -138,7 +135,6 @@ export function NotificationsView({
       const row = notificationById.get(id);
 
       if (row) {
-        setPendingAction(null);
         setSelectedNotification(row);
       }
     },
@@ -146,7 +142,6 @@ export function NotificationsView({
   );
 
   const closeNotification = React.useCallback(() => {
-    setPendingAction(null);
     setSelectedNotification(null);
   }, []);
 
@@ -155,7 +150,6 @@ export function NotificationsView({
       const row = announcementById.get(id);
 
       if (row) {
-        setPendingAction(null);
         setSelectedAnnouncement(row);
       }
     },
@@ -163,21 +157,20 @@ export function NotificationsView({
   );
 
   const closeAnnouncement = React.useCallback(() => {
-    setPendingAction(null);
     setSelectedAnnouncement(null);
   }, []);
 
   const updatePreference = (
-    id: string,
-    field: "in_app" | "email" | "sms",
+    category: string,
     value: boolean
   ) => {
     setPreferenceState((current) =>
       current.map((preference) =>
-        preference.id === id ? { ...preference, [field]: value } : preference
+        preference.category === category
+          ? { ...preference, in_app: value }
+          : preference
       )
     );
-    setPreferencesSaved(false);
   };
 
   const inboxColumns = React.useMemo<Column<AppNotification>[]>(
@@ -205,11 +198,6 @@ export function NotificationsView({
         key: "severity",
         header: "Severity",
         cell: (row) => <StatusBadge status={row.severity} />,
-      },
-      {
-        key: "channel",
-        header: "Channel",
-        cell: (row) => CHANNEL_LABELS[row.channel] ?? row.channel,
       },
       {
         key: "created",
@@ -255,6 +243,13 @@ export function NotificationsView({
         options: SEVERITY_OPTIONS,
         accessor: (row) => row.severity,
       },
+      {
+        key: "read",
+        label: "read state",
+        allLabel: "All states",
+        options: READ_OPTIONS,
+        accessor: (row) => row.status,
+      },
     ],
     []
   );
@@ -288,11 +283,6 @@ export function NotificationsView({
         ),
       },
       {
-        key: "channel",
-        header: "Channel",
-        cell: (row) => CHANNEL_LABELS[row.channel] ?? row.channel,
-      },
-      {
         key: "status",
         header: "Status",
         cell: (row) => <StatusBadge status={row.status} />,
@@ -305,15 +295,6 @@ export function NotificationsView({
         cell: (row) => (
           <span className="whitespace-nowrap">
             {formatDateTime(row.created_at)}
-          </span>
-        ),
-      },
-      {
-        key: "error",
-        header: "Delivery note",
-        cell: (row) => (
-          <span className="line-clamp-2 max-w-[16rem] text-[11px] text-hospital-text-muted">
-            {row.error_message ?? "\u2014"}
           </span>
         ),
       },
@@ -339,18 +320,11 @@ export function NotificationsView({
   const logFilters = React.useMemo<FilterConfig<AppNotification>[]>(
     () => [
       {
-        key: "status",
-        label: "status",
-        allLabel: "All statuses",
-        options: STATUS_OPTIONS,
+        key: "read",
+        label: "read state",
+        allLabel: "All states",
+        options: READ_OPTIONS,
         accessor: (row) => row.status,
-      },
-      {
-        key: "channel",
-        label: "channel",
-        allLabel: "All channels",
-        options: CHANNEL_OPTIONS,
-        accessor: (row) => row.channel,
       },
       {
         key: "severity",
@@ -385,7 +359,16 @@ export function NotificationsView({
       {
         key: "audience",
         header: "Audience",
-        cell: (row) => row.audience,
+        cell: (row) => (
+          <div className="min-w-0 text-xs">
+            <p>{AUDIENCE_LABELS[row.audience] ?? humanize(row.audience)}</p>
+            {row.department_name ? (
+              <p className="text-[11px] text-hospital-text-muted">
+                {row.department_name}
+              </p>
+            ) : null}
+          </div>
+        ),
       },
       {
         key: "status",
@@ -410,19 +393,6 @@ export function NotificationsView({
           ) : (
             "\u2014"
           ),
-      },
-      {
-        key: "channels",
-        header: "Channels",
-        cell: (row) => (
-          <div className="flex flex-wrap gap-1">
-            {row.channels.map((channel) => (
-              <Badge key={channel} variant="info">
-                {CHANNEL_LABELS[channel] ?? channel}
-              </Badge>
-            ))}
-          </div>
-        ),
       },
       {
         key: "actions",
@@ -466,7 +436,7 @@ export function NotificationsView({
             { value: "inbox", label: "Inbox", count: inbox.length },
             {
               value: "log",
-              label: "Delivery log",
+              label: "All notifications",
               count: notifications.length,
             },
             {
@@ -495,15 +465,7 @@ export function NotificationsView({
               `${row.title} ${row.message} ${row.category} ${row.related_entity_type ?? ""}`
             }
             filters={inboxFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="Mark All Read"
-                description="Mark all in-app notifications as read for the current user."
-                size="sm"
-                variant="secondary"
-                icon={<BellIcon className="size-4" aria-hidden="true" />}
-              />
-            }
+            toolbarActions={<MarkAllReadAction />}
             emptyTitle="No notifications"
             emptyDescription="There are no in-app notifications matching your filters."
             emptyIcon={<BellIcon className="size-5" aria-hidden="true" />}
@@ -516,21 +478,12 @@ export function NotificationsView({
             rows={notifications}
             columns={logColumns}
             rowKey={(row) => row.id}
-            caption="Notification and delivery log"
+            caption="All notifications across staff"
             searchPlaceholder="Search title, recipient, category, or related record"
             searchAccessor={(row) =>
               `${row.title} ${row.message} ${row.recipient_name} ${row.recipient_email} ${row.category} ${row.related_entity_type ?? ""}`
             }
             filters={logFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="Send Test Notification"
-                description="Send a test notification through the selected channel."
-                size="sm"
-                variant="secondary"
-                icon={<DocumentTextIcon className="size-4" aria-hidden="true" />}
-              />
-            }
             emptyTitle="No delivery records"
             emptyDescription="There are no notification delivery records matching your filters."
             emptyIcon={
@@ -551,15 +504,7 @@ export function NotificationsView({
               `${row.title} ${row.body} ${row.audience} ${row.published_by_name ?? ""}`
             }
             filters={announcementFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="New Announcement"
-                description="Draft a staff announcement and choose its audience and delivery channels."
-                size="sm"
-                variant="secondary"
-                icon={<SpeakerIcon className="size-4" aria-hidden="true" />}
-              />
-            }
+            toolbarActions={<NewAnnouncementAction departments={departments} />}
             emptyTitle="No announcements"
             emptyDescription="There are no staff announcements matching your filters."
             emptyIcon={<SpeakerIcon className="size-5" aria-hidden="true" />}
@@ -570,30 +515,21 @@ export function NotificationsView({
         {tab === "preferences" ? (
           <div className="space-y-4">
             <Alert variant="info">
-              Notification preferences are local to this preview and are not
-              saved. In-app updates will use Supabase Realtime when the backend
-              is connected.
+              These preferences control in-app notifications only. Email
+              delivery runs through the notification function and is not
+              enabled in this environment.
             </Alert>
-
-            {preferencesSaved ? (
-              <Alert variant="info" title="Preferences not saved">
-                The preferences were validated locally, but Supabase is not
-                connected. Nothing was saved.
-              </Alert>
-            ) : null}
 
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Category</TableHead>
                   <TableHead className="text-center">In-app</TableHead>
-                  <TableHead className="text-center">Email</TableHead>
-                  <TableHead className="text-center">SMS</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {preferenceState.map((preference) => (
-                  <TableRow key={preference.id}>
+                  <TableRow key={preference.category}>
                     <TableCell>{preference.label}</TableCell>
                     <TableCell className="text-center">
                       <Checkbox
@@ -601,34 +537,7 @@ export function NotificationsView({
                         aria-label={`In-app notifications for ${preference.label}`}
                         onChange={(event) =>
                           updatePreference(
-                            preference.id,
-                            "in_app",
-                            event.target.checked
-                          )
-                        }
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={preference.email}
-                        aria-label={`Email notifications for ${preference.label}`}
-                        onChange={(event) =>
-                          updatePreference(
-                            preference.id,
-                            "email",
-                            event.target.checked
-                          )
-                        }
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={preference.sms}
-                        aria-label={`SMS notifications for ${preference.label}`}
-                        onChange={(event) =>
-                          updatePreference(
-                            preference.id,
-                            "sms",
+                            preference.category,
                             event.target.checked
                           )
                         }
@@ -639,14 +548,7 @@ export function NotificationsView({
               </TableBody>
             </Table>
 
-            <Button
-              type="button"
-              onClick={() => setPreferencesSaved(true)}
-              size="md"
-            >
-              <SettingsIcon className="size-4" aria-hidden="true" />
-              Save preferences
-            </Button>
+            <SavePreferencesAction preferences={preferenceState} />
           </div>
         ) : null}
       </div>
@@ -665,12 +567,6 @@ export function NotificationsView({
       >
         {selectedNotification ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={selectedNotification.severity} />
               <StatusBadge status={selectedNotification.status} />
@@ -692,22 +588,8 @@ export function NotificationsView({
                   </p>
                 </div>
               </DetailField>
-              <DetailField label="Channel">
-                {CHANNEL_LABELS[selectedNotification.channel] ??
-                  selectedNotification.channel}
-              </DetailField>
               <DetailField label="Created">
                 {formatDateTime(selectedNotification.created_at)}
-              </DetailField>
-              <DetailField label="Sent">
-                {selectedNotification.sent_at
-                  ? formatDateTime(selectedNotification.sent_at)
-                  : "Not sent"}
-              </DetailField>
-              <DetailField label="Delivered">
-                {selectedNotification.delivered_at
-                  ? formatDateTime(selectedNotification.delivered_at)
-                  : "Not delivered"}
               </DetailField>
               <DetailField label="Read">
                 {selectedNotification.read_at
@@ -719,27 +601,13 @@ export function NotificationsView({
                   ? humanize(selectedNotification.related_entity_type)
                   : "\u2014"}
               </DetailField>
-              <DetailField label="Delivery error">
-                {selectedNotification.error_message ?? "\u2014"}
-              </DetailField>
             </dl>
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Mark notification read")}
-              >
-                Mark read
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Retry delivery")}
-              >
-                Retry delivery
-              </Button>
-            </div>
+            <MarkReadAction
+              notificationId={selectedNotification.id}
+              isRead={selectedNotification.is_read}
+              onDone={closeNotification}
+            />
           </div>
         ) : null}
       </Modal>
@@ -748,7 +616,7 @@ export function NotificationsView({
         open={selectedAnnouncement !== null}
         onClose={closeAnnouncement}
         title={selectedAnnouncement?.title ?? "Announcement details"}
-        description="Audience, publication status, and channels"
+        description="Audience, publication status, and recipients"
         size="lg"
         footer={
           <Button variant="secondary" onClick={closeAnnouncement}>
@@ -758,12 +626,6 @@ export function NotificationsView({
       >
         {selectedAnnouncement ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={selectedAnnouncement.status} />
               {selectedAnnouncement.pinned ? (
@@ -777,7 +639,17 @@ export function NotificationsView({
 
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Audience">
-                {selectedAnnouncement.audience}
+                <div className="min-w-0">
+                  <p>
+                    {AUDIENCE_LABELS[selectedAnnouncement.audience] ??
+                      humanize(selectedAnnouncement.audience)}
+                  </p>
+                  {selectedAnnouncement.department_name ? (
+                    <p className="text-[11px] text-hospital-text-muted">
+                      {selectedAnnouncement.department_name}
+                    </p>
+                  ) : null}
+                </div>
               </DetailField>
               <DetailField label="Published by">
                 {selectedAnnouncement.published_by_name ?? "\u2014"}
@@ -792,33 +664,15 @@ export function NotificationsView({
                   ? formatDateTime(selectedAnnouncement.expires_at)
                   : "\u2014"}
               </DetailField>
-              <DetailField label="Channels">
-                <div className="flex flex-wrap gap-1">
-                  {selectedAnnouncement.channels.map((channel) => (
-                    <Badge key={channel} variant="info">
-                      {CHANNEL_LABELS[channel] ?? channel}
-                    </Badge>
-                  ))}
-                </div>
-              </DetailField>
             </dl>
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Publish announcement")}
-              >
-                Publish
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Archive announcement")}
-              >
-                Archive
-              </Button>
-            </div>
+            <AnnouncementStatusActions
+              announcement={{
+                id: selectedAnnouncement.id,
+                status: selectedAnnouncement.status,
+              }}
+              onDone={closeAnnouncement}
+            />
           </div>
         ) : null}
       </Modal>

@@ -2045,20 +2045,13 @@ export type MortuaryStats = {
   unidentified: number;
 };
 
-export type NotificationChannel = "in_app" | "email" | "sms";
-
 export type NotificationSeverity =
   | "info"
   | "success"
   | "warning"
   | "critical";
 
-export type NotificationStatus =
-  | "queued"
-  | "sent"
-  | "delivered"
-  | "read"
-  | "failed";
+export type NotificationStatus = "unread" | "read";
 
 export type NotificationCategory =
   | "appointment"
@@ -2080,27 +2073,20 @@ export type AppNotification = {
   message: string;
   category: NotificationCategory;
   severity: NotificationSeverity;
-  channel: NotificationChannel;
   status: NotificationStatus;
   recipient_name: string;
   recipient_email: string;
   related_entity_type: string | null;
   related_entity_id: string | null;
   created_at: string;
-  sent_at: string | null;
-  delivered_at: string | null;
   read_at: string | null;
-  error_message: string | null;
   is_read: boolean;
 };
 
 export type NotificationPreference = {
-  id: string;
   category: NotificationCategory;
   label: string;
   in_app: boolean;
-  email: boolean;
-  sms: boolean;
 };
 
 export type StaffAnnouncementStatus = "draft" | "published" | "archived";
@@ -2110,10 +2096,11 @@ export type StaffAnnouncement = {
   title: string;
   body: string;
   audience: string;
+  department_id: string | null;
+  department_name: string | null;
   status: StaffAnnouncementStatus;
   published_by_name: string | null;
   published_at: string | null;
-  channels: NotificationChannel[];
   pinned: boolean;
   expires_at: string | null;
 };
@@ -2122,8 +2109,7 @@ export type NotificationStats = {
   unread: number;
   total: number;
   critical: number;
-  queued: number;
-  failed: number;
+  read: number;
   announcements: number;
 };
 
