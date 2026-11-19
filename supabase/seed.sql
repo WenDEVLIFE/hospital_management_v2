@@ -1686,3 +1686,14 @@ values (
   '11111111-1111-4111-8111-000000000002'
 )
 on conflict (id) do nothing;
+
+-- ============================================================================
+-- HOUSEKEEPING
+-- ============================================================================
+
+insert into public.housekeeping_staff (id, name, role, status, contact_number)
+values
+  ('c1000000-0000-4000-8000-000000000001', 'Maria Santos', 'Housekeeper', 'on_duty', '09170000101'),
+  ('c1000000-0000-4000-8000-000000000002', 'Jose Dela Cruz', 'Housekeeper', 'on_duty', '09170000102'),
+  ('c1000000-0000-4000-8000-000000000003', 'Liza Ramos', 'Senior Housekeeper', 'on_break', '09170000103')
+on conflict (id) do nothing;

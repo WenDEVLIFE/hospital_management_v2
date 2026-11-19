@@ -20,8 +20,10 @@ import {
   type Column,
   type FilterConfig,
 } from "@/components/module/record-table";
-import { UNAVAILABLE_MESSAGE, UnavailableAction } from "@/components/module/unavailable-action";
-import { Alert } from "@/components/ui/alert";
+import {
+  CleaningRequestActions,
+  CreateCleaningRequestAction,
+} from "./housekeeping-actions";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -117,7 +119,7 @@ export function HousekeepingView({
   const [tab, setTab] = React.useState("board");
   const [selectedRequest, setSelectedRequest] =
     React.useState<CleaningRequestListRow | null>(null);
-  const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  
 
   const requestById = React.useMemo(
     () => new Map(requests.map((request) => [request.id, request])),
@@ -129,7 +131,7 @@ export function HousekeepingView({
       const row = requestById.get(id);
 
       if (row) {
-        setPendingAction(null);
+        
         setSelectedRequest(row);
       }
     },
@@ -137,7 +139,7 @@ export function HousekeepingView({
   );
 
   const closeRequest = React.useCallback(() => {
-    setPendingAction(null);
+    
     setSelectedRequest(null);
   }, []);
 
@@ -442,15 +444,7 @@ export function HousekeepingView({
               `${row.request_number} ${row.location_label} ${row.department_name} ${row.request_type} ${row.assigned_staff_name ?? ""} ${row.notes ?? ""}`
             }
             filters={boardFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="New Cleaning Request"
-                description="Create a cleaning request for a room, bed, isolation area, or common space."
-                size="sm"
-                variant="secondary"
-                icon={<BroomIcon className="size-4" aria-hidden="true" />}
-              />
-            }
+            toolbarActions={<CreateCleaningRequestAction />}
             emptyTitle="No active cleaning requests"
             emptyDescription="There are no active cleaning requests matching your filters."
             emptyIcon={<BroomIcon className="size-5" aria-hidden="true" />}
@@ -604,12 +598,6 @@ export function HousekeepingView({
       >
         {selectedRequest ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Location">
                 {selectedRequest.location_label}
@@ -722,43 +710,12 @@ export function HousekeepingView({
                   )}
                 </section>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Assign staff")}
-                  >
-                    Assign staff
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Start cleaning")}
-                  >
-                    Start cleaning
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Complete cleaning")}
-                  >
-                    Complete
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Verify completion")}
-                  >
-                    Verify
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setPendingAction("Record disinfection")}
-                  >
-                    Record disinfection
-                  </Button>
-                </div>
+                {selectedRequest ? (
+                  <CleaningRequestActions
+                    request={selectedRequest}
+                    staff={staff}
+                  />
+                ) : null}
               </>
             ) : null}
           </div>
