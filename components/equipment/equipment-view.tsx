@@ -22,7 +22,11 @@ import {
   type Column,
   type FilterConfig,
 } from "@/components/module/record-table";
-import { UNAVAILABLE_MESSAGE, UnavailableAction } from "@/components/module/unavailable-action";
+import {
+  CompleteWorkOrderDialog,
+  CreateWorkOrderDialog,
+  RecordCalibrationDialog,
+} from "@/components/equipment/equipment-actions";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,6 +87,7 @@ export interface EquipmentViewProps {
   schedules: MaintenanceScheduleListRow[];
   calibrations: CalibrationListRow[];
   history: MaintenanceHistoryListRow[];
+  categories: Array<{ id: string; name: string }>;
 }
 
 function DetailField({
@@ -124,13 +129,24 @@ export function EquipmentView({
   schedules,
   calibrations,
   history,
+  categories: categoryOptions,
 }: EquipmentViewProps) {
   const [tab, setTab] = React.useState("equipment");
   const [selectedEquipment, setSelectedEquipment] =
     React.useState<EquipmentListRow | null>(null);
   const [selectedWorkOrder, setSelectedWorkOrder] =
     React.useState<WorkOrderListRow | null>(null);
-  const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  const [workOrderEquipmentId, setWorkOrderEquipmentId] = React.useState("");
+  const [workOrderOpen, setWorkOrderOpen] = React.useState(false);
+  const [calibrationTarget, setCalibrationTarget] = React.useState<{
+    id: string;
+    asset_number: string;
+    name: string;
+  } | null>(null);
+  const [completeTarget, setCompleteTarget] = React.useState<{
+    id: string;
+    work_order_number: string;
+  } | null>(null);
 
   const equipmentById = React.useMemo(
     () => new Map(equipment.map((item) => [item.id, item])),
@@ -146,7 +162,6 @@ export function EquipmentView({
       const row = equipmentById.get(id);
 
       if (row) {
-        setPendingAction(null);
         setSelectedEquipment(row);
       }
     },
@@ -154,7 +169,6 @@ export function EquipmentView({
   );
 
   const closeEquipment = React.useCallback(() => {
-    setPendingAction(null);
     setSelectedEquipment(null);
   }, []);
 
@@ -163,7 +177,6 @@ export function EquipmentView({
       const row = workOrderById.get(id);
 
       if (row) {
-        setPendingAction(null);
         setSelectedEquipment(null);
         setSelectedWorkOrder(row);
       }
@@ -172,13 +185,28 @@ export function EquipmentView({
   );
 
   const closeWorkOrder = React.useCallback(() => {
-    setPendingAction(null);
     setSelectedWorkOrder(null);
   }, []);
 
-  const categories = React.useMemo(
-    () => Array.from(new Set(equipment.map((item) => item.category_name))).sort(),
+  const equipmentOptions = React.useMemo(
+    () =>
+      equipment.map((item) => ({
+        id: item.id,
+        asset_number: item.asset_number,
+        name: item.name,
+      })),
     [equipment]
+  );
+
+  const categoryNames = React.useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...categoryOptions.map((category) => category.name),
+          ...equipment.map((item) => item.category_name),
+        ])
+      ).sort(),
+    [categoryOptions, equipment]
   );
 
   const equipmentColumns = React.useMemo<Column<EquipmentListRow>[]>(
@@ -286,14 +314,14 @@ export function EquipmentView({
         key: "category",
         label: "category",
         allLabel: "All categories",
-        options: categories.map((category) => ({
+        options: categoryNames.map((category) => ({
           label: category,
           value: category,
         })),
         accessor: (row) => row.category_name,
       },
     ],
-    [categories]
+    [categoryNames]
   );
 
   const workOrderColumns = React.useMemo<Column<WorkOrderListRow>[]>(
@@ -532,15 +560,6 @@ export function EquipmentView({
               `${row.asset_number} ${row.name} ${row.category_name} ${row.manufacturer} ${row.model} ${row.serial_number} ${row.department_name} ${row.location}`
             }
             filters={equipmentFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="Register Equipment"
-                description="Register a medical asset, category, serial number, department, and maintenance schedule."
-                size="sm"
-                variant="secondary"
-                icon={<MedicalKitIcon className="size-4" aria-hidden="true" />}
-              />
-            }
             emptyTitle="No equipment found"
             emptyDescription="There are no equipment records matching your selected filters."
             emptyIcon={<MedicalKitIcon className="size-5" aria-hidden="true" />}
@@ -559,15 +578,6 @@ export function EquipmentView({
               `${row.work_order_number} ${row.equipment_name} ${row.asset_number} ${row.issue_description} ${row.assigned_technician_name ?? ""}`
             }
             filters={workOrderFilters}
-            toolbarActions={
-              <UnavailableAction
-                label="Create Work Order"
-                description="Create a repair or maintenance work order for equipment."
-                size="sm"
-                variant="secondary"
-                icon={<SettingsIcon className="size-4" aria-hidden="true" />}
-              />
-            }
             emptyTitle="No work orders found"
             emptyDescription="There are no work orders matching your selected filters."
             emptyIcon={<SettingsIcon className="size-5" aria-hidden="true" />}
@@ -714,12 +724,6 @@ export function EquipmentView({
       >
         {selectedEquipment ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Equipment">
                 {selectedEquipment.name}
@@ -888,22 +892,28 @@ export function EquipmentView({
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => setPendingAction("Schedule maintenance")}
+                    onClick={() => {
+                      setWorkOrderEquipmentId(selectedEquipment.id);
+                      setSelectedEquipment(null);
+                      setWorkOrderOpen(true);
+                    }}
                   >
-                    Schedule maintenance
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPendingAction("Create work order")}
-                  >
+                    <SettingsIcon className="size-4" aria-hidden="true" />
                     Create work order
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setPendingAction("Record calibration")}
+                    onClick={() => {
+                      setCalibrationTarget({
+                        id: selectedEquipment.id,
+                        asset_number: selectedEquipment.asset_number,
+                        name: selectedEquipment.name,
+                      });
+                      setSelectedEquipment(null);
+                    }}
                   >
+                    <ShieldCheckIcon className="size-4" aria-hidden="true" />
                     Record calibration
                   </Button>
                 </div>
@@ -931,12 +941,6 @@ export function EquipmentView({
       >
         {selectedWorkOrder ? (
           <div className="space-y-5">
-            {pendingAction ? (
-              <Alert variant="info" title="Action unavailable">
-                {UNAVAILABLE_MESSAGE} Requested action: {pendingAction}.
-              </Alert>
-            ) : null}
-
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailField label="Equipment">
                 {selectedWorkOrder.equipment_name}
@@ -1006,46 +1010,54 @@ export function EquipmentView({
               ) : null}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Assign technician")}
-              >
-                Assign technician
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Start work")}
-              >
-                Start work
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Complete work order")}
-              >
-                Complete
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPendingAction("Put work order on hold")}
-              >
-                Hold
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setPendingAction("Cancel work order")}
-              >
-                Cancel
-              </Button>
-            </div>
+            {selectedWorkOrder.status === "completed" ||
+            selectedWorkOrder.status === "cancelled" ? (
+              <Alert variant="info" title="Work order closed">
+                This work order is {selectedWorkOrder.status} and cannot be
+                changed.
+              </Alert>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setCompleteTarget({
+                      id: selectedWorkOrder.id,
+                      work_order_number: selectedWorkOrder.work_order_number,
+                    });
+                    setSelectedWorkOrder(null);
+                  }}
+                >
+                  Complete work order
+                </Button>
+              </div>
+            )}
           </div>
         ) : null}
       </Modal>
+
+      <CreateWorkOrderDialog
+        key={workOrderEquipmentId || "all-equipment"}
+        open={workOrderOpen}
+        onClose={() => {
+          setWorkOrderOpen(false);
+          setWorkOrderEquipmentId("");
+        }}
+        equipment={equipmentOptions}
+        initialEquipmentId={workOrderEquipmentId}
+      />
+
+      <CompleteWorkOrderDialog
+        open={completeTarget !== null}
+        onClose={() => setCompleteTarget(null)}
+        workOrder={completeTarget}
+      />
+
+      <RecordCalibrationDialog
+        open={calibrationTarget !== null}
+        onClose={() => setCalibrationTarget(null)}
+        equipment={calibrationTarget}
+      />
     </>
   );
 }

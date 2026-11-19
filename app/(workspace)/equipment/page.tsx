@@ -8,17 +8,22 @@ import {
 } from "@solar-icons/react/linear";
 
 import { EquipmentView } from "@/components/equipment/equipment-view";
+import {
+  CreateWorkOrderAction,
+  RegisterEquipmentAction,
+} from "@/components/equipment/equipment-actions";
 import { EquipmentWorkflowStrip } from "@/components/equipment/equipment-workflow-strip";
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
 import { Alert } from "@/components/ui/alert";
+import { listDepartments } from "@/lib/data/departments";
 import {
   getEquipmentDetails,
   getEquipmentStats,
   listCalibrations,
   listEquipment,
+  listEquipmentCategories,
   listMaintenanceHistory,
   listMaintenanceSchedules,
   listWorkOrders,
@@ -39,6 +44,8 @@ export default async function EquipmentPage() {
     schedulesResult,
     calibrationsResult,
     historyResult,
+    categoriesResult,
+    departmentsResult,
   ] = await Promise.all([
     getEquipmentStats(),
     listEquipment({ pageSize: 200 }),
@@ -47,9 +54,20 @@ export default async function EquipmentPage() {
     listMaintenanceSchedules(),
     listCalibrations(),
     listMaintenanceHistory(),
+    listEquipmentCategories(),
+    listDepartments({ pageSize: 200, isActive: true }),
   ]);
 
   const history = historyResult.error ? [] : historyResult.data;
+  const categories = (categoriesResult.data ?? []).map((category) => ({
+    id: category.id,
+    name: category.name,
+  }));
+  const departments = (departmentsResult.data?.rows ?? []).map((department) => ({
+    id: department.id,
+    name: department.name,
+  }));
+  const equipmentRows = equipmentResult.data?.rows ?? [];
 
   return (
     <div className="space-y-6">
@@ -58,16 +76,16 @@ export default async function EquipmentPage() {
         description="Medical equipment register, preventive maintenance, work orders, and calibration."
         actions={
           <>
-            <UnavailableAction
-              label="Create Work Order"
-              description="Create a repair or maintenance work order for medical equipment."
-              variant="secondary"
-              icon={<SettingsIcon className="size-4" aria-hidden="true" />}
+            <CreateWorkOrderAction
+              equipment={equipmentRows.map((row) => ({
+                id: row.id,
+                asset_number: row.asset_number,
+                name: row.name,
+              }))}
             />
-            <UnavailableAction
-              label="Register Equipment"
-              description="Register a medical asset, category, serial number, department, and maintenance schedule."
-              icon={<MedicalKitIcon className="size-4" aria-hidden="true" />}
+            <RegisterEquipmentAction
+              categories={categories}
+              departments={departments}
             />
           </>
         }
@@ -139,12 +157,13 @@ export default async function EquipmentPage() {
         <ErrorState error={equipmentResult.error} />
       ) : (
         <EquipmentView
-          equipment={equipmentResult.data.rows}
+          equipment={equipmentRows}
           equipmentDetails={detailsResult.error ? {} : detailsResult.data}
           workOrders={workOrdersResult.error ? [] : workOrdersResult.data.rows}
           schedules={schedulesResult.error ? [] : schedulesResult.data}
           calibrations={calibrationsResult.error ? [] : calibrationsResult.data}
           history={history}
+          categories={categories}
         />
       )}
     </div>
