@@ -29,6 +29,10 @@ function insuranceErrorMessage(error: {
     return "Only active policies can be claimed against.";
   }
 
+  if (message.includes("policy has expired")) {
+    return "This policy has expired and cannot receive new claims.";
+  }
+
   if (message.includes("claimed amount cannot exceed")) {
     return "The claimed amount cannot exceed the total charged.";
   }
