@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { BroomIcon } from "@solar-icons/react/linear";
+import { BroomIcon, UserRoundedIcon } from "@solar-icons/react/linear";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -360,7 +360,10 @@ export function CleaningRequestActions({
               >
                 <option value="">Select staff</option>
                 {staff
-                  .filter((member) => member.status !== "off_duty")
+                  .filter(
+                    (member) =>
+                      member.status !== "off_duty" && !member.current_assignment
+                  )
                   .map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.name} · {member.role}
@@ -533,6 +536,196 @@ export function AddHousekeepingStaffAction() {
               />
             </FormField>
           </div>
+        </form>
+      </Modal>
+    </>
+  );
+}
+
+const emptyAssign = { requestId: "", staffId: "" };
+
+export function AssignCleaningStaffAction({
+  requests,
+  staff,
+}: {
+  requests: CleaningRequestListRow[];
+  staff: HousekeepingStaff[];
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const can = useCan();
+  const [open, setOpen] = React.useState(false);
+  const [values, setValues] = React.useState(emptyAssign);
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  if (!can("housekeeping.manage")) {
+    return null;
+  }
+
+  const pending = requests.filter(
+    (request) => request.status === "requested" && !request.assigned_staff_id
+  );
+  const availableStaff = staff.filter(
+    (member) => member.status !== "off_duty" && !member.current_assignment
+  );
+
+  function close() {
+    if (submitting) {
+      return;
+    }
+
+    setValues(emptyAssign);
+    setFormError(null);
+    setOpen(false);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
+
+    setFormError(null);
+    setSubmitting(true);
+
+    try {
+      const result = await advanceCleaningRequestAction({
+        requestId: values.requestId,
+        action: "assign",
+        staffId: values.staffId,
+        method: "",
+        chemical: "",
+        contactMinutes: "",
+        notes: "",
+      });
+
+      if (!result.ok) {
+        setFormError(result.formError);
+        return;
+      }
+
+      const assigned = availableStaff.find(
+        (member) => member.id === values.staffId
+      );
+
+      toast({
+        title: "Staff assigned",
+        description: `${assigned?.name ?? "Housekeeper"} assigned to the request.`,
+        variant: "success",
+      });
+      setValues(emptyAssign);
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setFormError("We could not assign the staff member. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        <UserRoundedIcon className="size-4" aria-hidden="true" />
+        Assign Staff
+      </Button>
+
+      <Modal
+        open={open}
+        onClose={close}
+        title="Assign housekeeping staff"
+        description="Pick a request that is waiting and the staff member who will clean it."
+        footer={
+          <>
+            <Button variant="secondary" onClick={close} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="hk-assign-form"
+              loading={submitting}
+              disabled={pending.length === 0 || availableStaff.length === 0}
+            >
+              Assign staff
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="hk-assign-form"
+          noValidate
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
+          {formError ? (
+            <Alert variant="danger" title="Unable to assign">
+              {formError}
+            </Alert>
+          ) : null}
+
+          {pending.length === 0 ? (
+            <Alert variant="info" title="No requests waiting">
+              Every open request already has an assignee. Create a cleaning
+              request first.
+            </Alert>
+          ) : null}
+
+          {availableStaff.length === 0 ? (
+            <Alert variant="warning" title="No staff on duty">
+              Add housekeeping staff or mark someone on duty before assigning.
+            </Alert>
+          ) : null}
+
+          <FormField label="Cleaning request" htmlFor="hk_assign_request" required>
+            <Select
+              id="hk_assign_request"
+              value={values.requestId}
+              disabled={pending.length === 0}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  requestId: event.target.value,
+                }))
+              }
+            >
+              <option value="">Select request</option>
+              {pending.map((request) => (
+                <option key={request.id} value={request.id}>
+                  {request.request_number} · {request.location_label} ·{" "}
+                  {request.priority}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <FormField label="Assign to" htmlFor="hk_assign_staff" required>
+            <Select
+              id="hk_assign_staff"
+              value={values.staffId}
+              disabled={availableStaff.length === 0}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  staffId: event.target.value,
+                }))
+              }
+            >
+              <option value="">Select staff</option>
+              {availableStaff.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name} · {member.role} · {member.status}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <Alert variant="info" title="What happens next">
+            The request moves to <strong>assigned</strong> and the staff member
+            is marked as busy until the cleaning is completed. Only staff with
+            no active assignment are listed.
+          </Alert>
         </form>
       </Modal>
     </>

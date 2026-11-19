@@ -23,7 +23,6 @@ import {
 import {
   AddHousekeepingStaffAction,
   CleaningRequestActions,
-  CreateCleaningRequestAction,
 } from "./housekeeping-actions";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -445,7 +444,6 @@ export function HousekeepingView({
               `${row.request_number} ${row.location_label} ${row.department_name} ${row.request_type} ${row.assigned_staff_name ?? ""} ${row.notes ?? ""}`
             }
             filters={boardFilters}
-            toolbarActions={<CreateCleaningRequestAction />}
             emptyTitle="No active cleaning requests"
             emptyDescription="There are no active cleaning requests matching your filters."
             emptyIcon={<BroomIcon className="size-5" aria-hidden="true" />}

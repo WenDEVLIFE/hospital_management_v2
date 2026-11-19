@@ -9,11 +9,14 @@ import {
 } from "@solar-icons/react/linear";
 
 import { PageHeader } from "@/components/layout/page-header";
+import {
+  AssignCleaningStaffAction,
+  CreateCleaningRequestAction,
+} from "@/components/housekeeping/housekeeping-actions";
 import { HousekeepingView } from "@/components/housekeeping/housekeeping-view";
 import { HousekeepingWorkflowStrip } from "@/components/housekeeping/housekeeping-workflow-strip";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
 import { Alert } from "@/components/ui/alert";
 import {
   getCleaningRequestDetails,
@@ -56,17 +59,11 @@ export default async function HousekeepingPage() {
         description="Cleaning requests, assignments, disinfection, and completion verification."
         actions={
           <>
-            <UnavailableAction
-              label="Assign Staff"
-              description="Assign housekeeping staff to a cleaning request."
-              variant="secondary"
-              icon={<UserRoundedIcon className="size-4" aria-hidden="true" />}
+            <AssignCleaningStaffAction
+              requests={requestsResult.data?.rows ?? []}
+              staff={staffResult.data ?? []}
             />
-            <UnavailableAction
-              label="New Cleaning Request"
-              description="Create a cleaning request for a room, bed, isolation area, or common space."
-              icon={<BroomIcon className="size-4" aria-hidden="true" />}
-            />
+            <CreateCleaningRequestAction />
           </>
         }
       />
