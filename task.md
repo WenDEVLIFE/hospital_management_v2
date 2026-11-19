@@ -92,7 +92,7 @@
 
 - [x] `npx supabase init` → create `supabase/config.toml` — 2026-11-12, `supabase/config.toml` + `supabase/.gitignore`
 - [x] Split `schema.sql` into the 22 timestamped migrations listed in `SUPABASE.MD` §31.3 — 2026-11-12, `supabase/migrations/20261110000100` … `20261110002200`; 47 tables and 16 enums verified in dependency order
-- [ ] Apply to a live project and run `npx supabase db lint` — 2026-11-13: live schema verified (47/47 tables present, all RLS-protected); demo seed added at `supabase/seed.sql` (12 auth users + all 47 tables); `db lint` still pending (no access token / linked CLI)
+- [ ] Apply to a live project and run `npx supabase db lint` — 2026-11-19, the CLI now lints the live project without a database password. First run found one real error: `advance_cleaning_request` compared a text column to a uuid in the cancel branch (`42883`), fixed by migration 20261119001900 (apply it, then re-run). Remaining warnings: unused `v_policy` in `verify_coverage`, shadowed/unused `v_index` in `record_blood_donation`
 - [x] Run `npx supabase db reset` on a clean local database — **blocked by: Docker/PostgreSQL not installed**
 - [x] Generate types: `npx supabase gen types typescript --schema public > types/supabase.ts` — **blocked by: requires a running database**
 - [x] Replace hand-written `types/hospital.ts` usage with the generated `Database` types (keep view models on top) — **blocked by: generated types above**
@@ -317,7 +317,7 @@
 - [x] `send-notification`
 - [x] `generate-document`
 - [x] `scheduled-maintenance`
-- [ ] Secrets configured via `supabase secrets set` (never in the frontend) — 2026-11-19: required keys documented in `supabase/functions/README.md` and `.env.example` (HMS_NOTIFICATION_TOKEN, HMS_MAINTENANCE_TOKEN, HMS_SMTP_USER, HMS_SMTP_APP_PASSWORD), and the app tree is verified free of any `SERVICE_ROLE` / `service_role` reference. Still requires `supabase secrets set` with the CLI access token
+- [x] Secrets configured via `supabase secrets set` (never in the frontend) — 2026-11-19, verified with the authenticated CLI: `supabase secrets list` shows `HMS_NOTIFICATION_TOKEN`, `HMS_MAINTENANCE_TOKEN`, `HMS_SMTP_USER` and `HMS_SMTP_APP_PASSWORD` configured on the project (values are stored hashed and never printed), alongside the auto-injected Supabase secrets. The app tree remains free of any `SERVICE_ROLE` / `service_role` reference
 
 ### 5.5 Provisioning
 
