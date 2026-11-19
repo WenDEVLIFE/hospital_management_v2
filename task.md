@@ -453,6 +453,8 @@
 
 ### 7.4 Security tests (`SUPABASE.MD` §33.3)
 
+Run with `npm run verify:security` (live probe against the seeded demo project; exits non-zero on any failure).
+
 - [x] Anonymous user cannot read patient records — 2026-11-19, the anon key returns 42501 for patients and clinical_notes (0 rows)
 - [x] Receptionist cannot read restricted clinical notes — 2026-11-19, receptionist reads 0 clinical notes and 0 diagnoses
 - [x] Physician cannot access administrative functions — 2026-11-19, create_department and create_staff_record return 42501 and audit_logs returns 0 rows

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:security": "node --env-file=.env.local scripts/verify-security.mjs"
   },
   "dependencies": {
     "@solar-icons/react": "2.3.5",
