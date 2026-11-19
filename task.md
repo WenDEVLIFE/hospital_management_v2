@@ -312,11 +312,11 @@
 
 ### 5.4 Edge Functions (`SUPABASE.MD` §26)
 
-- [ ] `admin-users`
-- [ ] `admin-role-assignment`
-- [ ] `send-notification`
-- [ ] `generate-document`
-- [ ] `scheduled-maintenance`
+- [x] `admin-users`
+- [x] `admin-role-assignment`
+- [x] `send-notification`
+- [x] `generate-document`
+- [x] `scheduled-maintenance`
 - [ ] Secrets configured via `supabase secrets set` (never in the frontend)
 
 ### 5.5 Provisioning

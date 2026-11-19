@@ -2707,34 +2707,50 @@ Every Edge Function must:
 9. Handle retries safely.
 10. Record sensitive administrative operations.
 
-## 26.3 Example Function Directory
+## 26.3 Invoking the functions
 
-```text
-supabase/
-└── functions/
-    ├── admin-users/
-    │   └── index.ts
-    ├── admin-role-assignment/
-    │   └── index.ts
-    ├── send-notification/
-    │   └── index.ts
-    ├── generate-document/
-    │   └── index.ts
-    └── ai-assist/
-        └── index.ts
-```
+All endpoints accept `POST` at `/functions/v1/<function-name>`. The user endpoints
+accept a Supabase Auth access token in `Authorization: Bearer <token>`, or can
+be called with `supabase.functions.invoke` from a signed-in session.
 
-## 26.4 Secrets
+| Function | Request | Access and result |
+|---|---|---|
+| `admin-users` | `{"action":"create","email":"…","fullName":"…","password":"…"}` | Active administrator. Creates an Auth account and profile without assigning roles. Verify the email address before provisioning. Returns the user ID. A duplicate email returns 409. |
+| `admin-users` | `{"action":"set-active","userId":"…","active":false}` | Active administrator. Updates the Auth ban and profile state together. Self-targeting is forbidden. Only super administrators can manage other administrators. Previously issued access tokens may remain valid until they expire. |
+| `admin-role-assignment` | `{"action":"grant","userId":"…","roleId":"…"}`, or `"action":"revoke"` | Same administrative target rules. Granting or revoking an administrator role requires a super administrator. Returns whether the assignment changed. |
+| `send-notification` | `{"notificationId":"…"}` | Trusted worker with `HMS_NOTIFICATION_TOKEN` in `x-hms-job-token`. Sends a generic email to the active recipient's verified Auth email. Gmail SMTP uses port 465 with implicit TLS. A database claim prevents duplicate sends. Returns SMTP acceptance. |
+| `generate-document` | `{"type":"invoice-summary","invoiceId":"…"}` | Active user with invoice read access under RLS. Returns a PDF attachment with invoice totals and status. |
+| `scheduled-maintenance` | No body | Trusted scheduler with `HMS_MAINTENANCE_TOKEN` in `x-hms-job-token`. Expires active insurance policies after their expiry date in Manila and returns the affected count. Repeated calls only process policies still eligible. |
 
-Configure secrets using:
+Configure a daily HTTP job in Supabase Cron or an existing scheduler to invoke
+`scheduled-maintenance`. For example, `5 16 * * *` in UTC runs at 00:05 Manila time.
+Use the scheduler's secret store, such as Supabase Vault, for the job token.
+
+A confirmed SMTP rejection releases the claim for retry. If acceptance is
+uncertain, the claim stays in `notification_email_deliveries`. Check Gmail's
+Sent folder before clearing an unresolved claim to retry it.
+
+## 26.4 Secrets and deployment
+
+Set the following values in a private environment file outside the repository.
+
+- `HMS_SMTP_USER` for the full Gmail address and `HMS_SMTP_APP_PASSWORD` for its Google App Password. Google requires 2-Step Verification to create an App Password.
+- `HMS_NOTIFICATION_TOKEN` and `HMS_MAINTENANCE_TOKEN` as distinct, randomly generated tokens for the trusted worker and scheduler.
+
+With the CLI authenticated and linked to the intended project, run:
 
 ```bash
-npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=YOUR_KEY
-
-npx supabase secrets set AI_PROVIDER_API_KEY=YOUR_KEY
+npx supabase db push
+npx supabase secrets set --env-file /absolute/path/to/private-edge.env
+npx supabase functions deploy --use-api admin-users admin-role-assignment send-notification generate-document scheduled-maintenance
 ```
 
-Never copy secrets into frontend environment variables.
+Supabase injects its built-in URL and API credentials. Custom secrets belong in
+the Edge Function environment and the trusted callers' secret stores. For local
+testing, run `npx supabase functions serve --env-file /absolute/path/to/private-edge.env`.
+
+See the [Supabase environment variables guide](https://supabase.com/docs/guides/functions/secrets)
+and [Google App Password instructions](https://support.google.com/mail/answer/185833).
 
 ---
 

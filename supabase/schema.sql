@@ -3681,7 +3681,7 @@ grant select on table public.audit_logs to authenticated;
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?transactional admissions, transfers, and discharges
+-- SPMC HMS â€”transactional admissions, transfers, and discharges
 -- Migration 025. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- All three functions lock the affected admission/bed rows, enforce their
@@ -4077,7 +4077,7 @@ grant execute on function public.discharge_patient(
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?finalize clinical note
+-- SPMC HMS â€”finalize clinical note
 -- Migration 026. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 
@@ -4157,7 +4157,7 @@ grant execute on function public.finalize_clinical_note(uuid)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?verify laboratory result
+-- SPMC HMS â€”verify laboratory result
 -- Migration 027. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 
@@ -4272,7 +4272,7 @@ grant execute on function public.verify_laboratory_result(uuid)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?dispense prescription
+-- SPMC HMS â€”dispense prescription
 -- Migration 028. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- Dispenses every remaining prescription item, deducts medication stock from
@@ -4471,7 +4471,7 @@ grant execute on function public.dispense_prescription(uuid)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?fix dispense_prescription authorization
+-- SPMC HMS â€”fix dispense_prescription authorization
 -- Migration 029. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- Pharmacists are not assigned through patient_care_assignments, so gating
@@ -4669,7 +4669,7 @@ grant execute on function public.dispense_prescription(uuid)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?record and refund payments
+-- SPMC HMS â€”record and refund payments
 -- Migration 030. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- record_payment applies a completed payment to an invoice and recomputes the
@@ -4927,7 +4927,7 @@ grant execute on function public.refund_payment(uuid, text)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?record and refund payments (enum casts)
+-- SPMC HMS â€”record and refund payments (enum casts)
 -- Migration 031. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- Migration 030 assigned CASE expressions to an enum column without casts,
@@ -5192,7 +5192,7 @@ grant execute on function public.refund_payment(uuid, text)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?stock movements
+-- SPMC HMS â€”stock movements
 -- Migration 032. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- One atomic entry point for stock in, stock out and stock-count adjustments.
@@ -5527,7 +5527,7 @@ grant execute on function public.adjust_inventory(
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?invoice, patient record, and nursing writes
+-- SPMC HMS â€”invoice, patient record, and nursing writes
 -- Migration 033. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 
@@ -6174,7 +6174,7 @@ grant execute on function public.add_nursing_note(uuid, uuid, text)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?departments, rooms, and staff administration
+-- SPMC HMS â€”departments, rooms, and staff administration
 -- Migration 034. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 
@@ -6440,7 +6440,7 @@ grant execute on function public.update_staff(uuid, jsonb)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?emergency department
+-- SPMC HMS â€”emergency department
 -- Migration 035. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- Emergency visits sit on top of an encounter so vitals, notes, diagnoses and
@@ -6744,7 +6744,7 @@ grant execute on function public.start_emergency_visit(
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?surgery and operating theatres
+-- SPMC HMS â€”surgery and operating theatres
 -- Migration 036. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 
@@ -7137,7 +7137,7 @@ grant execute on function public.schedule_surgery_case(
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?human resources
+-- SPMC HMS â€”human resources
 -- Migration 037. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- HR extends staff_profiles rather than duplicating it: identity, department
@@ -7604,7 +7604,7 @@ grant execute on function public.review_leave_request(uuid, text)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?overnight shifts
+-- SPMC HMS â€”overnight shifts
 -- Migration 038. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- A 23:00-07:00 night shift ends before it starts on the clock, so the original
@@ -7696,7 +7696,7 @@ grant execute on function public.schedule_shift(uuid, date, text, time, time)
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?role â†?permission matrix
+-- SPMC HMS â€”role â€”permission matrix
 -- Migration 040. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- Authoritative, idempotent seeding of the role matrix. Additive only: it never
@@ -7848,7 +7848,7 @@ on conflict do nothing;
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?storage buckets
+-- SPMC HMS â€”storage buckets
 -- Migration 041. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- Private buckets for clinical attachments. Objects are namespaced by patient
@@ -7963,7 +7963,7 @@ with check (
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?realtime publication completion
+-- SPMC HMS â€”realtime publication completion
 -- Migration 042. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- Migration 039 published the operational tables that existed at the time.
@@ -7996,7 +7996,7 @@ $$;
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?reject past-dated appointments
+-- SPMC HMS â€”reject past-dated appointments
 -- Migration 043. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- create_appointment accepted any timestamp, so an appointment could be
@@ -8154,7 +8154,7 @@ grant execute on function public.create_appointment(
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?insurance and PhilHealth
+-- SPMC HMS â€”insurance and PhilHealth
 -- Migration 044. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- Manual insurance workflow: policies, eligibility checks, authorizations,
@@ -8635,10 +8635,10 @@ grant execute on function public.create_claim(
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?blood bank
+-- SPMC HMS â€”blood bank
 -- Migration 045. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
--- Donor â†?donation â†?unit â†?screening â†?request â†?crossmatch â†?issue â†?-- transfusion. Issuing a unit requires a compatible crossmatch, passed
+-- Donor â€”donation â€”unit â€”screening â€”request â€”crossmatch â€”issue â€”-- transfusion. Issuing a unit requires a compatible crossmatch, passed
 -- screening and an unexpired unit; those rules live in issue_blood_unit.
 
 create table if not exists public.blood_donors (
@@ -9261,7 +9261,7 @@ grant execute on function public.issue_blood_unit(uuid, uuid, text, text) to aut
 -- ============================================================================
 
 -- ============================================================================
--- SPMC HMS â€?blood bank intake
+-- SPMC HMS â€”blood bank intake
 -- Migration 046. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- Donor registration, blood requests and unit screening complete the chain
@@ -9539,12 +9539,222 @@ grant execute on function public.create_blood_request(
 grant execute on function public.screen_blood_unit(uuid, text, text)
   to authenticated, service_role;
 
--- ============================================================================
--- Insurance intake (migration 047)
--- ============================================================================
+-- Privileged Edge Function operations and their transactional audit records.
+create function public.check_edge_account_target(p_actor uuid, p_target uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_super boolean;
+begin
+  -- Serialize account and role changes issued through the administrative APIs.
+  perform pg_catalog.pg_advisory_xact_lock(618371524);
+
+  select pg_catalog.bool_or(r.slug = 'super_admin')
+  into v_super
+  from public.profiles p
+  join public.user_roles ur on ur.user_id = p.id
+  join public.roles r on r.id = ur.role_id
+  where p.id = p_actor and p.is_active
+    and r.slug in ('super_admin', 'hospital_admin');
+
+  if v_super is null or p_target = p_actor then
+    raise exception 'Insufficient permission' using errcode = '42501';
+  end if;
+
+  if p_target is null then
+    return;
+  end if;
+
+  if not exists (select 1 from public.profiles where id = p_target) then
+    raise exception 'Account not found' using errcode = 'P0002';
+  end if;
+
+  if not v_super and exists (
+    select 1 from public.user_roles ur
+    join public.roles r on r.id = ur.role_id
+    where ur.user_id = p_target and r.slug in ('super_admin', 'hospital_admin')
+  ) then
+    raise exception 'Insufficient permission' using errcode = '42501';
+  end if;
+end;
+$$;
+
+create function public.audit_edge_auth_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor uuid;
+  v_active boolean;
+  v_profile_active boolean;
+begin
+  if tg_name = 'audit_edge_auth_creation' and new.raw_app_meta_data ? 'hms_create_actor' then
+    v_actor := (new.raw_app_meta_data->>'hms_create_actor')::uuid;
+    perform public.check_edge_account_target(v_actor, null);
+    new.raw_app_meta_data := new.raw_app_meta_data - 'hms_create_actor';
+
+    insert into public.audit_logs (actor_id, action, entity_type, entity_id)
+    values (v_actor, 'user.create', 'profile', new.id);
+  elsif tg_name = 'audit_edge_auth_status' and new.raw_app_meta_data ? 'hms_status_actor' then
+    v_actor := (new.raw_app_meta_data->>'hms_status_actor')::uuid;
+    perform public.check_edge_account_target(v_actor, new.id);
+    new.raw_app_meta_data := new.raw_app_meta_data - 'hms_status_actor';
+    v_active := not coalesce(new.banned_until > now(), false);
+
+    select is_active into v_profile_active from public.profiles where id = new.id for update;
+    if v_active = v_profile_active
+      and v_active = not coalesce(old.banned_until > now(), false) then
+      -- A deactivation retry does not extend an already recorded ban.
+      new.banned_until := old.banned_until;
+      return new;
+    end if;
+
+    update public.profiles set is_active = v_active where id = new.id;
+    insert into public.audit_logs (actor_id, action, entity_type, entity_id)
+    values (
+      v_actor,
+      case when v_active then 'user.activate' else 'user.deactivate' end,
+      'profile',
+      new.id
+    );
+  end if;
+
+  return new;
+end;
+$$;
+
+-- GoTrue writes administrative app metadata separately from the insert and ban.
+create trigger audit_edge_auth_creation
+before insert or update of raw_app_meta_data on auth.users
+for each row execute function public.audit_edge_auth_change();
+
+create trigger audit_edge_auth_status
+before update of banned_until on auth.users
+for each row execute function public.audit_edge_auth_change();
+
+create function public.protect_profile_active()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if current_user = 'authenticated' and new.is_active is distinct from old.is_active then
+    raise exception 'Use the administrative account operation' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger protect_profile_active
+before update of is_active on public.profiles
+for each row execute function public.protect_profile_active();
+
+create function public.set_edge_user_role(p_target uuid, p_role uuid, p_grant boolean)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_role text;
+  v_changed boolean;
+begin
+  if p_target is null or p_role is null or p_grant is null then
+    raise exception 'Invalid role assignment' using errcode = '22023';
+  end if;
+
+  perform public.check_edge_account_target(v_actor, p_target);
+  select slug into v_role from public.roles where id = p_role for share;
+  if not found then
+    raise exception 'Role not found' using errcode = 'P0002';
+  end if;
+
+  if v_role in ('super_admin', 'hospital_admin') and not public.has_role('super_admin') then
+    raise exception 'Insufficient permission' using errcode = '42501';
+  end if;
+
+  if p_grant then
+    insert into public.user_roles (user_id, role_id, granted_by)
+    values (p_target, p_role, v_actor)
+    on conflict (user_id, role_id) do nothing;
+  else
+    delete from public.user_roles where user_id = p_target and role_id = p_role;
+  end if;
+  v_changed := found;
+
+  if v_changed then
+    insert into public.audit_logs (actor_id, action, entity_type, entity_id, metadata)
+    values (
+      v_actor,
+      case when p_grant then 'role.grant' else 'role.revoke' end,
+      'profile',
+      p_target,
+      jsonb_build_object('role_id', p_role, 'role_slug', v_role)
+    );
+  end if;
+
+  return v_changed;
+end;
+$$;
+
+create function public.expire_insurance_policies()
+returns integer
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_count integer;
+begin
+  update public.insurance_policies
+  set status = 'expired'
+  where status = 'active' and expiry_date < (now() at time zone 'Asia/Manila')::date;
+  get diagnostics v_count = row_count;
+
+  if v_count > 0 then
+    insert into public.audit_logs (action, entity_type, metadata)
+    values ('insurance.expire', 'insurance_policy', jsonb_build_object('count', v_count));
+  end if;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.check_edge_account_target(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.check_edge_account_target(uuid, uuid) to service_role;
+
+revoke all on function public.audit_edge_auth_change() from public, anon, authenticated;
+revoke all on function public.protect_profile_active() from public, anon, authenticated;
+
+revoke insert, update, delete on public.user_roles from public, anon, authenticated;
+revoke all on function public.set_edge_user_role(uuid, uuid, boolean) from public, anon, authenticated;
+grant execute on function public.set_edge_user_role(uuid, uuid, boolean) to authenticated;
+
+revoke all on function public.expire_insurance_policies() from public, anon, authenticated;
+grant execute on function public.expire_insurance_policies() to service_role;
+
+-- An SMTP reply can be lost after the provider accepts a message. Keep a
+-- durable claim so concurrent calls and retries cannot send it a second time.
+create table public.notification_email_deliveries (
+  notification_id uuid primary key references public.notifications(id) on delete cascade,
+  claimed_at timestamptz not null default now(),
+  accepted_at timestamptz
+);
+
+alter table public.notification_email_deliveries enable row level security;
+revoke all on table public.notification_email_deliveries from public, anon, authenticated;
+grant select, insert, update, delete on public.notification_email_deliveries to service_role;
 
 -- ============================================================================
--- SPMC HMS â€?insurance intake
+-- Insurance intake (migration 20261119000100)
+-- ============================================================================
+-- ============================================================================
+-- SPMC HMS â€” insurance intake
 -- Migration 047. Mirrors supabase/schema.sql; keep both in sync.
 -- ============================================================================
 -- The insurance module could verify coverage and prepare claims, but there was
