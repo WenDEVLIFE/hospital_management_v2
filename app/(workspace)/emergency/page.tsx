@@ -13,6 +13,7 @@ import {
 import { EmergencyView } from "@/components/emergency/emergency-view";
 import { EmergencyWorkflowStrip } from "@/components/emergency/emergency-workflow-strip";
 import { PageHeader } from "@/components/layout/page-header";
+import { RealtimeRefresh } from "@/components/providers/realtime-refresh";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
 import { StartTriageAction } from "@/components/emergency/start-triage-dialog";
@@ -44,6 +45,8 @@ export default async function EmergencyPage() {
 
   return (
     <div className="space-y-6">
+      <RealtimeRefresh table="emergency_visits" />
+
       <PageHeader
         title="Emergency Room"
         description="Triage, treat, and disposition emergency patients."

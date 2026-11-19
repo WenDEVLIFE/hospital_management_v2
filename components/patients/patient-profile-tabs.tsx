@@ -38,6 +38,7 @@ import {
 } from "@/lib/format";
 import { formatPatientAddress, getPatientAge } from "./patient-utils";
 import { PatientAllergyDialog } from "./patient-allergy-dialog";
+import { DocumentManager } from "@/components/documents/document-manager";
 
 export interface PatientProfileTabsProps {
   patient: PatientListRow;
@@ -580,6 +581,7 @@ export function PatientProfileTabs({
       label: "Billing History",
       count: summary.invoices.length,
     },
+    { value: "documents", label: "Documents" },
   ];
 
   return (
@@ -625,6 +627,17 @@ export function PatientProfileTabs({
         ) : null}
 
         {tab === "billing" ? <BillingPanel rows={summary.invoices} /> : null}
+
+        {tab === "documents" ? (
+          <DocumentManager
+            bucket="patient-documents"
+            scope={patient.id}
+            title="Patient documents"
+            description="Consent forms, referrals and scanned records. Private, opened through two-minute links."
+            uploadPermission="medical_record.create"
+            deletePermission="medical_record.update"
+          />
+        ) : null}
       </div>
 
       <PatientAllergyDialog

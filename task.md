@@ -23,11 +23,11 @@
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
-| 6 | Frontend → backend integration | 52 / 67 | In progress (6.5 helpers and visibility done; upload UI, signed-URL viewer and realtime consumers next; 7 fixture modules remain in 6.7) |
+| 6 | Frontend → backend integration | 55 / 67 | In progress (6.5 complete: upload UI, signed-URL viewer and realtime consumers live; 7 fixture modules remain in 6.7) |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **228 / 295** | **77%** |
+| **Total** | | **231 / 295** | **78%** |
 
 ---
 
@@ -393,9 +393,9 @@
 
 ### 6.5 Files, realtime, roles
 
-- [ ] Upload UI for patient documents, lab attachments, radiology files — helper layer ready (`lib/supabase/storage.ts`), UI not built
-- [ ] Signed URL viewer — `createSignedUrl` helper ready; viewer not built
-- [ ] Realtime hooks for the 9 published tables — `lib/supabase/realtime.ts` provides `useRealtimeTable` and `subscribeToTable` over the tables published by migration 039; no screen subscribes yet
+- [x] Upload UI for patient documents, lab attachments, radiology files — 2026-11-19, `DocumentManager` (upload, list, delete) wired into the patient Documents tab, the laboratory order dialog and the radiology request dialog; server actions validate bucket, scope and 10 MB limit. Storage round-trip verified: upload → list → signed URL → delete
+- [x] Signed URL viewer — 2026-11-19, each file row opens a 120-second signed URL in a new tab via a server action; verified that a signed URL is issued and the object is unreachable after deletion
+- [x] Realtime hooks for the 9 published tables — 2026-11-19, `RealtimeRefresh` mounted on `/laboratory` (orders + results) and `/emergency` (visits); the subscription path and RLS filtering were verified with real accounts (nurse received an event, inventory staff received none). Browser-side refresh after an event is not yet observed in a session
 - [x] Set `NavItem.permission` and filter navigation by `has_permission` — verified with nurse and admin accounts after applying migration 039
 - [x] Hide actions the user cannot perform (never rely on hiding alone — RLS still enforces) — every backed mutation entry point and page-level create action is gated; unavailable fixture-module actions are unaffected
 

@@ -6,6 +6,7 @@ import {
 } from "@solar-icons/react/linear";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { RealtimeRefresh } from "@/components/providers/realtime-refresh";
 import { PageSection } from "@/components/layout/page-section";
 import { LabOrdersView } from "@/components/laboratory/lab-orders-view";
 import { LabWorkflowStrip } from "@/components/laboratory/lab-workflow-strip";
@@ -23,6 +24,9 @@ export default async function LaboratoryPage() {
 
   return (
     <div className="space-y-4">
+      <RealtimeRefresh table="laboratory_orders" />
+      <RealtimeRefresh table="laboratory_results" />
+
       <PageHeader
         title="Laboratory"
         description="Requests, specimens and verified results."

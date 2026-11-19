@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/components/ui/toast";
 import { useCan } from "@/components/providers/permission-provider";
+import { DocumentManager } from "@/components/documents/document-manager";
 import { formatDateTime } from "@/lib/format";
 import { verifyLaboratoryOrderAction } from "@/app/(workspace)/laboratory/actions";
 import type { LabOrderListRow } from "@/types/hospital";
@@ -388,6 +389,15 @@ export function LabOrdersView({ rows }: LabOrdersViewProps) {
                 personnel may verify results.
               </p>
             </Alert>
+
+            <DocumentManager
+              bucket="laboratory-attachments"
+              scope={selected.encounter_id}
+              title="Laboratory attachments"
+              description="Instrument printouts and scanned request forms."
+              uploadPermission="laboratory.result.create"
+              deletePermission="laboratory.result.create"
+            />
           </div>
         ) : null}
       </Modal>

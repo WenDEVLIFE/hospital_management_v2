@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
+import { DocumentManager } from "@/components/documents/document-manager";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDateTime } from "@/lib/format";
 import type { RadiologyOrderListRow } from "@/types/hospital";
@@ -288,6 +289,15 @@ export function RadiologyOrdersView({ rows }: RadiologyOrdersViewProps) {
                 />
               )}
             </section>
+
+            <DocumentManager
+              bucket="radiology-files"
+              scope={selected.encounter_id}
+              title="Imaging files"
+              description="Scanned images and PDF reports attached to this request."
+              uploadPermission="radiology.report.create"
+              deletePermission="radiology.report.create"
+            />
           </div>
         ) : null}
       </Modal>
