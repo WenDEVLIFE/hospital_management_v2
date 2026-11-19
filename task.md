@@ -23,11 +23,11 @@
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
-| 6 | Frontend → backend integration | 56 / 67 | In progress (6.5 complete; insurance verified; 6 fixture modules remain in 6.7) |
+| 6 | Frontend → backend integration | 57 / 67 | In progress (6.5 complete; insurance and housekeeping verified; 5 fixture modules remain in 6.7) |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **232 / 295** | **79%** |
+| **Total** | | **233 / 295** | **79%** |
 
 ---
 
@@ -415,7 +415,7 @@
 - [x] Blood bank — 2026-11-17, applied and verified end to end: donor → 2-unit donation → crossmatch refused before screening → negative screening passes / positive screening discards → request → crossmatch refused before screening cleared → compatible crossmatch → issue → request completed → re-issue refused. Incompatible crossmatch returns the unit to available and leaves the request pending. Audit rows written for all six actions
 - [ ] Ambulance
 - [ ] Dietary
-- [ ] Housekeeping — migration 20261119000400 adds housekeeping staff, cleaning requests and disinfection records, plus `housekeeping.view/manage`, RLS and `create_cleaning_request` / `advance_cleaning_request`; data layer, creation dialog and status dialog wired. Apply `20261119000400_housekeeping.sql` and `20261119000500_housekeeping_staff_intake.sql` (staff creation, so requests can be assigned without SQL), then verify the lifecycle (assign → start → complete with disinfection → verify)
+- [x] Housekeeping — 2026-11-19, applied and verified 11/11: staff creation (on duty), request creation, assign → start → complete with a disinfection record (chemical, 10-minute contact time) → verify; completion without a contact time is refused, reopening a verified request is refused, `completed_today` incremented, and five audit rows written
 - [ ] Equipment
 - [ ] Mortuary
 - [ ] Notifications
