@@ -3,16 +3,16 @@ import {
   MinusCircleIcon,
   ShieldCheckIcon,
   UsersGroupTwoRoundedIcon,
-  UserPlusRoundedIcon,
 } from "@solar-icons/react/linear";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { PageSection } from "@/components/layout/page-section";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
 import { RolesPanel } from "@/components/settings/roles-panel";
 import { UsersTable } from "@/components/settings/users-table";
+import { StaffAddAction } from "@/components/staff/staff-add-action";
+import { listDepartments } from "@/lib/data/departments";
 import { getUserStats, listRoles, listUsers } from "@/lib/data/users";
 
 export const metadata = {
@@ -20,14 +20,19 @@ export const metadata = {
 };
 
 export default async function UserManagementPage() {
-  const [listResult, rolesResult, statsResult] = await Promise.all([
-    listUsers({ pageSize: 200 }),
-    listRoles(),
-    getUserStats(),
-  ]);
+  const [listResult, rolesResult, statsResult, departmentResult] =
+    await Promise.all([
+      listUsers({ pageSize: 200 }),
+      listRoles(),
+      getUserStats(),
+      listDepartments({ pageSize: 200, isActive: true }),
+    ]);
 
   const rows = listResult.data?.rows ?? [];
   const roles = rolesResult.data ?? [];
+  const departmentOptions = (departmentResult.data?.rows ?? []).map(
+    (department) => ({ id: department.id, name: department.name })
+  );
 
   const departments = Array.from(
     new Set(
@@ -48,11 +53,13 @@ export default async function UserManagementPage() {
         title="User Management"
         description="Staff accounts, roles and access."
         actions={
-          <UnavailableAction
+          <StaffAddAction
             label="Invite User"
+            title="Invite user"
             description="Create a staff account and assign its initial role and department."
-            note="This workflow writes to hospital administration records. It will be enabled once the hospital database connection is available. Nothing is saved in this preview."
-            icon={<UserPlusRoundedIcon className="size-4" aria-hidden="true" />}
+            variant="primary"
+            departments={departmentOptions}
+            roles={roles.map((role) => ({ id: role.id, name: role.name }))}
           />
         }
       />

@@ -32,9 +32,17 @@ const emptyForm = {
 export function StaffAddAction({
   departments,
   roles,
+  label = "Add Staff",
+  title = "Add staff",
+  description = "Create the sign-in account, employment record and first role.",
+  variant = "secondary",
 }: {
   departments: Array<{ id: string; name: string }>;
   roles: Array<{ id: string; name: string }>;
+  label?: string;
+  title?: string;
+  description?: string;
+  variant?: "primary" | "secondary";
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -96,16 +104,16 @@ export function StaffAddAction({
 
   return (
     <>
-      <Button variant="secondary" onClick={() => setOpen(true)}>
+      <Button variant={variant} onClick={() => setOpen(true)}>
         <AddCircleIcon className="size-4" aria-hidden="true" />
-        Add Staff
+        {label}
       </Button>
 
       <Modal
         open={open}
         onClose={close}
-        title="Add staff"
-        description="Create the sign-in account, employment record and first role."
+        title={title}
+        description={description}
         footer={
           <>
             <Button variant="secondary" onClick={close} disabled={submitting}>
