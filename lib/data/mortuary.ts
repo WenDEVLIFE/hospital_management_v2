@@ -1,5 +1,4 @@
 import type {
-  MortuaryAccessLog,
   MortuaryRecord,
   MortuaryRecordDetail,
   MortuaryRecordListRow,

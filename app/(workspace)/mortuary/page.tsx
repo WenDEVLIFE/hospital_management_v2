@@ -13,7 +13,10 @@ import { MortuaryView } from "@/components/mortuary/mortuary-view";
 import { MortuaryWorkflowStrip } from "@/components/mortuary/mortuary-workflow-strip";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import {
+  MortuaryAdmissionAction,
+  ReleaseMortuaryAction,
+} from "@/components/mortuary/mortuary-actions";
 import { Alert } from "@/components/ui/alert";
 import {
   getMortuaryRecordDetails,
@@ -22,6 +25,7 @@ import {
   listMortuaryReleases,
   listMortuaryStorageUnits,
 } from "@/lib/data/mortuary";
+import { listPatients } from "@/lib/data/patients";
 
 export const metadata = {
   title: "Mortuary",
@@ -36,12 +40,14 @@ export default async function MortuaryPage() {
     detailsResult,
     releasesResult,
     storageResult,
+    patientResult,
   ] = await Promise.all([
     getMortuaryStats(),
     listMortuaryRecords({ pageSize: 200 }),
     getMortuaryRecordDetails(),
     listMortuaryReleases({ pageSize: 200 }),
     listMortuaryStorageUnits(),
+    listPatients({ pageSize: 300 }),
   ]);
 
   return (
@@ -51,16 +57,22 @@ export default async function MortuaryPage() {
         description="Deceased patient records, identification, storage, and authorized release."
         actions={
           <>
-            <UnavailableAction
-              label="Authorize Release"
-              description="Verify release documents and authorize release of a body to the next of kin or authorized representative."
-              variant="secondary"
-              icon={<ClipboardListIcon className="size-4" aria-hidden="true" />}
+            <MortuaryAdmissionAction
+              patients={(patientResult.data?.rows ?? []).map((patient) => ({
+                id: patient.id,
+                full_name: patient.full_name,
+                medical_record_number: patient.medical_record_number,
+              }))}
             />
-            <UnavailableAction
-              label="Mortuary Admission"
-              description="Admit a deceased patient to the mortuary and assign a body tag."
-              icon={<ArchiveIcon className="size-4" aria-hidden="true" />}
+            <ReleaseMortuaryAction
+              cases={(recordsResult.data?.rows ?? [])
+                .filter((row) => row.status !== "released")
+                .map((row) => ({
+                  id: row.id,
+                  case_number: row.case_number,
+                  patient_name: row.patient_name,
+                  identification_status: row.identification_status,
+                }))}
             />
           </>
         }

@@ -23,11 +23,11 @@
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
 | 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
-| 6 | Frontend → backend integration | 59 / 67 | In progress (8 modules verified; 3 fixture modules remain: equipment, mortuary, notifications) |
+| 6 | Frontend → backend integration | 60 / 67 | In progress (9 modules verified; 2 fixture modules remain: equipment and notifications) |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **235 / 295** | **79%** |
+| **Total** | | **236 / 295** | **79%** |
 
 ---
 
@@ -417,7 +417,7 @@
 - [x] Dietary — 2026-11-19, applied and verified 12/12: catalogue shipped by migration 20261119000800, assessment DIET-2026-0001 created with two allergies, three trays generated with the allergens copied and slots at 07:00/12:00/18:00, unsupported meal type rejected, tray advanced preparing → ready → delivered with prepared/delivered stamped, re-delivery rejected, four audit rows
 - [x] Housekeeping — 2026-11-19, applied and verified 11/11: staff creation (on duty), request creation, assign → start → complete with a disinfection record (chemical, 10-minute contact time) → verify; completion without a contact time is refused, reopening a verified request is refused, `completed_today` incremented, and five audit rows written
 - [ ] Equipment
-- [ ] Mortuary
+- [x] Mortuary — 2026-11-19, applied and verified 12/12: case MOR-2026-0001 admitted into MU-01 (unit occupied), duplicate body tag rejected, a discrepancy case blocked from release, release without a document rejected, release completed with recipient and document freeing the unit, second release rejected, access log and audit rows written. Admission and release dialogs are wired
 - [ ] Notifications
 
 ---
