@@ -22,12 +22,12 @@
 | 2 | UI foundation | 31 / 33 | Complete (2 follow-ups) |
 | 3 | UI modules | 48 / 48 | Complete |
 | 4 | Row Level Security | 25 / 25 | Verified (escalation suite + view isolation) |
-| 5 | Backend services | 17 / 28 | RPCs, storage flow, realtime RLS and concurrency verified; buckets 3/8, Edge Functions and admin bootstrap pending |
-| 6 | Frontend ↔ backend integration | 51 / 67 | In progress (6.5 helpers and visibility done; upload UI, signed-URL viewer and realtime consumers next; 8 fixture modules remain in 6.7) |
+| 5 | Backend services | 22 / 28 | RPCs, storage, realtime RLS, concurrency and the 5 Edge Functions are done; buckets 3/8, function secrets and admin bootstrap pending |
+| 6 | Frontend → backend integration | 52 / 67 | In progress (6.5 helpers and visibility done; upload UI, signed-URL viewer and realtime consumers next; 7 fixture modules remain in 6.7) |
 | 7 | QA & security verification | 14 / 40 | In progress (escalation, concurrency, transfer, discharge, note and lab gates verified) |
 | 8 | Cleanup & debt | 0 / 10 | Not started |
 | 9 | Deployment | 0 / 7 | Not started |
-| **Total** | | **222 / 295** | **75%** |
+| **Total** | | **228 / 295** | **77%** |
 
 ---
 
