@@ -103,3 +103,15 @@ export const advanceCleaningRequestSchema = z
 export type AdvanceCleaningRequestInput = z.infer<
   typeof advanceCleaningRequestSchema
 >;
+
+export const housekeepingStaffSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Enter the staff name.")
+    .max(160, "Keep the name under 160 characters."),
+  role: z.string().trim().max(80, "Keep the role short."),
+  contactNumber: z.string().trim().max(30, "Keep the contact number short."),
+});
+
+export type HousekeepingStaffInput = z.infer<typeof housekeepingStaffSchema>;

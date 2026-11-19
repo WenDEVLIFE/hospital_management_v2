@@ -21,6 +21,7 @@ import {
   type FilterConfig,
 } from "@/components/module/record-table";
 import {
+  AddHousekeepingStaffAction,
   CleaningRequestActions,
   CreateCleaningRequestAction,
 } from "./housekeeping-actions";
@@ -481,6 +482,7 @@ export function HousekeepingView({
               `${row.name} ${row.role} ${row.status} ${row.current_assignment ?? ""}`
             }
             filters={staffFilters}
+            toolbarActions={<AddHousekeepingStaffAction />}
             emptyTitle="No staff records"
             emptyDescription="There are no housekeeping staff matching your filters."
             emptyIcon={<UserRoundedIcon className="size-5" aria-hidden="true" />}

@@ -16,10 +16,12 @@ import { useCan } from "@/components/providers/permission-provider";
 import {
   advanceCleaningRequestAction,
   createCleaningRequestAction,
+  createHousekeepingStaffAction,
 } from "@/app/(workspace)/housekeeping/actions";
 import {
   advanceCleaningRequestSchema,
   createCleaningRequestSchema,
+  housekeepingStaffSchema,
 } from "@/lib/validations/housekeeping";
 import type { CleaningRequestListRow, HousekeepingStaff } from "@/types/hospital";
 
@@ -409,6 +411,128 @@ export function CleaningRequestActions({
               onChange={(event) => setNotes(event.target.value)}
             />
           </FormField>
+        </form>
+      </Modal>
+    </>
+  );
+}
+
+export function AddHousekeepingStaffAction() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const can = useCan();
+  const [open, setOpen] = React.useState(false);
+  const [values, setValues] = React.useState({
+    name: "",
+    role: "Housekeeper",
+    contactNumber: "",
+  });
+  const [error, setError] = React.useState<string | null>(null);
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  if (!can("housekeeping.manage")) {
+    return null;
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
+
+    const parsed = housekeepingStaffSchema.safeParse(values);
+
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Check the staff details.");
+      return;
+    }
+
+    setError(null);
+    setFormError(null);
+    setSubmitting(true);
+
+    try {
+      const result = await createHousekeepingStaffAction(parsed.data);
+
+      if (!result.ok) {
+        setFormError(result.formError);
+        return;
+      }
+
+      toast({
+        title: "Staff added",
+        description: `${parsed.data.name} is on duty.`,
+        variant: "success",
+      });
+      setValues({ name: "", role: "Housekeeper", contactNumber: "" });
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setFormError("We could not add the staff member. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+        Add staff
+      </Button>
+
+      <Modal
+        open={open}
+        onClose={() => !submitting && setOpen(false)}
+        title="Add housekeeping staff"
+        description="Staff appear in the assignment list while on duty."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" form="hk-staff-form" loading={submitting}>
+              Add staff
+            </Button>
+          </>
+        }
+      >
+        <form id="hk-staff-form" noValidate onSubmit={handleSubmit} className="space-y-4">
+          {formError ? (
+            <Alert variant="danger" title="Unable to add staff">
+              {formError}
+            </Alert>
+          ) : null}
+          {error ? <Alert variant="warning" title="Check the form">{error}</Alert> : null}
+
+          <FormField label="Name" htmlFor="hk_staff_name" required>
+            <Input
+              id="hk_staff_name"
+              value={values.name}
+              onChange={(event) => setValues((c) => ({ ...c, name: event.target.value }))}
+            />
+          </FormField>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Role" htmlFor="hk_staff_role">
+              <Input
+                id="hk_staff_role"
+                value={values.role}
+                onChange={(event) => setValues((c) => ({ ...c, role: event.target.value }))}
+              />
+            </FormField>
+
+            <FormField label="Contact number" htmlFor="hk_staff_contact" hint="Optional.">
+              <Input
+                id="hk_staff_contact"
+                value={values.contactNumber}
+                onChange={(event) =>
+                  setValues((c) => ({ ...c, contactNumber: event.target.value }))
+                }
+              />
+            </FormField>
+          </div>
         </form>
       </Modal>
     </>

@@ -7,8 +7,10 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   advanceCleaningRequestSchema,
   createCleaningRequestSchema,
+  housekeepingStaffSchema,
   type AdvanceCleaningRequestInput,
   type CreateCleaningRequestInput,
+  type HousekeepingStaffInput,
 } from "@/lib/validations/housekeeping";
 
 export type HousekeepingWriteResult =
@@ -125,6 +127,35 @@ export async function advanceCleaningRequestAction(
       ? Number(value.contactMinutes)
       : null,
     p_notes: value.notes?.trim() || null,
+  });
+
+  if (error) {
+    return { ok: false, formError: housekeepingErrorMessage(error) };
+  }
+
+  revalidateHousekeeping();
+
+  return { ok: true, id: data ? String(data) : undefined };
+}
+
+export async function createHousekeepingStaffAction(
+  input: HousekeepingStaffInput
+): Promise<HousekeepingWriteResult> {
+  const parsed = housekeepingStaffSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Check the staff details.",
+    };
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("create_housekeeping_staff", {
+    p_name: value.name,
+    p_role: value.role?.trim() || "Housekeeper",
+    p_contact_number: value.contactNumber?.trim() || null,
   });
 
   if (error) {
