@@ -13,7 +13,10 @@ import { AmbulanceWorkflowStrip } from "@/components/ambulance/ambulance-workflo
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/module/error-state";
 import { StatCard } from "@/components/module/stat-card";
-import { UnavailableAction } from "@/components/module/unavailable-action";
+import {
+  DispatchAmbulanceAction,
+  RegisterAmbulanceAction,
+} from "@/components/ambulance/ambulance-actions";
 import {
   getAmbulanceStats,
   getAmbulanceTripDetails,
@@ -23,6 +26,7 @@ import {
   listAmbulanceVehicles,
   listFuelRecords,
 } from "@/lib/data/ambulance";
+import { listPatients } from "@/lib/data/patients";
 
 export const metadata = {
   title: "Ambulance",
@@ -39,6 +43,7 @@ export default async function AmbulancePage() {
     tripDetailsResult,
     maintenanceResult,
     fuelResult,
+    patientResult,
   ] = await Promise.all([
     getAmbulanceStats(),
     listAmbulanceVehicles({ pageSize: 200 }),
@@ -47,6 +52,7 @@ export default async function AmbulancePage() {
     getAmbulanceTripDetails(),
     listAmbulanceMaintenance(),
     listFuelRecords(),
+    listPatients({ pageSize: 300 }),
   ]);
 
   return (
@@ -56,16 +62,13 @@ export default async function AmbulancePage() {
         description="Fleet availability, emergency dispatch, patient transport, and vehicle records."
         actions={
           <>
-            <UnavailableAction
-              label="Register Ambulance"
-              description="Register a vehicle, plate number, equipment level, and crew assignment."
-              variant="secondary"
-              icon={<BusIcon className="size-4" aria-hidden="true" />}
-            />
-            <UnavailableAction
-              label="Dispatch Ambulance"
-              description="Assign an available ambulance and medical crew to a transport request."
-              icon={<SirenRoundedIcon className="size-4" aria-hidden="true" />}
+            <RegisterAmbulanceAction />
+            <DispatchAmbulanceAction
+              patients={(patientResult.data?.rows ?? []).map((patient) => ({
+                id: patient.id,
+                full_name: patient.full_name,
+                medical_record_number: patient.medical_record_number,
+              }))}
             />
           </>
         }
