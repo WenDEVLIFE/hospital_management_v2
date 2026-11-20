@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify:security": "node --env-file=.env.local scripts/verify-security.mjs"
+    "verify:security": "node --env-file=.env.local scripts/verify-security.mjs",
+    "typecheck": "tsc --noEmit",
+    "db:types": "node scripts/check-db-types.mjs --write",
+    "db:types:check": "node scripts/check-db-types.mjs",
+    "verify:ci": "npm run lint && npm run typecheck && npm run db:types:check && npm run build"
   },
   "dependencies": {
     "@solar-icons/react": "2.3.5",

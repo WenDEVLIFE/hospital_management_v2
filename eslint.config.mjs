@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated from the linked Supabase project; never hand-edited.
+    "types/database.generated.ts",
   ]),
 ]);
 

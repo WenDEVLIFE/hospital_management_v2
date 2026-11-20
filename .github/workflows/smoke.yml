@@ -1,0 +1,35 @@
+name: Staging smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    name: Authorization probes against staging
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.STAGING_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Require staging credentials
+        run: |
+          if [ -z "${NEXT_PUBLIC_SUPABASE_URL}" ] || [ -z "${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}" ]; then
+            echo "::error::Configure STAGING_SUPABASE_URL and STAGING_SUPABASE_PUBLISHABLE_KEY in the staging environment."
+            exit 1
+          fi
+
+      - name: Run authorization probes
+        run: node scripts/verify-security.mjs
