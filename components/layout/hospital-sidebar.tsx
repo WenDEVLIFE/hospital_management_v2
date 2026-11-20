@@ -28,7 +28,7 @@ function SidebarNav({ collapsed, onNavigate }: SidebarNavProps) {
   return (
     <nav
       aria-label="Primary"
-      className="flex-1 space-y-5 overflow-y-auto px-2 py-4"
+      className="min-h-0 flex-1 space-y-5 overflow-y-auto px-2 py-4"
     >
       {sections.map((section) => (
         <div key={section.title}>
@@ -119,7 +119,7 @@ export function HospitalSidebar() {
       <aside
         aria-label="Main navigation"
         className={cn(
-          "hidden h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-hospital-green-hover bg-hospital-green sm:flex",
+          "hidden h-full min-h-0 shrink-0 flex-col border-r border-hospital-green-hover bg-hospital-green sm:flex",
           collapsed ? "w-[72px]" : "w-64"
         )}
       >

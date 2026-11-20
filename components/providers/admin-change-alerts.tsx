@@ -476,7 +476,16 @@ export function AdminChangeAlerts() {
 
               if (ready) {
                 playSecurityAlertSound();
+                return;
               }
+
+              toast({
+                title: "Audio is blocked",
+                description:
+                  "Click again, or check this tab and your device volume. Browsers require one interaction before playing sound.",
+                variant: "warning",
+                duration: 8000,
+              });
             })();
           }}
         >

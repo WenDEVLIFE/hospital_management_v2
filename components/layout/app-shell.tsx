@@ -7,7 +7,7 @@ import { SidebarProvider } from "./sidebar-provider";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <div className="flex h-screen flex-col overflow-hidden bg-hospital-surface">
+      <div className="fixed inset-0 flex flex-col overflow-hidden bg-hospital-surface">
         <React.Suspense
           fallback={
             <div
@@ -19,19 +19,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <HospitalHeader />
         </React.Suspense>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
           <React.Suspense
             fallback={
               <div
                 aria-hidden="true"
-                className="hidden h-[calc(100vh-4rem)] w-64 shrink-0 border-r border-hospital-border bg-white sm:block"
+                className="hidden h-full w-64 shrink-0 border-r border-hospital-border bg-white sm:block"
               />
             }
           >
             <HospitalSidebar />
           </React.Suspense>
 
-          <main className="flex-1 overflow-y-auto">
+          <main className="min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto w-full max-w-[1440px] space-y-6 p-6">
               <React.Suspense fallback={null}>
                 <Breadcrumbs />

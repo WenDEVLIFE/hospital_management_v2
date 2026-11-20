@@ -35,11 +35,11 @@ function WorkspaceFallback() {
   return (
     <div
       aria-hidden="true"
-      className="flex min-h-screen flex-col bg-hospital-surface"
+      className="fixed inset-0 flex flex-col overflow-hidden bg-hospital-surface"
     >
       <div className="h-16 w-full shrink-0 border-b border-hospital-border bg-hospital-green" />
-      <div className="flex flex-1">
-        <div className="hidden h-[calc(100vh-4rem)] w-64 shrink-0 bg-hospital-green sm:block" />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="hidden h-full w-64 shrink-0 bg-hospital-green sm:block" />
         <div className="flex-1 p-6">
           <div className="h-6 w-48 rounded bg-hospital-surface-muted" />
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
