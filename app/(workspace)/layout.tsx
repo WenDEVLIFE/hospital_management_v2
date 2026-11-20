@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { AdminChangeAlerts } from "@/components/providers/admin-change-alerts";
 import { PermissionProvider } from "@/components/providers/permission-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { getCurrentUserAccess } from "@/lib/auth/access";
@@ -23,6 +24,7 @@ async function WorkspaceContent({ children }: { children: React.ReactNode }) {
       value={{ isAdmin: access.isAdmin, permissions: access.permissions }}
     >
       <ToastProvider>
+        <AdminChangeAlerts />
         <AppShell>{children}</AppShell>
       </ToastProvider>
     </PermissionProvider>

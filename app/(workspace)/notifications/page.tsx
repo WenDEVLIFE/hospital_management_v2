@@ -12,6 +12,7 @@ import { StatCard } from "@/components/module/stat-card";
 import { NewAnnouncementAction } from "@/components/notifications/notification-actions";
 import { NotificationsView } from "@/components/notifications/notifications-view";
 import { NotificationsWorkflowStrip } from "@/components/notifications/notifications-workflow-strip";
+import { RealtimeRefresh } from "@/components/providers/realtime-refresh";
 import { Alert } from "@/components/ui/alert";
 import { listDepartments } from "@/lib/data/departments";
 import {
@@ -52,6 +53,8 @@ export default async function NotificationsPage() {
 
   return (
     <div className="space-y-6">
+      <RealtimeRefresh table="notifications" />
+
       <PageHeader
         title="Notifications"
         description="Internal notifications, delivery log, staff announcements, and notification preferences."

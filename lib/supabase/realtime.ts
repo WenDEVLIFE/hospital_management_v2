@@ -60,6 +60,10 @@ export function useRealtimeTable({
   onChange,
 }: RealtimeSubscriptionOptions) {
   const handlerRef = React.useRef(onChange);
+  // Every subscriber needs its own topic. Reusing one topic makes supabase-js
+  // hand back an already-joined channel, which throws when a second binding is
+  // added, and lets one component's cleanup remove another's listener.
+  const instanceId = React.useId().replace(/[^a-zA-Z0-9]/g, "");
 
   React.useEffect(() => {
     handlerRef.current = onChange;
@@ -67,7 +71,7 @@ export function useRealtimeTable({
 
   React.useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    const channelName = filter ? `${table}:${filter}` : table;
+    const channelName = `${table}${filter ? `:${filter}` : ""}:${instanceId}`;
     const channel = supabase
       .channel(`realtime-${channelName}`)
       .on(
@@ -89,7 +93,7 @@ export function useRealtimeTable({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [table, event, filter]);
+  }, [table, event, filter, instanceId]);
 }
 
 /**
