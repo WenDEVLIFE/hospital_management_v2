@@ -11,6 +11,7 @@ import {
 
 import { PageHeader } from "@/components/layout/page-header";
 import { PageSection } from "@/components/layout/page-section";
+import { PrimaryColorValue } from "@/components/settings/primary-color-value";
 import {
   SettingsLinkList,
   type SettingsLink,
@@ -153,7 +154,7 @@ export default async function SettingsPage() {
                 aria-hidden="true"
               />
               <span className="font-mono text-xs">--hospital-green</span>
-              <span className="text-hospital-text-muted">#007A55</span>
+              <PrimaryColorValue />
             </dd>
           </div>
           <div>

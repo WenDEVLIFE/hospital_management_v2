@@ -28,93 +28,6 @@ export interface ReportsCategoryGridProps {
   cards: ReportCard[];
 }
 
-const DEFAULT_COLUMNS = [
-  "Report period",
-  "Department",
-  "Record count",
-  "Prepared by",
-];
-
-const REPORT_COLUMNS: Record<string, string[]> = {
-  "Patient Registration": [
-    "Medical record number",
-    "Patient name",
-    "Sex",
-    "Age",
-    "Registration date",
-    "Registration status",
-  ],
-  "Appointment Activity": [
-    "Appointment number",
-    "Patient name",
-    "Department",
-    "Physician",
-    "Scheduled date",
-    "Appointment status",
-  ],
-  "Admission and Discharge": [
-    "Admission number",
-    "Patient name",
-    "Department",
-    "Attending physician",
-    "Admission date",
-    "Discharge date",
-    "Length of stay",
-    "Admission status",
-  ],
-  "Bed Occupancy": [
-    "Department",
-    "Room number",
-    "Bed number",
-    "Bed status",
-    "Occupied days",
-    "Occupancy rate",
-  ],
-  "Laboratory Activity": [
-    "Order number",
-    "Patient name",
-    "Test name",
-    "Priority",
-    "Ordered at",
-    "Result status",
-    "Verified at",
-  ],
-  "Pharmacy Dispensing": [
-    "Prescription number",
-    "Patient name",
-    "Medication",
-    "Quantity dispensed",
-    "Dispensed by",
-    "Dispensed at",
-  ],
-  "Billing and Collections": [
-    "Invoice number",
-    "Patient name",
-    "Invoice date",
-    "Total amount",
-    "Amount paid",
-    "Balance",
-    "Invoice status",
-  ],
-  "Inventory and Stock": [
-    "Item code",
-    "Item name",
-    "Unit",
-    "Quantity on hand",
-    "Reorder level",
-    "Nearest expiration",
-    "Stock status",
-  ],
-  "Staff Directory": [
-    "Staff number",
-    "Staff name",
-    "Role",
-    "Department",
-    "Employment type",
-    "Account status",
-  ],
-};
-
 function iconForReport(title: string) {
   const normalized = title.toLowerCase();
 
@@ -154,10 +67,6 @@ export function ReportsCategoryGrid({ cards }: ReportsCategoryGridProps) {
       />
     );
   }
-
-  const columns = selected
-    ? REPORT_COLUMNS[selected.title] ?? DEFAULT_COLUMNS
-    : [];
 
   return (
     <>
@@ -258,7 +167,7 @@ export function ReportsCategoryGrid({ cards }: ReportsCategoryGridProps) {
                 Columns this report would contain
               </p>
               <ul className="mt-2 space-y-1.5">
-                {columns.map((column) => (
+                {selected.columns.map((column) => (
                   <li
                     key={column}
                     className="flex gap-2 text-sm text-hospital-text"

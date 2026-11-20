@@ -1135,9 +1135,14 @@ create table public.vital_signs (
 
   recorded_at timestamptz not null default now(),
 
+  verification_status text not null default 'unverified'
+    check (verification_status in ('unverified', 'verified')),
+
   created_at timestamptz not null default now()
 );
 ```
+
+The recording policy requires new observations to start unverified. The application currently records and displays the status, with no verification action exposed.
 
 ## 12.3 Diagnoses
 
@@ -1489,6 +1494,19 @@ create table public.medications (
   updated_at timestamptz not null default now()
 );
 ```
+
+### Medication stock
+
+`medication_stock` links a medication to one inventory item by their IDs.
+Migration `20261120000100` backfills existing links from matching codes.
+When onboarding a new tracked medication, provision its link through a
+privileged database migration or maintenance operation. Renaming either code
+leaves the link intact.
+
+Pharmacy reads `medication_stock_balances` with its existing permissions.
+Inventory batches hold the quantities and expiries. Dispensing resolves the
+linked item, updates its batches, and records stock transactions in the same
+database transaction.
 
 ## 16.2 Prescriptions
 

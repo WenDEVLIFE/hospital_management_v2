@@ -1,6 +1,7 @@
 import type {
   BillingStats,
   Invoice,
+  InvoiceItem,
   InvoiceListRow,
   Payment,
   PaymentListRow,
@@ -15,7 +16,7 @@ import {
 import { toDataError, type DataResult, type PagedResult } from "./result";
 
 const INVOICE_COLUMNS =
-  "*, patients(first_name, middle_name, last_name, suffix, medical_record_number)";
+  "*, patients(first_name, middle_name, last_name, suffix, medical_record_number), invoice_items(*)";
 
 const PAYMENT_COLUMNS =
   "*, invoices(invoice_number, patients(first_name, middle_name, last_name, suffix)), profiles!payments_received_by_fkey(full_name)";
@@ -23,6 +24,7 @@ const PAYMENT_COLUMNS =
 type Relation<T> = T | T[] | null;
 
 type InvoiceJoinRow = Invoice & {
+  invoice_items: InvoiceItem[] | null;
   patients: Relation<{
     first_name: string;
     middle_name: string | null;
@@ -91,6 +93,7 @@ function toInvoiceListRow(row: InvoiceJoinRow): InvoiceListRow {
     admission_id: row.admission_id,
     encounter_id: row.encounter_id,
     invoice_date: row.invoice_date,
+    line_items: row.invoice_items ?? [],
     subtotal: Number(row.subtotal),
     discount_amount: Number(row.discount_amount),
     total_amount: Number(row.total_amount),
@@ -147,6 +150,8 @@ export async function listInvoices(
 
   const { data, error, count } = await query
     .order("invoice_date", { ascending: false })
+    .order("created_at", { referencedTable: "invoice_items" })
+    .order("id", { referencedTable: "invoice_items" })
     .range(meta.offset, meta.offset + meta.pageSize - 1);
 
   if (error) {

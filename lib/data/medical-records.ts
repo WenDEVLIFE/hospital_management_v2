@@ -16,7 +16,7 @@ const ENCOUNTER_LIST_COLUMNS =
   "*, patients(first_name, middle_name, last_name, suffix, medical_record_number), departments(name), physicians(staff_profiles(first_name, last_name))";
 
 const ENCOUNTER_DETAIL_COLUMNS =
-  "*, patients(*), vital_signs(*), diagnoses(*), clinical_notes(*)";
+  "*, patients(*), vital_signs(*), diagnoses(*), clinical_notes(*), prescriptions(id, prescription_number, prescription_date, status)";
 
 const NOT_FOUND = {
   code: "NOT_FOUND",
@@ -47,6 +47,7 @@ type EncounterDetailJoinRow = Encounter & {
   vital_signs: VitalSigns[] | null;
   diagnoses: Diagnosis[] | null;
   clinical_notes: ClinicalNote[] | null;
+  prescriptions: EncounterDetail["prescriptions"] | null;
 };
 
 function firstRelation<T>(value: Relation<T>): T | null {
@@ -139,6 +140,10 @@ function toEncounterDetail(
       left.recorded_at.localeCompare(right.recorded_at)
     ),
     diagnoses: row.diagnoses ?? [],
+    prescriptions: [...(row.prescriptions ?? [])].sort((left, right) =>
+      right.prescription_date.localeCompare(left.prescription_date) ||
+      left.prescription_number.localeCompare(right.prescription_number)
+    ),
     clinical_notes: [...(row.clinical_notes ?? [])].sort((left, right) =>
       left.created_at.localeCompare(right.created_at)
     ),

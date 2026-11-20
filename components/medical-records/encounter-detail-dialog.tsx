@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
   ClipboardListIcon,
-  DangerTriangleIcon,
   DocumentTextIcon,
   HeartPulseIcon,
   Pills2Icon,
@@ -19,6 +18,7 @@ import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/components/ui/toast";
 import {
+  formatDate,
   formatDateTime,
   formatIdentifier,
   formatName,
@@ -330,19 +330,10 @@ export function EncounterDetailDialog({
                           names={staffNamesByUserId}
                         />
                       </HeaderFact>
+                      <HeaderFact label="Verification">
+                        <StatusBadge status={vital.verification_status ?? "unverified"} />
+                      </HeaderFact>
                     </dl>
-
-                    <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-amber-800">
-                      <DangerTriangleIcon
-                        className="mt-0.5 size-3.5 shrink-0"
-                        aria-hidden="true"
-                      />
-                      <span>
-                        Verification status is not recorded for this
-                        observation. Treat these values as unverified until
-                        reviewed by authorized staff.
-                      </span>
-                    </p>
                   </div>
                 ))}
               </div>
@@ -481,12 +472,28 @@ export function EncounterDetailDialog({
             title="Prescriptions"
             icon={<Pills2Icon className="size-4" aria-hidden="true" />}
           >
-            <EmptyState
-              icon={<Pills2Icon className="size-5" aria-hidden="true" />}
-              title="Prescriptions not included"
-              description="Prescription records are not part of the encounter detail payload. Review the Prescriptions module for medication orders."
-              className="py-6"
-            />
+            {detail.prescriptions.length > 0 ? (
+              <ul className="divide-y divide-hospital-border-subtle">
+                {detail.prescriptions.map((prescription) => (
+                  <li key={prescription.id} className="flex flex-wrap items-center gap-3 py-2">
+                    <span className="font-mono text-xs">
+                      {formatIdentifier(prescription.prescription_number)}
+                    </span>
+                    <span className="text-xs text-hospital-text-muted">
+                      {formatDate(prescription.prescription_date)}
+                    </span>
+                    <StatusBadge status={prescription.status} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <EmptyState
+                icon={<Pills2Icon className="size-5" aria-hidden="true" />}
+                title="No prescriptions to display"
+                description="No prescription records are visible for this encounter."
+                className="py-6"
+              />
+            )}
           </RecordSection>
         </div>
       )}

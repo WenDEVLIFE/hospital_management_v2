@@ -495,16 +495,16 @@ Run with `npm run verify:security` (live probe against the seeded demo project; 
 **Goal:** Leave no misleading code behind.
 **Depends on:** can run in parallel with Phases 4–7.
 
-- [ ] Add `!.env.example` to `.gitignore`
-- [ ] Ignore `supabase/.temp/` and `supabase/cli-latest`
-- [ ] Replace the 2 raw `<table>` elements with shared primitives: `components/billing/invoice-detail-dialog.tsx`, `components/dashboard/admission-trend-chart.tsx` (chart data fallback)
-- [ ] Move the hardcoded `#007A55` display value in `app/(workspace)/settings/page.tsx` to a token read
-- [ ] Align report category labels with `THEME.MD` §8.13 wording
-- [ ] Extend data types for fields the UI currently reports as missing: `EncounterDetail.prescriptions`, `VitalSigns.verification_status`, `InvoiceListRow.line_items`, `StaffListRow.work_schedule`
-- [ ] Add a medication stock table (currently synthesized from `inventory_batches` / `stock_transactions`)
+- [x] Keep `!.env.example` in `.gitignore` — verified the tracked template remains unignored.
+- [x] Ignore `supabase/.temp/` and `supabase/cli-latest` — removed the cached CLI marker from tracking.
+- [x] Replace the 2 raw `<table>` elements with shared primitives: `components/billing/invoice-detail-dialog.tsx`, `components/dashboard/admission-trend-chart.tsx` (chart data fallback)
+- [x] Move the hardcoded `#007A55` display value in `app/(workspace)/settings/page.tsx` to a token read
+- [x] Align all nine report labels with `THEME.MD` §8.13 and keep each preview’s column list with its report configuration.
+- [x] Extend data types for fields the UI currently reports as missing: `EncounterDetail.prescriptions`, `VitalSigns.verification_status`, `InvoiceListRow.line_items`, `StaffListRow.work_schedule`
+- [x] Add a dedicated medication stock table with stable inventory links and an RLS-backed balance view. Verified backfill, seed replay, access checks, and transactional dispensing in disposable PostgreSQL. Apply migration `20261120000100` before deploying the application.
 - [x] Remove `export const instant = false` from `app/(workspace)/layout.tsx` — 2026-11-19, the layout suspends the access read and the workspace has a `loading.tsx`; no opt-out remains
-- [ ] Remove the localStorage session key `spmc_auth_session` and `spmc_password_reset_request` remnants after Phase 6
-- [ ] Add `turbopack.root` to `next.config.ts` to silence the `package-lock.json outside Git repository` warning
+- [x] Verify that the Phase 6 cleanup removed the `spmc_auth_session` and `spmc_password_reset_request` keys from application code.
+- [x] Add `turbopack.root` to `next.config.ts` to silence the `package-lock.json outside Git repository` warning
 
 ---
 

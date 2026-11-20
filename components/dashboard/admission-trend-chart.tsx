@@ -1,4 +1,12 @@
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatDate } from "@/lib/format";
 import type { DashboardOverview } from "@/types/hospital";
 
@@ -120,46 +128,46 @@ export function AdmissionTrendChart({ data }: AdmissionTrendChartProps) {
           View data table
         </summary>
 
-        <div className="mt-2 overflow-x-auto">
-          <table className="w-full min-w-[240px] border-collapse text-xs">
+        <div className="mt-2">
+          <Table scrollLabel="Admissions and discharges by month" className="w-full min-w-[240px] border-collapse text-xs">
             <caption className="sr-only">
               Admissions and discharges by month
             </caption>
-            <thead>
-              <tr className="border-b border-hospital-border text-left text-[11px] text-hospital-text-muted">
-                <th scope="col" className="py-1.5 pr-3 font-medium">
+            <TableHeader>
+              <TableRow className="border-b border-hospital-border text-left text-[11px] text-hospital-text-muted">
+                <TableHead scope="col" className="h-auto px-3 py-1.5 text-[11px] font-medium">
                   Month
-                </th>
-                <th scope="col" className="py-1.5 pr-3 text-right font-medium">
+                </TableHead>
+                <TableHead scope="col" className="h-auto px-3 py-1.5 text-right text-[11px] font-medium">
                   Admissions
-                </th>
-                <th scope="col" className="py-1.5 text-right font-medium">
+                </TableHead>
+                <TableHead scope="col" className="h-auto px-3 py-1.5 text-right text-[11px] font-medium">
                   Discharges
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.map((point) => (
-                <tr
+                <TableRow
                   key={point.month}
                   className="border-b border-hospital-border-subtle last:border-b-0"
                 >
-                  <th
+                  <TableHead
                     scope="row"
-                    className="py-1.5 pr-3 text-left font-normal text-hospital-text"
+                    className="h-auto px-3 py-1.5 text-left text-xs font-normal text-hospital-text"
                   >
                     {monthLabel(point.month)}
-                  </th>
-                  <td className="py-1.5 pr-3 text-right tabular-nums text-hospital-text">
+                  </TableHead>
+                  <TableCell className="px-3 py-1.5 text-right text-xs tabular-nums">
                     {point.admissions}
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums text-hospital-text">
+                  </TableCell>
+                  <TableCell className="px-3 py-1.5 text-right text-xs tabular-nums">
                     {point.discharges}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </details>
     </div>

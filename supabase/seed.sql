@@ -1240,8 +1240,7 @@ values
   ('ab000000-0000-4000-8000-000000000008', 'ITM-0008', 'Syringe 5mL', 'Disposable 5mL syringe.', (select id from public.inventory_categories where name = 'Medical Supplies'), 'piece', 100, '11111111-1111-4111-8111-00000000000c')
 on conflict (id) do nothing;
 
--- Medication stock is represented as inventory items whose item_code matches
--- the medication code. A dedicated stock table remains future work.
+-- Demo inventory items for the medications linked in medication_stock below.
 insert into public.inventory_items (
   id, item_code, name, description, category_id, unit, reorder_level, created_by
 )
@@ -1414,6 +1413,12 @@ values
 on conflict (prefix) do update
 set last_value = greatest(seq.last_value, excluded.last_value),
     updated_at = now();
+
+insert into public.medication_stock (medication_id, inventory_item_id)
+select medication.id, item.id
+from public.medications as medication
+join public.inventory_items as item on item.item_code = medication.medication_code
+on conflict do nothing;
 
 commit;
 

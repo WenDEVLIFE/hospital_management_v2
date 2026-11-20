@@ -5,6 +5,7 @@ import type {
   AppointmentListRow,
   Encounter,
   Invoice,
+  InvoiceItem,
   InvoiceListRow,
   LaboratoryResult,
   MedicalHistory,
@@ -266,9 +267,11 @@ export async function getPatientSummary(
       .order("prescription_date", { ascending: false }),
     supabase
       .from("invoices")
-      .select("*")
+      .select("*, invoice_items(*)")
       .eq("patient_id", id)
-      .order("invoice_date", { ascending: false }),
+      .order("invoice_date", { ascending: false })
+      .order("created_at", { referencedTable: "invoice_items" })
+      .order("id", { referencedTable: "invoice_items" }),
   ]);
 
   // Laboratory results are reached through orders -> items. Querying in steps
@@ -395,7 +398,7 @@ export async function getPatientSummary(
 
   const invoices: InvoiceListRow[] = invoicesResult.error
     ? []
-    : ((invoicesResult.data ?? []) as Invoice[]).map((row) => ({
+    : ((invoicesResult.data ?? []) as (Invoice & { invoice_items: InvoiceItem[] | null })[]).map((row) => ({
         id: row.id,
         invoice_number: row.invoice_number,
         patient_id: row.patient_id,
@@ -404,6 +407,7 @@ export async function getPatientSummary(
         admission_id: row.admission_id,
         encounter_id: row.encounter_id,
         invoice_date: row.invoice_date,
+        line_items: row.invoice_items ?? [],
         subtotal: Number(row.subtotal),
         discount_amount: Number(row.discount_amount),
         total_amount: Number(row.total_amount),

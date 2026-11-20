@@ -5,7 +5,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatIdentifier, formatName } from "@/lib/format";
+import { formatDate, formatIdentifier, formatName } from "@/lib/format";
 import type { StaffListRow } from "@/types/hospital";
 
 export interface StaffDetailDialogProps {
@@ -171,6 +171,26 @@ export function StaffDetailDialog({
                 },
               ]}
             />
+          </DetailSection>
+
+          <DetailSection title="Work schedule" description="Up to 14 published shifts, most recent first.">
+            {staff.work_schedule.length === 0 ? (
+              <p className="text-sm text-hospital-text-muted">No published shifts to display.</p>
+            ) : (
+              <ul className="divide-y divide-hospital-border-subtle">
+                {staff.work_schedule.map((shift) => (
+                  <li key={shift.id} className="flex flex-wrap items-center gap-3 py-2 text-sm">
+                    <span>{formatDate(shift.shift_date)}</span>
+                    <span className="capitalize">{shift.shift_type.replaceAll("_", " ")}</span>
+                    {shift.shift_type !== "off" && (
+                      <span className="tabular-nums text-hospital-text-muted">
+                        {shift.start_time.slice(0, 5)}–{shift.end_time.slice(0, 5)}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </DetailSection>
 
           <DetailSection

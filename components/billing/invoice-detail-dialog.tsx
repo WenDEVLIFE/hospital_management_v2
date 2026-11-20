@@ -7,20 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { InvoiceListRow, PaymentListRow } from "@/types/hospital";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
-
-export interface InvoiceChargeLine {
-  id: string;
-  description: string;
-  quantity: number;
-  unit_price: number;
-  line_total: number;
-}
 
 export interface InvoiceDetailDialogProps {
   invoice: InvoiceListRow | null;
   payments: PaymentListRow[];
-  items?: InvoiceChargeLine[];
   onRecordPayment?: (invoice: InvoiceListRow) => void;
   onRefundPayment?: (payment: PaymentListRow) => void;
   onClose: () => void;
@@ -74,7 +73,6 @@ function TotalRow({
 export function InvoiceDetailDialog({
   invoice,
   payments,
-  items = [],
   onRecordPayment,
   onRefundPayment,
   onClose,
@@ -192,69 +190,70 @@ export function InvoiceDetailDialog({
             <h3 className="text-[11px] font-semibold text-hospital-text-muted">
               Itemized charges
             </h3>
-            <div className="mt-2 overflow-x-auto rounded-md border border-hospital-border">
-              <table className="min-w-full border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-hospital-border bg-hospital-surface-muted">
-                    <th
+            <div className="mt-2">
+              <Table scrollLabel="Itemized charges" className="min-w-full border-collapse text-sm">
+                <caption className="sr-only">Itemized charges</caption>
+                <TableHeader>
+                  <TableRow className="border-b border-hospital-border bg-hospital-surface-muted">
+                    <TableHead
                       scope="col"
                       className="h-9 px-3 text-left text-xs font-semibold text-hospital-text-muted"
                     >
                       Description
-                    </th>
-                    <th
+                    </TableHead>
+                    <TableHead
                       scope="col"
                       className="h-9 px-3 text-right text-xs font-semibold text-hospital-text-muted"
                     >
                       Qty
-                    </th>
-                    <th
+                    </TableHead>
+                    <TableHead
                       scope="col"
                       className="h-9 px-3 text-right text-xs font-semibold text-hospital-text-muted"
                     >
                       Unit price
-                    </th>
-                    <th
+                    </TableHead>
+                    <TableHead
                       scope="col"
                       className="h-9 px-3 text-right text-xs font-semibold text-hospital-text-muted"
                     >
                       Line total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.length > 0 ? (
-                    items.map((item) => (
-                      <tr
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invoice.line_items.length > 0 ? (
+                    invoice.line_items.map((item) => (
+                      <TableRow
                         key={item.id}
                         className="border-b border-hospital-border last:border-b-0"
                       >
-                        <td className="px-3 py-2.5 text-hospital-text">
+                        <TableCell className="px-3 py-2.5 text-hospital-text">
                           {item.description}
-                        </td>
-                        <td className="px-3 py-2.5 text-right tabular-nums text-hospital-text">
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-right tabular-nums text-hospital-text">
                           {item.quantity}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums text-hospital-text">
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums text-hospital-text">
                           {formatCurrency(item.unit_price)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums text-hospital-text">
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums text-hospital-text">
                           {formatCurrency(item.line_total)}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))
                   ) : (
-                    <tr>
-                      <td
+                    <TableRow>
+                      <TableCell
                         colSpan={4}
                         className="px-3 py-3 text-xs text-hospital-text-muted"
                       >
-                        Itemized charge lines are not available in this preview.
-                      </td>
-                    </tr>
+                        No itemized charges recorded.
+                      </TableCell>
+                    </TableRow>
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </section>
 

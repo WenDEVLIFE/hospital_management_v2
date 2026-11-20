@@ -41,24 +41,7 @@ type PrescriptionJoinRow = Prescription & {
   }> | null;
 };
 
-type MedicationCatalogRow = {
-  id: string;
-  medication_code: string;
-  generic_name: string;
-  brand_name: string | null;
-  strength: string | null;
-  dosage_form: string | null;
-  unit: string | null;
-};
-
-type InventoryStockJoinRow = {
-  item_code: string;
-  reorder_level: number;
-  inventory_batches: Array<{
-    quantity_remaining: number;
-    expiration_date: string | null;
-  }> | null;
-};
+type MedicationStockBalance = Omit<MedicationStockRow, "stock_status" | "expiring_soon">;
 
 function firstRelation<T>(value: Relation<T>): T | null {
   if (!value) {
@@ -108,97 +91,34 @@ function isExpiringSoon(date: string | null): boolean {
   return expiration.getTime() <= threshold;
 }
 
-/**
- * Medication stock is currently represented by inventory items whose item_code
- * matches the medication code, with quantities and expiries in inventory
- * batches. A dedicated stock table remains Phase 8 debt.
- */
 const loadMedicationStock = cache(
   async (): Promise<DataResult<MedicationStockRow[]>> => {
     const supabase = await getSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("medication_stock_balances")
+      .select("*")
+      .order("generic_name")
+      .order("id");
 
-    const { data: medicationRows, error: medicationError } = await supabase
-      .from("medications")
-      .select(
-        "id, medication_code, generic_name, brand_name, strength, dosage_form, unit"
-      )
-      .eq("is_active", true)
-      .order("generic_name", { ascending: true });
-
-    if (medicationError) {
-      return { data: null, error: toDataError(medicationError) };
+    if (error) {
+      return { data: null, error: toDataError(error) };
     }
 
-    const medications = (medicationRows ?? []) as MedicationCatalogRow[];
+    const rows = ((data ?? []) as MedicationStockBalance[]).map((row) => {
+      const quantityOnHand = Number(row.quantity_on_hand);
+      const reorderLevel = Number(row.reorder_level);
+      const stockStatus: StockStatus = quantityOnHand <= 0
+        ? "out_of_stock"
+        : quantityOnHand <= reorderLevel ? "low_stock" : "available";
 
-    if (medications.length === 0) {
-      return { data: [], error: null };
-    }
-
-    const codes = medications.map((medication) => medication.medication_code);
-    const { data: inventoryRows, error: inventoryError } = await supabase
-      .from("inventory_items")
-      .select(
-        "item_code, reorder_level, inventory_batches(quantity_remaining, expiration_date)"
-      )
-      .in("item_code", codes);
-
-    if (inventoryError) {
-      return { data: null, error: toDataError(inventoryError) };
-    }
-
-    const inventoryByCode = new Map<string, InventoryStockJoinRow>();
-
-    for (const inventory of (inventoryRows ?? []) as InventoryStockJoinRow[]) {
-      inventoryByCode.set(inventory.item_code, inventory);
-    }
-
-    const rows: MedicationStockRow[] = [];
-
-    for (const medication of medications) {
-      const inventory = inventoryByCode.get(medication.medication_code);
-
-      // No inventory record means stock is not tracked for this medication yet.
-      // Do not present that as a confirmed zero balance.
-      if (!inventory) {
-        continue;
-      }
-
-      const batches = inventory.inventory_batches ?? [];
-      const quantityOnHand = batches.reduce(
-        (total, batch) => total + Number(batch.quantity_remaining ?? 0),
-        0
-      );
-      const expirations = batches
-        .map((batch) => batch.expiration_date)
-        .filter((date): date is string => Boolean(date))
-        .sort();
-      const nearestExpiration = expirations[0] ?? null;
-      const reorderLevel = Number(inventory.reorder_level ?? 0);
-
-      let stockStatus: StockStatus = "available";
-
-      if (quantityOnHand <= 0) {
-        stockStatus = "out_of_stock";
-      } else if (quantityOnHand <= reorderLevel) {
-        stockStatus = "low_stock";
-      }
-
-      rows.push({
-        id: medication.id,
-        medication_code: medication.medication_code,
-        generic_name: medication.generic_name,
-        brand_name: medication.brand_name,
-        strength: medication.strength,
-        dosage_form: medication.dosage_form,
-        unit: medication.unit,
+      return {
+        ...row,
         quantity_on_hand: quantityOnHand,
         reorder_level: reorderLevel,
-        nearest_expiration: nearestExpiration,
         stock_status: stockStatus,
-        expiring_soon: isExpiringSoon(nearestExpiration),
-      });
-    }
+        expiring_soon: isExpiringSoon(row.nearest_expiration),
+      };
+    });
 
     return { data: rows, error: null };
   }

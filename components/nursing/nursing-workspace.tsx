@@ -4,12 +4,12 @@ import * as React from "react";
 import {
   CheckCircleIcon,
   ClipboardListIcon,
-  DangerTriangleIcon,
   HeartPulseIcon,
 } from "@solar-icons/react/linear";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { useCan } from "@/components/providers/permission-provider";
 import { formatDateTime, formatIdentifier } from "@/lib/format";
 import type { NursingAssignmentRow, VitalSigns } from "@/types/hospital";
@@ -268,16 +268,8 @@ export function NursingWorkspace({
                     ))}
                   </dl>
 
-                  <p className="mt-4 flex items-start gap-1.5 text-[11px] leading-relaxed text-amber-800">
-                    <DangerTriangleIcon
-                      className="mt-0.5 size-3.5 shrink-0"
-                      aria-hidden="true"
-                    />
-                    <span>
-                      Verification status is not recorded in this assignment
-                      view. Treat these observations as unverified until
-                      reviewed by authorized staff.
-                    </span>
+                  <p className="mt-4 flex items-center gap-2 text-xs text-hospital-text-muted">
+                    Verification <StatusBadge status={latestVitals.verification_status ?? "unverified"} />
                   </p>
                 </>
               ) : (

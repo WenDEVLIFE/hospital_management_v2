@@ -8,11 +8,12 @@ import { normalizePagination, sanitizeSearchTerm } from "./query";
 import { toDataError, type DataResult, type PagedResult } from "./result";
 
 const STAFF_COLUMNS =
-  "id, user_id, staff_number, first_name, middle_name, last_name, department_id, employment_type, professional_license_number, is_active, departments(name), profiles!staff_profiles_user_id_fkey(email, contact_number, is_active), physicians(specialty, license_number)";
+  "id, user_id, staff_number, first_name, middle_name, last_name, department_id, employment_type, professional_license_number, is_active, departments(name), profiles!staff_profiles_user_id_fkey(email, contact_number, is_active), physicians(specialty, license_number), hr_shifts(id, shift_date, shift_type, start_time, end_time)";
 
 type Relation<T> = T | T[] | null;
 
 type StaffJoinRow = {
+  hr_shifts: StaffListRow["work_schedule"] | null;
   id: string;
   user_id: string;
   staff_number: string;
@@ -137,7 +138,12 @@ export async function listStaff(
 
   let query = supabase
     .from("staff_profiles")
-    .select(STAFF_COLUMNS, { count: "exact" });
+    .select(STAFF_COLUMNS, { count: "exact" })
+    .eq("hr_shifts.published", true)
+    .order("shift_date", { referencedTable: "hr_shifts", ascending: false })
+    .order("start_time", { referencedTable: "hr_shifts" })
+    .order("id", { referencedTable: "hr_shifts" })
+    .limit(14, { referencedTable: "hr_shifts" });
 
   if (params.departmentId) {
     query = query.eq("department_id", params.departmentId);
@@ -204,6 +210,7 @@ export async function listStaff(
     return {
       id: row.id,
       staff_number: row.staff_number,
+      work_schedule: row.hr_shifts ?? [],
       user_id: row.user_id,
       first_name: row.first_name,
       middle_name: row.middle_name,

@@ -214,6 +214,7 @@ export type Encounter = {
 };
 
 export type VitalSigns = {
+  verification_status: "unverified" | "verified";
   id: string;
   patient_id: string;
   encounter_id: string;
@@ -605,7 +606,16 @@ export type BedBoardRow = {
   admission_id: string | null;
 };
 
+export type StaffScheduleEntry = {
+  id: string;
+  shift_date: string;
+  shift_type: ShiftType | "on_call";
+  start_time: string;
+  end_time: string;
+};
+
 export type StaffListRow = {
+  work_schedule: StaffScheduleEntry[];
   id: string;
   staff_number: string;
   user_id: string;
@@ -653,6 +663,7 @@ export type EncounterDetail = {
   encounter: Encounter;
   patient: Patient;
   vitals: VitalSigns[];
+  prescriptions: Pick<Prescription, "id" | "prescription_number" | "prescription_date" | "status">[];
   diagnoses: Diagnosis[];
   clinical_notes: ClinicalNote[];
 };
@@ -2205,6 +2216,7 @@ export type MedicationStockRow = {
 };
 
 export type InvoiceListRow = {
+  line_items: InvoiceItem[];
   id: string;
   invoice_number: string;
   patient_id: string;
@@ -2312,6 +2324,7 @@ export type ReportCard = {
   category: string;
   href: string;
   formats: string[];
+  columns: string[];
 };
 
 export type ReportRange = {
