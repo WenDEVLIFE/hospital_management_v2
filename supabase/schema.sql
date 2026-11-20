@@ -15415,15 +15415,21 @@ set search_path = ''
 as $$
 declare
   v_actor uuid := auth.uid();
-  v_actor_name text;
+  v_actor_source text;
+  v_actor_label text;
   v_entity_type text := tg_table_name;
   v_entity_id uuid;
   v_before jsonb;
   v_after jsonb;
   v_changed jsonb := '[]'::jsonb;
   v_changed_text text;
+  v_changed_suffix text := '';
   v_operation text := lower(tg_op);
+  v_verb text;
   v_severity text;
+  v_description text;
+  v_title text;
+  v_message text;
 begin
   if tg_op <> 'INSERT' then
     v_before := to_jsonb(old);
@@ -15449,14 +15455,43 @@ begin
     from jsonb_array_elements_text(v_changed) as t(value);
   end if;
 
-  if v_actor is not null then
-    select p.full_name
-    into v_actor_name
-    from public.profiles p
-    where p.id = v_actor;
+  if coalesce(v_changed_text, '') <> '' then
+    v_changed_suffix := format(' (%s)', v_changed_text);
   end if;
 
-  v_actor_name := coalesce(v_actor_name, 'System');
+  if v_actor is not null then
+    select p.full_name
+    into v_actor_label
+    from public.profiles p
+    where p.id = v_actor;
+
+    v_actor_source := 'app_user';
+    v_actor_label := coalesce(v_actor_label, 'Unregistered user');
+  elsif auth.role() = 'service_role' then
+    v_actor_source := 'service_role';
+    v_actor_label := 'System service role';
+  else
+    v_actor_source := 'direct_database';
+    v_actor_label := 'Direct database';
+  end if;
+
+  v_verb := case
+    when v_operation = 'insert' then 'created'
+    when v_operation = 'update' then 'updated'
+    else 'deleted'
+  end;
+
+  v_description := case v_actor_source
+    when 'direct_database' then
+      format('Direct database %s on a %s record.', v_operation, v_entity_type)
+    else
+      format(
+        '%s %s a %s record.',
+        case when v_actor_source = 'service_role' then 'System' else v_actor_label end,
+        v_verb,
+        v_entity_type
+      )
+  end;
 
   insert into public.audit_logs (
     actor_id,
@@ -15471,19 +15506,53 @@ begin
     format('%s.%s', v_entity_type, v_operation),
     v_entity_type,
     v_entity_id,
-    case v_operation
-      when 'insert' then format('Created a %s record.', v_entity_type)
-      when 'update' then format('Updated a %s record.', v_entity_type)
-      else format('Deleted a %s record.', v_entity_type)
-    end,
+    v_description,
     jsonb_build_object(
       'source', 'audit_change_alert',
       'operation', upper(v_operation),
+      'actor_source', v_actor_source,
+      'actor_label', v_actor_label,
+      'is_direct_db', v_actor_source = 'direct_database',
       'changed_fields', v_changed
     )
   );
 
-  v_severity := case when v_operation = 'delete' then 'warning' else 'info' end;
+  v_severity := case
+    when v_actor_source = 'direct_database' then 'critical'
+    when v_operation = 'delete' then 'warning'
+    else 'info'
+  end;
+
+  v_title := case
+    when v_actor_source = 'direct_database'
+      then format('Direct database change: %s', v_entity_type)
+    else format('Database change: %s', v_entity_type)
+  end;
+
+  v_message := case v_actor_source
+    when 'direct_database' then
+      format(
+        'Direct database %s on %s%s.',
+        v_operation,
+        v_entity_type,
+        v_changed_suffix
+      )
+    when 'service_role' then
+      format(
+        'Service-role %s on %s%s.',
+        v_operation,
+        v_entity_type,
+        v_changed_suffix
+      )
+    else
+      format(
+        '%s %s a %s record%s.',
+        v_actor_label,
+        v_verb,
+        v_entity_type,
+        v_changed_suffix
+      )
+  end;
 
   insert into public.notifications (
     user_id,
@@ -15496,22 +15565,8 @@ begin
   )
   select
     p.id,
-    format('Database change: %s', v_entity_type),
-    format(
-      '%s %s a %s record%s.',
-      v_actor_name,
-      case
-        when v_operation = 'insert' then 'created'
-        when v_operation = 'update' then 'updated'
-        else 'deleted'
-      end,
-      v_entity_type,
-      case
-        when coalesce(v_changed_text, '') <> ''
-          then format(' (%s)', v_changed_text)
-        else ''
-      end
-    ),
+    v_title,
+    v_message,
     'system',
     v_severity,
     v_entity_type,
@@ -15537,6 +15592,10 @@ begin
   return null;
 end;
 $$;
+
+revoke all on function public.audit_change_alert() from public;
+
+revoke all on function public.audit_change_alert() from public;
 
 revoke all on function public.audit_change_alert() from public;
 

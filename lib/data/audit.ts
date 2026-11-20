@@ -37,12 +37,17 @@ function auditResult(
 
 function toAuditLogRow(row: AuditLogJoinRow): AuditLogRow {
   const actor = firstRelation(row.profiles);
+  const metadataLabel = row.metadata?.actor_label;
 
   return {
     id: Number(row.id),
     created_at: row.created_at,
     actor_id: row.actor_id,
-    actor_name: actor?.full_name ?? "System",
+    actor_name:
+      actor?.full_name ??
+      (typeof metadataLabel === "string" && metadataLabel.length > 0
+        ? metadataLabel
+        : "System"),
     action: row.action,
     entity_type: row.entity_type,
     entity_id: row.entity_id,
