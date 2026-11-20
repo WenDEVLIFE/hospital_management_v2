@@ -240,7 +240,7 @@ export function LoginForm({ initialError, initialNext }: LoginFormProps) {
       </form>
 
       <p className="mt-4 border-t border-hospital-border-subtle pt-4 text-[11px] text-hospital-text-muted">
-        Accounts are provisioned by hospital administration.
+        Copyright © 2026 SPMC. All rights reserved.
       </p>
     </div>
   );
