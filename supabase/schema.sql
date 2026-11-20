@@ -15053,3 +15053,132 @@ revoke all on function public.dispense_prescription(uuid) from public;
 
 grant execute on function public.dispense_prescription(uuid)
   to authenticated, service_role;
+
+create or replace function public.update_bed_status(
+  p_bed_id uuid,
+  p_expected_status public.bed_status,
+  p_status public.bed_status
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_previous_status public.bed_status;
+begin
+  if v_actor is null or not public.has_permission('bed.manage') then
+    raise exception 'Bed management permission required' using errcode = '42501';
+  end if;
+
+  if p_expected_status is null or p_status is null or p_status = 'occupied' then
+    raise exception 'Invalid manual bed status' using errcode = '22023';
+  end if;
+
+  -- Admission and transfer also lock the bed before assigning a patient.
+  select status into v_previous_status
+  from public.beds
+  where id = p_bed_id
+  for update;
+
+  if not found then
+    raise exception 'Bed not found' using errcode = 'P0002';
+  end if;
+
+  if v_previous_status <> p_expected_status then
+    raise exception 'Bed status changed' using errcode = '40001';
+  end if;
+
+  if v_previous_status = 'occupied' or exists (
+    select 1
+    from public.admission_bed_assignments
+    where bed_id = p_bed_id and released_at is null
+  ) then
+    raise exception 'Bed has a patient assignment' using errcode = '23514';
+  end if;
+
+  if v_previous_status = p_status then
+    return;
+  end if;
+
+  update public.beds
+  set status = p_status, updated_by = v_actor
+  where id = p_bed_id;
+
+  insert into public.audit_logs (
+    actor_id, action, entity_type, entity_id, description, metadata
+  ) values (
+    v_actor, 'bed.status.update', 'bed', p_bed_id, 'Changed bed status.',
+    jsonb_build_object('previous_status', v_previous_status, 'status', p_status)
+  );
+end;
+$$;
+
+revoke all on function public.update_bed_status(uuid, public.bed_status, public.bed_status)
+  from public, anon;
+grant execute on function public.update_bed_status(uuid, public.bed_status, public.bed_status)
+  to authenticated;
+
+-- Complete HR setup for a staff profile that already has a sign-in account.
+create or replace function public.create_hr_employee_details(
+  p_staff_profile_id uuid,
+  p_position text,
+  p_hire_date date
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_is_active boolean;
+  v_position text := btrim(coalesce(p_position, ''));
+begin
+  if v_actor is null or not public.has_permission('hr.manage') then
+    raise exception 'HR management permission required' using errcode = '42501';
+  end if;
+
+  if char_length(v_position) not between 2 and 120 or p_hire_date is null then
+    raise exception 'Enter a valid position and hire date' using errcode = '22023';
+  end if;
+
+  select is_active into v_is_active
+  from public.staff_profiles
+  where id = p_staff_profile_id
+  for key share;
+
+  if not found then
+    raise exception 'Staff record not found' using errcode = 'P0002';
+  end if;
+
+  insert into public.hr_employee_details (
+    staff_profile_id, position, hire_date, employment_status, created_by
+  ) values (
+    p_staff_profile_id, v_position, p_hire_date,
+    case when v_is_active then 'active' else 'inactive' end, v_actor
+  )
+  on conflict (staff_profile_id) do nothing;
+
+  if not found then
+    raise exception 'An HR employee record already exists for this staff member'
+      using errcode = '23505';
+  end if;
+
+  insert into public.audit_logs (
+    actor_id, action, entity_type, entity_id, description, metadata
+  ) values (
+    v_actor, 'hr.employee.create', 'staff_profile', p_staff_profile_id,
+    'Created an employee record for existing staff.',
+    jsonb_build_object('source', 'create_hr_employee_details')
+  );
+
+  return p_staff_profile_id;
+end;
+$$;
+
+revoke all on function public.create_hr_employee_details(uuid, text, date)
+  from public, anon;
+grant execute on function public.create_hr_employee_details(uuid, text, date)
+  to authenticated;

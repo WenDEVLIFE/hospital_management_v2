@@ -82,6 +82,14 @@ export const fileLeaveSchema = z
 
 export type FileLeaveInput = z.infer<typeof fileLeaveSchema>;
 
+export const createEmployeeDetailsSchema = z.object({
+  staffProfileId: z.string().regex(UUID_PATTERN, "Select a valid staff record."),
+  position: z.string().trim().min(2, "Enter the position.").max(120),
+  hireDate: z.iso.date("Select a valid hire date."),
+});
+
+export type CreateEmployeeDetailsInput = z.infer<typeof createEmployeeDetailsSchema>;
+
 export const createEmployeeSchema = z
   .object({
     fullName: z

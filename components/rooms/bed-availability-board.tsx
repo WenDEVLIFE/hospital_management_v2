@@ -11,7 +11,10 @@ import { Modal } from "@/components/ui/modal";
 import { SearchInput } from "@/components/ui/search-input";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { UNAVAILABLE_MESSAGE } from "@/components/module/unavailable-action";
+import { useToast } from "@/components/ui/toast";
+import { useCan } from "@/components/providers/permission-provider";
+import { updateBedStatusAction } from "@/app/(workspace)/rooms-beds/actions";
+import { bedStatusSchema } from "@/lib/validations/organisation";
 import { cn } from "@/lib/utils";
 import type { BedBoardRow } from "@/types/hospital";
 
@@ -21,6 +24,8 @@ const STATUS_OPTIONS = [
   { label: "Maintenance", value: "maintenance" },
   { label: "Reserved", value: "reserved" },
 ];
+
+const EDITABLE_STATUS_OPTIONS = STATUS_OPTIONS.filter((option) => option.value !== "occupied");
 
 const LEGEND = [
   { label: "Available", swatch: "bg-emerald-500" },
@@ -69,7 +74,10 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
     null
   );
   const [nextStatus, setNextStatus] = React.useState("available");
-  const [confirmed, setConfirmed] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+  const canManageBeds = useCan()("bed.manage");
+  const { toast } = useToast();
 
   const departments = React.useMemo(() => {
     const map = new Map<string, string>();
@@ -139,13 +147,48 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
   const openBedDialog = (bed: BedBoardRow) => {
     setSelectedBed(bed);
     setNextStatus(bed.status);
-    setConfirmed(false);
+    setFormError(null);
   };
 
   const closeBedDialog = () => {
     setSelectedBed(null);
-    setConfirmed(false);
+    setFormError(null);
   };
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!selectedBed || submitting || nextStatus === selectedBed.status) return;
+
+    const parsed = bedStatusSchema.safeParse({
+      bedId: selectedBed.bed_id,
+      expectedStatus: selectedBed.status,
+      status: nextStatus,
+    });
+
+    if (!parsed.success) {
+      setFormError("Select a valid bed status.");
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError(null);
+
+    try {
+      const result = await updateBedStatusAction(parsed.data);
+      if (!result.ok) {
+        setFormError(result.formError);
+        return;
+      }
+
+      toast({ title: "Bed status updated", variant: "success" });
+      closeBedDialog();
+    } catch {
+      setFormError("The bed status could not be saved. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -252,23 +295,36 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 lg:grid-cols-4 min-[1440px]:grid-cols-6">
-                      {room.beds.map((bed) => (
-                        <button
-                          key={bed.bed_id}
-                          type="button"
-                          onClick={() => openBedDialog(bed)}
-                          aria-label={`Update status for bed ${bed.bed_number} in room ${room.roomNumber}, currently ${bed.status}`}
-                          className="flex cursor-pointer flex-col gap-2 rounded-md border border-hospital-border bg-white p-3 text-left transition-colors hover:border-hospital-green-border hover:bg-hospital-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
-                        >
-                          <span className="font-mono text-[11px] font-medium text-hospital-text">
-                            Bed {bed.bed_number}
-                          </span>
-                          <StatusBadge status={bed.status} />
-                          <span className="text-[11px] leading-snug text-hospital-text-muted">
-                            {bedStatusHint(bed)}
-                          </span>
-                        </button>
-                      ))}
+                      {room.beds.map((bed) => {
+                        const content = (
+                          <>
+                            <span className="font-mono text-[11px] font-medium text-hospital-text">
+                              Bed {bed.bed_number}
+                            </span>
+                            <StatusBadge status={bed.status} />
+                            <span className="text-[11px] leading-snug text-hospital-text-muted">
+                              {bedStatusHint(bed)}
+                            </span>
+                          </>
+                        );
+                        const cardClassName = "flex flex-col gap-2 rounded-md border border-hospital-border bg-white p-3 text-left";
+
+                        return canManageBeds && bed.status !== "occupied" ? (
+                          <button
+                            key={bed.bed_id}
+                            type="button"
+                            onClick={() => openBedDialog(bed)}
+                            aria-label={`Update status for bed ${bed.bed_number} in room ${room.roomNumber}, currently ${bed.status}`}
+                            className={cn(cardClassName, "transition-colors hover:border-hospital-green-border hover:bg-hospital-surface focus-visible:ring-2 focus-visible:ring-hospital-green")}
+                          >
+                            {content}
+                          </button>
+                        ) : (
+                          <div key={bed.bed_id} className={cardClassName}>
+                            {content}
+                          </div>
+                        );
+                      })}
                     </div>
                   </section>
                 );
@@ -281,6 +337,7 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
       <Modal
         open={Boolean(selectedBed)}
         onClose={closeBedDialog}
+        preventDismiss={submitting}
         title="Update bed status"
         description={
           selectedBed
@@ -290,34 +347,40 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
         size="md"
         footer={
           <>
-            <Button variant="secondary" onClick={closeBedDialog}>
-              {confirmed ? "Close" : "Cancel"}
+            <Button variant="secondary" onClick={closeBedDialog} disabled={submitting}>
+              Cancel
             </Button>
-            <Button onClick={() => setConfirmed(true)}>Update status</Button>
+            <Button
+              type="submit"
+              form="bed-status-form"
+              disabled={nextStatus === selectedBed?.status}
+              loading={submitting}
+            >
+              Update status
+            </Button>
           </>
         }
       >
-        {selectedBed ? (
-          confirmed ? (
-            <Alert variant="info">{UNAVAILABLE_MESSAGE}</Alert>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm leading-relaxed text-hospital-text-muted">
-                Bed occupancy is controlled by admission transactions. Status
-                changes will be available once the hospital database is
-                connected.
-              </p>
-              <FormField label="New status" htmlFor="bed-status">
-                <Select
-                  id="bed-status"
-                  value={nextStatus}
-                  onChange={(event) => setNextStatus(event.target.value)}
-                  options={STATUS_OPTIONS}
-                />
-              </FormField>
-            </div>
-          )
-        ) : null}
+        {selectedBed && (
+          <form id="bed-status-form" className="space-y-3" onSubmit={handleSubmit}>
+            <p className="text-sm text-hospital-text-muted">
+              Admissions, transfers, and discharges control bed occupancy.
+            </p>
+            {formError && <Alert variant="danger">{formError}</Alert>}
+            <FormField label="New status" htmlFor="bed-status">
+              <Select
+                id="bed-status"
+                value={nextStatus}
+                disabled={submitting}
+                onChange={(event) => {
+                  setNextStatus(event.target.value);
+                  setFormError(null);
+                }}
+                options={EDITABLE_STATUS_OPTIONS}
+              />
+            </FormField>
+          </form>
+        )}
       </Modal>
     </div>
   );

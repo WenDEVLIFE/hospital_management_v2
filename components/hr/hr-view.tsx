@@ -33,6 +33,7 @@ import {
   RecordAttendanceDialog,
   SetSalaryDialog,
 } from "@/components/hr/hr-employment-actions";
+import { CreateEmployeeDetailsDialog } from "@/components/hr/create-employee-details-dialog";
 import { useCan } from "@/components/providers/permission-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -103,16 +104,26 @@ export interface HrViewProps {
   payrollEntries: Record<string, PayrollEntry[]>;
 }
 
+const clockTimeFormatter = new Intl.DateTimeFormat("en-PH", {
+  timeZone: "UTC",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 function formatTime(value: string | null): string {
-  if (!value) {
+  const clockTime = value?.match(/^(\d{2}:\d{2})(?::(\d{2})(?:\.(\d{1,6}))?)?$/);
+
+  if (!clockTime) {
     return "\u2014";
   }
 
-  return new Intl.DateTimeFormat("en-PH", {
-    timeZone: "Asia/Manila",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+  // PostgreSQL time values are already local clock times. Use a UTC anchor
+  // for display without shifting them to another time zone.
+  const [, hoursAndMinutes, seconds = "00", fraction = ""] = clockTime;
+  const milliseconds = fraction.slice(0, 3).padEnd(3, "0");
+  const date = new Date(`1970-01-01T${hoursAndMinutes}:${seconds}.${milliseconds}Z`);
+
+  return Number.isNaN(date.getTime()) ? "\u2014" : clockTimeFormatter.format(date);
 }
 
 function DetailField({
@@ -188,7 +199,10 @@ export function HrView({
     React.useState<EmployeeListRow | null>(null);
   const [salaryTarget, setSalaryTarget] =
     React.useState<EmployeeListRow | null>(null);
+  const [employeeRecordTarget, setEmployeeRecordTarget] =
+    React.useState<EmployeeListRow | null>(null);
   const can = useCan();
+  const canCreateEmployeeRecord = can("hr.manage");
 
   const employeeRowById = React.useMemo(
     () => new Map(employees.map((employee) => [employee.id, employee])),
@@ -302,18 +316,30 @@ export function HrView({
         header: "Actions",
         align: "right",
         cell: (row) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label={`View employee ${row.full_name}`}
-            onClick={() => openEmployee(row.id)}
-          >
-            View
-          </Button>
+          <div className="flex flex-wrap justify-end gap-1">
+            {canCreateEmployeeRecord && !row.has_employee_record && (
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label={`Create employee record for ${row.full_name}`}
+                onClick={() => setEmployeeRecordTarget(row)}
+              >
+                Create employee record
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`View employee ${row.full_name}`}
+              onClick={() => openEmployee(row.id)}
+            >
+              View
+            </Button>
+          </div>
         ),
       },
     ],
-    [openEmployee]
+    [canCreateEmployeeRecord, openEmployee]
   );
 
   const employeeFilters = React.useMemo<FilterConfig<EmployeeListRow>[]>(
@@ -990,7 +1016,18 @@ export function HrView({
                       Record attendance
                     </Button>
                   ) : null}
-                  {can("hr.payroll") ? (
+                  {!selectedEmployee.has_employee_record && canCreateEmployeeRecord && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setEmployeeRecordTarget(selectedEmployee);
+                        setSelectedEmployee(null);
+                      }}
+                    >
+                      Create employee record
+                    </Button>
+                  )}
+                  {selectedEmployee.has_employee_record && can("hr.payroll") ? (
                     <Button
                       size="sm"
                       variant="secondary"
@@ -1104,6 +1141,13 @@ export function HrView({
         open={attendanceTarget !== null}
         onClose={() => setAttendanceTarget(null)}
       />
+
+      {employeeRecordTarget && (
+        <CreateEmployeeDetailsDialog
+          employee={employeeRecordTarget}
+          onClose={() => setEmployeeRecordTarget(null)}
+        />
+      )}
 
       <SetSalaryDialog
         key={salaryTarget?.id ?? "none"}

@@ -985,6 +985,7 @@ export type Employee = {
 };
 
 export type EmployeeListRow = Employee & {
+  has_employee_record: boolean;
   current_shift: string | null;
   attendance_rate: number;
   leave_balance: number;

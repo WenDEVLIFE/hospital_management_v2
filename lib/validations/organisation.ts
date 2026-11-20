@@ -51,6 +51,16 @@ export const roomSchema = z.object({
 
 export type RoomInput = z.infer<typeof roomSchema>;
 
+const manualBedStatus = z.enum(["available", "reserved", "maintenance"]);
+
+export const bedStatusSchema = z.object({
+  bedId: z.string().regex(UUID_PATTERN),
+  expectedStatus: manualBedStatus,
+  status: manualBedStatus,
+});
+
+export type BedStatusInput = z.infer<typeof bedStatusSchema>;
+
 export const staffUpdateSchema = z.object({
   staffId: z
     .string()

@@ -329,6 +329,7 @@ export async function listEmployees(
 
       return {
         ...employee,
+        has_employee_record: detail !== null,
         current_shift: shift ? shift.shift_type : null,
         attendance_rate:
           employeeAttendance.length > 0

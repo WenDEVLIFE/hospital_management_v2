@@ -7,12 +7,14 @@ import { invokeEdgeFunction } from "@/lib/supabase/functions";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createEmployeeSchema,
+  createEmployeeDetailsSchema,
   fileLeaveSchema,
   recordAttendanceSchema,
   runPayrollSchema,
   scheduleShiftSchema,
   setSalarySchema,
   type CreateEmployeeInput,
+  type CreateEmployeeDetailsInput,
   type FileLeaveInput,
   type RecordAttendanceInput,
   type RunPayrollInput,
@@ -149,6 +151,35 @@ function accountErrorMessage(status: number, code: string): string {
   }
 
   return "The account could not be created. Try again.";
+}
+
+export async function createEmployeeDetailsAction(
+  input: CreateEmployeeDetailsInput
+): Promise<HrWriteResult> {
+  const parsed = createEmployeeDetailsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, formError: parsed.error.issues[0].message };
+  }
+
+  const { staffProfileId, position, hireDate } = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.rpc("create_hr_employee_details", {
+    p_staff_profile_id: staffProfileId,
+    p_position: position,
+    p_hire_date: hireDate,
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      revalidateHr();
+      return { ok: false, formError: "This employee record already exists. Close the form and reopen the employee details." };
+    }
+
+    return { ok: false, formError: hrErrorMessage(error) };
+  }
+
+  revalidateHr();
+  return { ok: true, id: staffProfileId };
 }
 
 export async function createEmployeeAction(
