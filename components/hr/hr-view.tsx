@@ -316,7 +316,7 @@ export function HrView({
         header: "Actions",
         align: "right",
         cell: (row) => (
-          <div className="flex flex-wrap justify-end gap-1">
+          <div className="ml-auto flex w-max items-center gap-1 whitespace-nowrap">
             {canCreateEmployeeRecord && !row.has_employee_record && (
               <Button
                 variant="outline"
