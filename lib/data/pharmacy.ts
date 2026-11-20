@@ -4,7 +4,9 @@ import type {
   MedicationStockRow,
   PharmacyStats,
   Prescription,
+  PrescriptionEncounterOption,
   PrescriptionListRow,
+  PrescriptionMedicationOption,
   StockStatus,
 } from "@/types/hospital";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -307,4 +309,110 @@ export async function getPharmacyStats(): Promise<DataResult<PharmacyStats>> {
   }
 
   return { data: stats, error: null };
+}
+
+type PrescriptionEncounterOptionRow = {
+  id: string;
+  encounter_number: string;
+  patient_id: string;
+  started_at: string;
+  patients: Relation<{
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+    suffix: string | null;
+    medical_record_number: string;
+  }>;
+};
+
+type PrescriptionMedicationOptionRow = {
+  id: string;
+  generic_name: string;
+  brand_name: string | null;
+  strength: string | null;
+  dosage_form: string | null;
+  unit: string | null;
+};
+
+export type PrescriptionFormOptions = {
+  encounters: PrescriptionEncounterOption[];
+  medications: PrescriptionMedicationOption[];
+};
+
+/**
+ * Options for the new-prescription form: encounters that can still receive
+ * orders and medications that are active in the catalogue. Both lists are
+ * already constrained by RLS, so a caller without clinical access receives
+ * empty arrays rather than another user's patients.
+ */
+export async function listPrescriptionFormOptions(): Promise<
+  DataResult<PrescriptionFormOptions>
+> {
+  const supabase = await getSupabaseServerClient();
+
+  const [encounterResult, medicationResult] = await Promise.all([
+    supabase
+      .from("encounters")
+      .select(
+        "id, encounter_number, patient_id, started_at, patients(first_name, middle_name, last_name, suffix, medical_record_number)"
+      )
+      .in("clinical_status", ["open", "in_progress"])
+      .order("started_at", { ascending: false })
+      .limit(200),
+    supabase
+      .from("medications")
+      .select("id, generic_name, brand_name, strength, dosage_form, unit")
+      .eq("is_active", true)
+      .order("generic_name"),
+  ]);
+
+  if (encounterResult.error) {
+    return { data: null, error: toDataError(encounterResult.error) };
+  }
+
+  if (medicationResult.error) {
+    return { data: null, error: toDataError(medicationResult.error) };
+  }
+
+  const encounters = (
+    (encounterResult.data ?? []) as PrescriptionEncounterOptionRow[]
+  ).flatMap((row) => {
+    const patient = firstRelation(row.patients);
+
+    if (!patient) {
+      return [];
+    }
+
+    const patientName = fullName(patient);
+    const patientMrn = patient.medical_record_number;
+
+    return [
+      {
+        id: row.id,
+        encounter_number: row.encounter_number,
+        patient_id: row.patient_id,
+        patient_name: patientName,
+        patient_mrn: patientMrn,
+        label: `${row.encounter_number} · ${patientName} (${patientMrn})`,
+      },
+    ];
+  });
+
+  const medications = (
+    (medicationResult.data ?? []) as PrescriptionMedicationOptionRow[]
+  ).map((row) => {
+    const descriptor = [row.generic_name, row.strength, row.dosage_form]
+      .filter(Boolean)
+      .join(" · ");
+
+    return {
+      id: row.id,
+      generic_name: row.generic_name,
+      label: row.brand_name
+        ? `${descriptor} (${row.brand_name})`
+        : descriptor,
+    };
+  });
+
+  return { data: { encounters, medications }, error: null };
 }

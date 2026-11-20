@@ -2201,6 +2201,21 @@ export type PrescriptionDispenseItem = {
   remaining_quantity: number;
 };
 
+export type PrescriptionEncounterOption = {
+  id: string;
+  encounter_number: string;
+  patient_id: string;
+  patient_name: string;
+  patient_mrn: string;
+  label: string;
+};
+
+export type PrescriptionMedicationOption = {
+  id: string;
+  generic_name: string;
+  label: string;
+};
+
 export type MedicationStockRow = {
   id: string;
   medication_code: string;

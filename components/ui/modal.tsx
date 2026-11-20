@@ -4,7 +4,7 @@ import * as React from "react";
 import { CloseIcon } from "@solar-icons/react/linear";
 import { cn } from "@/lib/utils";
 
-export type ModalSize = "sm" | "md" | "lg";
+export type ModalSize = "sm" | "md" | "lg" | "xl";
 
 export interface ModalProps {
   open: boolean;
@@ -30,6 +30,7 @@ const sizeStyles: Record<ModalSize, string> = {
   sm: "max-w-sm",
   md: "max-w-md",
   lg: "max-w-lg",
+  xl: "max-w-2xl",
 };
 
 export function Modal({

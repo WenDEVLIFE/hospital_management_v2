@@ -3,17 +3,36 @@ import { PageSection } from "@/components/layout/page-section";
 import { ErrorState } from "@/components/module/error-state";
 import { NewPrescriptionButton } from "@/components/pharmacy/new-prescription-button";
 import { PrescriptionsView } from "@/components/pharmacy/prescriptions-view";
-import { listPrescriptions } from "@/lib/data/pharmacy";
+import { accessCan, getCurrentUserAccess } from "@/lib/auth/access";
+import {
+  listPrescriptionFormOptions,
+  listPrescriptions,
+} from "@/lib/data/pharmacy";
 
 export default async function PrescriptionsPage() {
-  const result = await listPrescriptions({ pageSize: 100 });
+  const [access, result, optionsResult] = await Promise.all([
+    getCurrentUserAccess(),
+    listPrescriptions({ pageSize: 100 }),
+    listPrescriptionFormOptions(),
+  ]);
+
+  const canCreate = accessCan(access, "prescription.create");
+  const options = optionsResult.data ?? { encounters: [], medications: [] };
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="Prescriptions"
         description="Medication orders issued during encounters."
-        actions={<NewPrescriptionButton />}
+        actions={
+          canCreate ? (
+            <NewPrescriptionButton
+              encounters={options.encounters}
+              medications={options.medications}
+              optionsError={optionsResult.error?.message ?? null}
+            />
+          ) : null
+        }
       />
 
       <PageSection
