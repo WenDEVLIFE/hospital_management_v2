@@ -2303,6 +2303,8 @@ export type StockTransactionRow = {
   performed_at: string;
 };
 
+export type AuditResult = "success" | "failed" | "critical" | "warning";
+
 export type AuditLogRow = {
   id: number;
   created_at: string;
@@ -2313,7 +2315,7 @@ export type AuditLogRow = {
   entity_id: string | null;
   description: string | null;
   ip_address: string | null;
-  result: "success" | "failed";
+  result: AuditResult;
 };
 
 export type UserListRow = {
@@ -2508,5 +2510,7 @@ export type AuditStats = {
   today: number;
   success: number;
   failed: number;
+  critical: number;
+  warning: number;
   byAction: { action: string; count: number }[];
 };

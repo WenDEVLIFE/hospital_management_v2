@@ -3,6 +3,7 @@
 import {
   CheckCircleIcon,
   DangerCircleIcon,
+  DangerTriangleIcon,
   HistoryIcon,
 } from "@solar-icons/react/linear";
 
@@ -28,18 +29,36 @@ function formatModule(value: string): string {
 }
 
 function AuditResultBadge({ result }: { result: AuditLogRow["result"] }) {
-  const success = result === "success";
-
-  return (
-    <Badge variant={success ? "success" : "critical"}>
-      {success ? (
-        <CheckCircleIcon className="size-3.5" aria-hidden="true" />
-      ) : (
-        <DangerCircleIcon className="size-3.5" aria-hidden="true" />
-      )}
-      <span>{success ? "Success" : "Failed"}</span>
-    </Badge>
-  );
+  switch (result) {
+    case "success":
+      return (
+        <Badge variant="success">
+          <CheckCircleIcon className="size-3.5" aria-hidden="true" />
+          <span>Success</span>
+        </Badge>
+      );
+    case "critical":
+      return (
+        <Badge variant="critical">
+          <DangerCircleIcon className="size-3.5" aria-hidden="true" />
+          <span>Critical</span>
+        </Badge>
+      );
+    case "warning":
+      return (
+        <Badge variant="pending">
+          <DangerTriangleIcon className="size-3.5" aria-hidden="true" />
+          <span>Warning</span>
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="critical">
+          <DangerCircleIcon className="size-3.5" aria-hidden="true" />
+          <span>Failed</span>
+        </Badge>
+      );
+  }
 }
 
 export function AuditLogsTable({ rows }: AuditLogsTableProps) {

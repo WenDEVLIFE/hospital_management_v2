@@ -25,14 +25,28 @@ function emptyStats(): AuditStats {
     today: 0,
     success: 0,
     failed: 0,
+    critical: 0,
+    warning: 0,
     byAction: [],
   };
 }
 
 function auditResult(
   metadata: Record<string, unknown> | null
-): "success" | "failed" {
-  return metadata?.outcome === "failed" ? "failed" : "success";
+): AuditLogRow["result"] {
+  const outcome = metadata?.outcome;
+
+  if (outcome === "failed") return "failed";
+  if (outcome === "critical") return "critical";
+  if (outcome === "warning") return "warning";
+
+  // Trigger-generated rows written before the outcome flag existed.
+  if (metadata?.source === "audit_change_alert") {
+    if (metadata.actor_source === "direct_database") return "critical";
+    if (metadata.operation === "DELETE") return "warning";
+  }
+
+  return "success";
 }
 
 function toAuditLogRow(row: AuditLogJoinRow): AuditLogRow {
@@ -132,10 +146,19 @@ export async function getAuditStats(): Promise<DataResult<AuditStats>> {
   >) {
     stats.total += 1;
 
-    if (auditResult(log.metadata) === "success") {
-      stats.success += 1;
-    } else {
-      stats.failed += 1;
+    switch (auditResult(log.metadata)) {
+      case "success":
+        stats.success += 1;
+        break;
+      case "failed":
+        stats.failed += 1;
+        break;
+      case "critical":
+        stats.critical += 1;
+        break;
+      case "warning":
+        stats.warning += 1;
+        break;
     }
 
     if (manilaDate(log.created_at) === today) {

@@ -15513,6 +15513,11 @@ begin
       'actor_source', v_actor_source,
       'actor_label', v_actor_label,
       'is_direct_db', v_actor_source = 'direct_database',
+      'outcome', case
+        when v_actor_source = 'direct_database' then 'critical'
+        when v_operation = 'delete' then 'warning'
+        else 'success'
+      end,
       'changed_fields', v_changed
     )
   );
@@ -15592,6 +15597,8 @@ begin
   return null;
 end;
 $$;
+
+revoke all on function public.audit_change_alert() from public;
 
 revoke all on function public.audit_change_alert() from public;
 

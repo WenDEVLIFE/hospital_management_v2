@@ -4,15 +4,16 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  BellIcon,
   CloseIcon,
   DangerTriangleIcon,
   DocumentTextIcon,
 } from "@solar-icons/react/linear";
 
 import { usePermissions } from "@/components/providers/permission-provider";
+import { Button } from "@/components/ui/button";
 import { useToast, type ToastVariant } from "@/components/ui/toast";
 import {
-  playAlertChime,
   playSecurityAlertSound,
   unlockAlertAudio,
 } from "@/lib/audio/security-alert";
@@ -26,7 +27,11 @@ import { cn } from "@/lib/utils";
 const DISMISSED_KEY = "spmc.dismissedAuditAlerts";
 const MAX_BANNERS = 3;
 const LOOKBACK_MS = 24 * 60 * 60 * 1000;
+const POLL_INTERVAL_MS = 20_000;
 const MAX_SEEN_IDS = 200;
+
+const ALERT_COLUMNS =
+  "id, title, message, severity, related_entity_type, created_at";
 
 type AlertRow = {
   id: string;
@@ -55,8 +60,8 @@ function toAlert(row: Record<string, unknown>): AlertRow | null {
     id,
     title,
     message: stringValue(row.message),
-    // Notifications written before migration 00800 carry severity "info"
-    // even for direct database edits; keep them visible as critical.
+    // Rows written before migration 00800 carry severity "info" even for
+    // direct database edits; keep them visible as critical.
     severity:
       severity === "info" && title.startsWith("Direct database change")
         ? "critical"
@@ -67,6 +72,12 @@ function toAlert(row: Record<string, unknown>): AlertRow | null {
         : null,
     created_at: stringValue(row.created_at, new Date().toISOString()),
   };
+}
+
+function toAlerts(rows: Record<string, unknown>[]): AlertRow[] {
+  return rows
+    .map(toAlert)
+    .filter((alert): alert is AlertRow => alert !== null);
 }
 
 function deservesBanner(severity: string): boolean {
@@ -102,18 +113,24 @@ function toToastVariant(severity: string): ToastVariant {
 }
 
 /**
- * Live administrator alerts for database changes, modelled on the DABAWGOV
- * security banner: direct database edits raise a persistent critical banner and
- * siren until dismissed, while ordinary changes use a softer chime and toast.
- * The notification rows are written by public.audit_change_alert().
+ * Administrator alerts for database changes, modelled on DABAWGOV:
+ *
+ * - every new system notification plays the emergency siren on any screen;
+ * - critical/warning changes show a persistent banner until dismissed;
+ * - unread alerts from the last 24 hours are loaded on mount and every 20s, so
+ *   a dropped Realtime connection or a closed tab cannot hide them;
+ * - an explicit "Enable alert siren" control unlocks audio on the first click,
+ *   because browsers block sound until the page receives a user gesture.
  */
 export function AdminChangeAlerts() {
   const { isAdmin } = usePermissions();
   const { toast } = useToast();
   const router = useRouter();
   const [alerts, setAlerts] = React.useState<AlertRow[]>([]);
+  const [audioReady, setAudioReady] = React.useState(false);
   const dismissedRef = React.useRef<Set<string>>(new Set());
   const seen = React.useRef(new Set<string>());
+  const lastCheckedRef = React.useRef(new Date().toISOString());
   const refreshTimer = React.useRef<number | null>(null);
 
   const scheduleRefresh = React.useCallback(() => {
@@ -135,10 +152,18 @@ export function AdminChangeAlerts() {
     };
   }, []);
 
-  // Audio can only start after a user gesture in the tab.
+  const tryUnlock = React.useCallback(async () => {
+    const ready = await unlockAlertAudio();
+    setAudioReady(ready);
+    return ready;
+  }, []);
+
+  // Audio can only start after a user gesture in this tab. The floating
+  // "Enable alert siren" control makes that explicit when the browser has not
+  // granted activation yet.
   React.useEffect(() => {
     const unlock = () => {
-      void unlockAlertAudio();
+      void tryUnlock();
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
     };
@@ -150,94 +175,11 @@ export function AdminChangeAlerts() {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
     };
-  }, []);
+  }, [tryUnlock]);
 
-  // Load unread critical/warning alerts so a change made while this tab was
-  // closed still surfaces when the admin returns.
-  React.useEffect(() => {
-    if (!isAdmin) {
-      return;
-    }
-
-    dismissedRef.current = readDismissed();
-    let cancelled = false;
-
-    void (async () => {
-      const supabase = getSupabaseBrowserClient();
-      const since = new Date(Date.now() - LOOKBACK_MS).toISOString();
-      const { data } = await supabase
-        .from("notifications")
-        .select(
-          "id, title, message, severity, related_entity_type, created_at"
-        )
-        .eq("notification_type", "system")
-        .eq("is_read", false)
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (cancelled || !data) {
-        return;
-      }
-
-      const rows = (data as Record<string, unknown>[])
-        .map(toAlert)
-        .filter(
-          (alert): alert is AlertRow =>
-            alert !== null && deservesBanner(alert.severity)
-        );
-
-      setAlerts((current) => {
-        const merged = [...rows, ...current].filter(
-          (alert) => !dismissedRef.current.has(alert.id)
-        );
-        const unique: AlertRow[] = [];
-
-        for (const alert of merged) {
-          if (!unique.some((item) => item.id === alert.id)) {
-            unique.push(alert);
-          }
-        }
-
-        return unique.slice(0, MAX_BANNERS);
-      });
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isAdmin]);
-
-  const dismissAlert = React.useCallback((id: string) => {
-    setAlerts((current) => current.filter((alert) => alert.id !== id));
-    dismissedRef.current.add(id);
-
-    try {
-      window.localStorage.setItem(
-        DISMISSED_KEY,
-        JSON.stringify(Array.from(dismissedRef.current).slice(-100))
-      );
-    } catch {
-      // Storage may be unavailable in private mode; dismissal still works
-      // for the current page.
-    }
-  }, []);
-
-  const handleChange = React.useCallback(
-    (payload: RealtimePayload) => {
-      if (!isAdmin || payload.eventType !== "INSERT" || !payload.newRecord) {
-        return;
-      }
-
-      const row = payload.newRecord;
-
-      if (row.notification_type !== "system") {
-        return;
-      }
-
-      const alert = toAlert(row);
-
-      if (!alert || seen.current.has(alert.id)) {
+  const presentAlert = React.useCallback(
+    (alert: AlertRow, playSound: boolean) => {
+      if (seen.current.has(alert.id)) {
         return;
       }
 
@@ -254,28 +196,163 @@ export function AdminChangeAlerts() {
         duration: 8000,
       });
 
-      if (deservesBanner(alert.severity)) {
-        if (alert.severity === "critical") {
-          playSecurityAlertSound();
-        } else {
-          playAlertChime();
-        }
+      if (playSound && !playSecurityAlertSound()) {
+        // The tab lost audio activation (backgrounded, device change). Bring
+        // back the explicit unlock control.
+        setAudioReady(false);
+      }
 
-        if (!dismissedRef.current.has(alert.id)) {
-          setAlerts((current) =>
-            [alert, ...current.filter((item) => item.id !== alert.id)].slice(
-              0,
-              MAX_BANNERS
-            )
-          );
-        }
-      } else {
-        playAlertChime();
+      if (
+        deservesBanner(alert.severity) &&
+        !dismissedRef.current.has(alert.id)
+      ) {
+        setAlerts((current) =>
+          [alert, ...current.filter((item) => item.id !== alert.id)].slice(
+            0,
+            MAX_BANNERS
+          )
+        );
       }
 
       scheduleRefresh();
     },
-    [isAdmin, scheduleRefresh, toast]
+    [scheduleRefresh, toast]
+  );
+
+  // Catch-up on mount: show unread critical/warning alerts without sound.
+  React.useEffect(() => {
+    if (!isAdmin) {
+      return;
+    }
+
+    dismissedRef.current = readDismissed();
+    let cancelled = false;
+
+    void (async () => {
+      const supabase = getSupabaseBrowserClient();
+      const since = new Date(Date.now() - LOOKBACK_MS).toISOString();
+      const { data } = await supabase
+        .from("notifications")
+        .select(ALERT_COLUMNS)
+        .eq("notification_type", "system")
+        .eq("is_read", false)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (cancelled || !data) {
+        return;
+      }
+
+      const rows = toAlerts(data as Record<string, unknown>[]);
+
+      for (const row of rows) {
+        seen.current.add(row.id);
+      }
+
+      const bannerRows = rows.filter((row) => deservesBanner(row.severity));
+
+      setAlerts((current) => {
+        const merged = [...bannerRows, ...current].filter(
+          (alert) => !dismissedRef.current.has(alert.id)
+        );
+        const unique: AlertRow[] = [];
+
+        for (const alert of merged) {
+          if (!unique.some((item) => item.id === alert.id)) {
+            unique.push(alert);
+          }
+        }
+
+        return unique.slice(0, MAX_BANNERS);
+      });
+
+      lastCheckedRef.current = new Date().toISOString();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
+
+  // Polling fallback: Realtime can miss events when the socket drops or the tab
+  // sleeps. This also catches anything inserted while the app was closed.
+  React.useEffect(() => {
+    if (!isAdmin) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const poll = async () => {
+      if (document.hidden) {
+        return;
+      }
+
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase
+        .from("notifications")
+        .select(ALERT_COLUMNS)
+        .eq("notification_type", "system")
+        .eq("is_read", false)
+        .gt("created_at", lastCheckedRef.current)
+        .order("created_at", { ascending: true })
+        .limit(10);
+
+      if (cancelled || !data) {
+        return;
+      }
+
+      const rows = toAlerts(data as Record<string, unknown>[]);
+
+      for (const row of rows) {
+        presentAlert(row, true);
+      }
+
+      if (rows.length > 0) {
+        lastCheckedRef.current = rows[rows.length - 1].created_at;
+      }
+    };
+
+    const interval = window.setInterval(() => {
+      void poll();
+    }, POLL_INTERVAL_MS);
+
+    const onVisible = () => {
+      if (!document.hidden) {
+        void tryUnlock();
+        void poll();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [isAdmin, presentAlert, tryUnlock]);
+
+  const handleChange = React.useCallback(
+    (payload: RealtimePayload) => {
+      if (!isAdmin || payload.eventType !== "INSERT" || !payload.newRecord) {
+        return;
+      }
+
+      const row = payload.newRecord;
+
+      if (row.notification_type !== "system") {
+        return;
+      }
+
+      const alert = toAlert(row);
+
+      if (alert) {
+        presentAlert(alert, true);
+      }
+    },
+    [isAdmin, presentAlert]
   );
 
   useRealtimeTable({
@@ -284,94 +361,129 @@ export function AdminChangeAlerts() {
     onChange: handleChange,
   });
 
-  if (!isAdmin || alerts.length === 0) {
-    return null;
-  }
+  const dismissAlert = React.useCallback((id: string) => {
+    setAlerts((current) => current.filter((alert) => alert.id !== id));
+    dismissedRef.current.add(id);
+
+    try {
+      window.localStorage.setItem(
+        DISMISSED_KEY,
+        JSON.stringify(Array.from(dismissedRef.current).slice(-100))
+      );
+    } catch {
+      // Storage may be unavailable in private mode; dismissal still works for
+      // the current page.
+    }
+  }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-20 z-[70] flex justify-center px-4">
-      <div className="w-full max-w-2xl space-y-2" aria-live="assertive">
-        {alerts.map((alert) => {
-          const critical = alert.severity === "critical";
+    <>
+      {isAdmin && alerts.length > 0 ? (
+        <div className="pointer-events-none fixed inset-x-0 top-20 z-[70] flex justify-center px-4">
+          <div className="w-full max-w-2xl space-y-2" aria-live="assertive">
+            {alerts.map((alert) => {
+              const critical = alert.severity === "critical";
 
-          return (
-            <div
-              key={alert.id}
-              role="alert"
-              className={cn(
-                "pointer-events-auto flex items-start gap-3 rounded-md border p-3 shadow-lg",
-                critical
-                  ? "border-red-300 bg-red-50"
-                  : "border-amber-300 bg-amber-50"
-              )}
-            >
-              <DangerTriangleIcon
-                className={cn(
-                  "mt-0.5 size-5 shrink-0",
-                  critical ? "text-red-600" : "text-amber-600"
-                )}
-                aria-hidden="true"
-              />
-
-              <div className="min-w-0 flex-1">
-                <p
+              return (
+                <div
+                  key={alert.id}
+                  role="alert"
                   className={cn(
-                    "text-[10px] font-bold uppercase tracking-wider",
-                    critical ? "text-red-700" : "text-amber-700"
+                    "pointer-events-auto flex items-start gap-3 rounded-md border p-3 shadow-lg",
+                    critical
+                      ? "border-red-300 bg-red-50"
+                      : "border-amber-300 bg-amber-50"
                   )}
                 >
-                  {critical
-                    ? "Critical database alert"
-                    : "Database change alert"}
-                </p>
-                <p
-                  className={cn(
-                    "truncate text-sm font-semibold",
-                    critical ? "text-red-900" : "text-amber-900"
-                  )}
-                >
-                  {alert.title}
-                </p>
-                <p
-                  className={cn(
-                    "mt-0.5 text-xs leading-relaxed",
-                    critical ? "text-red-800" : "text-amber-800"
-                  )}
-                >
-                  {alert.message}
-                </p>
-                <Link
-                  href="/audit-logs"
-                  className={cn(
-                    "mt-1 inline-flex items-center gap-1 text-xs font-medium underline",
-                    critical ? "text-red-800" : "text-amber-800"
-                  )}
-                >
-                  <DocumentTextIcon
-                    className="size-3.5"
+                  <DangerTriangleIcon
+                    className={cn(
+                      "mt-0.5 size-5 shrink-0",
+                      critical ? "text-red-600" : "text-amber-600"
+                    )}
                     aria-hidden="true"
                   />
-                  View audit log
-                </Link>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => dismissAlert(alert.id)}
-                aria-label="Dismiss alert"
-                className={cn(
-                  "shrink-0 rounded-md p-1 transition-colors",
-                  critical
-                    ? "text-red-700 hover:bg-red-100"
-                    : "text-amber-700 hover:bg-amber-100"
-                )}
-              >
-                <CloseIcon className="size-4" aria-hidden="true" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        "text-[10px] font-bold uppercase tracking-wider",
+                        critical ? "text-red-700" : "text-amber-700"
+                      )}
+                    >
+                      {critical
+                        ? "Critical database alert"
+                        : "Database change alert"}
+                    </p>
+                    <p
+                      className={cn(
+                        "truncate text-sm font-semibold",
+                        critical ? "text-red-900" : "text-amber-900"
+                      )}
+                    >
+                      {alert.title}
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-0.5 text-xs leading-relaxed",
+                        critical ? "text-red-800" : "text-amber-800"
+                      )}
+                    >
+                      {alert.message}
+                    </p>
+                    <Link
+                      href="/audit-logs"
+                      className={cn(
+                        "mt-1 inline-flex items-center gap-1 text-xs font-medium underline",
+                        critical ? "text-red-800" : "text-amber-800"
+                      )}
+                    >
+                      <DocumentTextIcon
+                        className="size-3.5"
+                        aria-hidden="true"
+                      />
+                      View audit log
+                    </Link>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => dismissAlert(alert.id)}
+                    aria-label="Dismiss alert"
+                    className={cn(
+                      "shrink-0 rounded-md p-1 transition-colors",
+                      critical
+                        ? "text-red-700 hover:bg-red-100"
+                        : "text-amber-700 hover:bg-amber-100"
+                    )}
+                  >
+                    <CloseIcon className="size-4" aria-hidden="true" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {isAdmin && !audioReady ? (
+        <Button
+          type="button"
+          size="sm"
+          className="fixed right-4 top-20 z-[70] shadow-lg"
+          onClick={() => {
+            void (async () => {
+              const ready = await tryUnlock();
+
+              if (ready) {
+                playSecurityAlertSound();
+              }
+            })();
+          }}
+        >
+          <BellIcon className="size-4" aria-hidden="true" />
+          Enable alert siren
+        </Button>
+      ) : null}
+    </>
   );
 }

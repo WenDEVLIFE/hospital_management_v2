@@ -30,7 +30,13 @@ function getContext(): AudioContext | null {
     return null;
   }
 
-  context ??= new AudioContextCtor();
+  if (!context) {
+    try {
+      context = new AudioContextCtor();
+    } catch {
+      return null;
+    }
+  }
 
   return context;
 }
@@ -53,18 +59,25 @@ function throttled(): AudioContext | null {
   return audio;
 }
 
-export async function unlockAlertAudio(): Promise<void> {
+export async function unlockAlertAudio(): Promise<boolean> {
   const audio = getContext();
 
-  if (!audio || audio.state === "running") {
-    return;
+  if (!audio) {
+    return false;
+  }
+
+  if (audio.state === "running") {
+    return true;
   }
 
   try {
     await audio.resume();
   } catch {
     // Autoplay policy still applies; the visual alert remains visible.
+    return false;
   }
+
+  return (audio.state as string) === "running";
 }
 
 export function playAlertChime(): void {
@@ -104,12 +117,19 @@ export function playAlertChime(): void {
   }
 }
 
-export function playSecurityAlertSound(): void {
-  const audio = throttled();
+export function playSecurityAlertSound(): boolean {
+  const audio = getContext();
 
-  if (!audio) {
-    return;
+  if (!audio || audio.state !== "running") {
+    return false;
   }
+
+  if (Date.now() - lastPlayedAt < MIN_INTERVAL_MS) {
+    // A siren already played for this burst of alerts.
+    return true;
+  }
+
+  lastPlayedAt = Date.now();
 
   const now = audio.currentTime;
   const oscillator = audio.createOscillator();
@@ -145,4 +165,6 @@ export function playSecurityAlertSound(): void {
     filter.disconnect();
     gain.disconnect();
   };
+
+  return true;
 }

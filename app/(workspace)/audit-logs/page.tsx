@@ -1,6 +1,7 @@
 import {
   ClockCircleIcon,
   DangerCircleIcon,
+  DangerTriangleIcon,
   HistoryIcon,
 } from "@solar-icons/react/linear";
 
@@ -36,7 +37,7 @@ export default async function AuditLogsPage() {
       {statsResult.error ? (
         <ErrorState error={statsResult.error} />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Total events"
             value={statsResult.data.total}
@@ -47,6 +48,13 @@ export default async function AuditLogsPage() {
             value={statsResult.data.today}
             tone="info"
             icon={<ClockCircleIcon className="size-4" aria-hidden="true" />}
+          />
+          <StatCard
+            label="Critical events"
+            value={statsResult.data.critical}
+            hint="Direct database changes"
+            tone="danger"
+            icon={<DangerTriangleIcon className="size-4" aria-hidden="true" />}
           />
           <StatCard
             label="Failed actions"
