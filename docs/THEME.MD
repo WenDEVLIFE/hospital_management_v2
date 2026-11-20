@@ -142,7 +142,7 @@ All styling must be centralized through semantic CSS variables in `app/globals.c
 |---|---|---|
 | `--hospital-text` | #0F172A | Primary text, headings, and table content |
 | `--hospital-text-muted` | #475569 | Secondary text, descriptions, and timestamps |
-| `--hospital-text-subtle` | #64748B | Supporting metadata |
+| `--hospital-text-subtle` | #59697F | Supporting metadata |
 | `--hospital-text-inverse` | #FFFFFF | Text on dark and green backgrounds |
 
 ### 3.4 Multi-Cue Status System
@@ -1712,7 +1712,7 @@ All design tokens must be declared in:
   /* Typography */
   --hospital-text: #0F172A;
   --hospital-text-muted: #475569;
-  --hospital-text-subtle: #64748B;
+  --hospital-text-subtle: #59697F;
   --hospital-text-inverse: #FFFFFF;
 
   /* Clinical Status */

@@ -3,11 +3,17 @@ import { cn } from "@/lib/utils";
 
 export function Table({
   className,
+  scrollLabel,
   ...props
-}: React.TableHTMLAttributes<HTMLTableElement>) {
+}: React.TableHTMLAttributes<HTMLTableElement> & { scrollLabel?: string }) {
   return (
     <div className="rounded-md border border-hospital-border bg-white overflow-hidden">
-      <div className="overflow-x-auto">
+      <div
+        className="overflow-x-auto focus-visible:outline-offset-[-2px]"
+        role={scrollLabel ? "region" : undefined}
+        aria-label={scrollLabel}
+        tabIndex={scrollLabel ? 0 : undefined}
+      >
         <table className={cn("min-w-full caption-bottom", className)} {...props} />
       </div>
     </div>

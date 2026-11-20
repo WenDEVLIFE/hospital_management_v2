@@ -190,7 +190,7 @@ export function RecordTable<T>({
                   onChange={(event) =>
                     handleFilterChange(filter.key, event.target.value)
                   }
-                  className="h-9 rounded-md border border-hospital-border bg-white px-3 text-sm text-hospital-text transition-colors focus:border-hospital-green focus:outline-none focus:ring-1 focus:ring-hospital-green"
+                  className="h-9 rounded-md border border-hospital-control-border bg-white px-3 text-sm text-hospital-text transition-colors focus:border-hospital-green focus:outline-none focus:ring-1 focus:ring-hospital-green"
                 >
                   <option value="">{filter.allLabel ?? `All ${filter.label}`}</option>
                   {filter.options.map((option) => (

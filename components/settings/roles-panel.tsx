@@ -32,7 +32,7 @@ export function RolesPanel({ roles }: RolesPanelProps) {
           description="Roles will appear here once the hospital database defines them."
         />
       ) : (
-        <Table>
+        <Table scrollLabel="Roles table">
           <TableHeader>
             <TableRow>
               <TableHead>Role</TableHead>

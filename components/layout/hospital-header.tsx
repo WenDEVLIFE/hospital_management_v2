@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -14,7 +13,13 @@ import {
   SettingsIcon,
   UserCircleIcon,
 } from "@solar-icons/react/linear";
-import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuLink,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { isNavItemActive, navigation } from "@/lib/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useSidebar } from "./sidebar-provider";
@@ -33,13 +38,10 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
   const router = useRouter();
   const { mobileOpen, toggleMobile, collapsed, toggleCollapsed } = useSidebar();
 
-  const [menuOpen, setMenuOpen] = React.useState(false);
   const [accountEmail, setAccountEmail] = React.useState<string | undefined>(
     profile?.email
   );
   const [signingOut, setSigningOut] = React.useState(false);
-  const userMenuRef = React.useRef<HTMLDivElement>(null);
-  const userMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
   const mobileTriggerRef = React.useRef<HTMLButtonElement>(null);
   const wasMobileOpen = React.useRef(false);
 
@@ -71,49 +73,12 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
   }, [pathname]);
 
   React.useEffect(() => {
-    if (!menuOpen) {
-      return;
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!userMenuRef.current?.contains(event.target as Node)) {
-        setMenuOpen(false);
-        userMenuTriggerRef.current?.focus();
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setMenuOpen(false);
-        userMenuTriggerRef.current?.focus();
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [menuOpen]);
-
-  React.useEffect(() => {
     if (wasMobileOpen.current && !mobileOpen) {
       mobileTriggerRef.current?.focus();
     }
 
     wasMobileOpen.current = mobileOpen;
   }, [mobileOpen]);
-
-  const closeMenu = (restoreFocus = true) => {
-    setMenuOpen(false);
-
-    if (restoreFocus) {
-      userMenuTriggerRef.current?.focus();
-    }
-  };
 
   const handleSignOut = async () => {
     if (signingOut) {
@@ -128,7 +93,6 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
       // Navigate anyway; the proxy will resolve the remaining session state.
     } finally {
       setSigningOut(false);
-      closeMenu(false);
       router.replace("/login");
       router.refresh();
     }
@@ -201,82 +165,42 @@ export function HospitalHeader({ profile }: HospitalHeaderProps) {
           <BellIcon className="size-5" />
         </button>
 
-        <div ref={userMenuRef} className="relative">
-          <button
-            ref={userMenuTriggerRef}
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            aria-controls="account-menu"
-            className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-white/30 bg-white/10 px-3 text-xs font-medium text-white transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-hospital-green"
-          >
-            <UserCircleIcon className="size-4 text-white/80" />
-            <span>Account</span>
-            <AltArrowDownIcon
-              aria-hidden="true"
-              className={cn(
-                "size-3 text-white/70 transition-transform duration-150 ease-out",
-                menuOpen && "rotate-180"
-              )}
-            />
-          </button>
-
-          {menuOpen ? (
-            <div
-              id="account-menu"
-              role="menu"
-              aria-label="Account menu"
-              className="absolute right-0 top-full z-50 mt-2 w-56 rounded-md border border-hospital-border bg-white shadow-lg"
+        <DropdownMenu
+          align="end"
+          className="w-56"
+          trigger={
+            <button
+              type="button"
+              className="group inline-flex h-9 items-center gap-2 rounded-md border border-white/60 bg-hospital-green-hover px-3 text-xs font-medium text-white transition-colors hover:bg-hospital-green-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-hospital-green"
             >
-              <div className="border-b border-hospital-border-subtle px-3 py-2">
-                {accountEmail || profile?.role ? (
-                  <>
-                    {accountEmail ? (
-                      <p className="truncate text-xs font-medium text-hospital-text">
-                        {accountEmail}
-                      </p>
-                    ) : null}
-                    {profile?.role ? (
-                      <p className="mt-1 text-[11px] text-hospital-text-muted">
-                        {profile.role}
-                      </p>
-                    ) : null}
-                  </>
-                ) : (
-                  <p className="text-xs font-medium text-hospital-text">
-                    Account
-                  </p>
-                )}
-              </div>
-
-              <div className="p-1">
-                <Link
-                  href="/settings/account"
-                  role="menuitem"
-                  onClick={() => closeMenu(false)}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-hospital-text transition-colors hover:bg-hospital-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1"
-                >
-                  <SettingsIcon className="size-4 text-hospital-text-muted" />
-                  <span>Account settings</span>
-                </Link>
-              </div>
-
-              <div className="mt-1 border-t border-hospital-border-subtle p-1">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={handleSignOut}
-                  disabled={signingOut}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Logout2Icon className="size-4" />
-                  <span>Sign out</span>
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
+              <UserCircleIcon className="size-4" aria-hidden="true" />
+              <span>Account</span>
+              <AltArrowDownIcon
+                aria-hidden="true"
+                className="size-3 transition-transform duration-150 ease-out group-aria-expanded:rotate-180"
+              />
+            </button>
+          }
+        >
+          <DropdownMenuLabel>
+            <p className="truncate text-hospital-text">{accountEmail ?? "Account"}</p>
+            {profile?.role ? <p className="mt-1 font-normal">{profile.role}</p> : null}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuLink href="/settings/account">
+            <SettingsIcon className="size-4 text-hospital-text-muted" aria-hidden="true" />
+            Account settings
+          </DropdownMenuLink>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            destructive
+            disabled={signingOut}
+            icon={<Logout2Icon />}
+            onSelect={() => void handleSignOut()}
+          >
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenu>
       </div>
     </header>
   );

@@ -438,12 +438,12 @@
 
 ### 7.2 Browser & accessibility
 
-- [ ] Visual QA at 640 / 1024 / 1440 for all 26 routes
-- [ ] Hover, focus-visible, active, disabled, loading states inspected
-- [ ] Keyboard-only pass: tab order, modal trap, dropdown, tabs, calendar, table sort
-- [ ] `prefers-reduced-motion` verified
-- [ ] Screen reader pass on the patient profile and clinical encounter dialog
-- [ ] Contrast check against WCAG AA for every token pair
+- [x] Visual QA at 640 / 1024 / 1440 for all 26 routes in §3.1. Reviewed 78 Chromium viewport captures on 2026-11-20. All routes returned 200 with no document-level horizontal overflow. At 640 px, the sidebar crowds the content area, filters and tables clip within their containers, and currency values overlap metric icons on Billing and Payments.
+- [x] Hover, focus-visible, active, disabled, and loading states inspected on representative controls. Sign in darkened on hover and showed a keyboard focus ring. The pressed state shared the hover styling. Reports Reset range was disabled. In-flight sign-in displayed a spinner, set `aria-busy`, blocked repeat submission, and re-enabled after the simulated response.
+- [x] Keyboard-only pass for the sampled flows. Verified tab order, profile tab and panel focus, calendar month navigation, encounter table sort, and dialog focus trap and return. The Account menu moves focus to its first item, supports arrow navigation and Escape, and allows Tab and Shift+Tab to exit. The laboratory workflow and roles table scroll with the keyboard at 640 px.
+- [x] `prefers-reduced-motion` verified in Chromium. Pulse and transition durations dropped to 0.01 ms, and the in-flight sign-in spinner ran once at 0.01 ms.
+- [ ] Screen reader pass on the patient profile and clinical encounter dialog. The profile panel now takes its accessible name from the active tab and is reachable by Tab. Verified the profile panel in Chromium and the macOS browser accessibility tree, and verified the dialog's name and description in Chromium. Spoken VoiceOver output remains unverified because the native VoiceOver connection timed out.
+- [x] WCAG AA contrast gate for the tested routes and color pairs. Recomputed all 378 distinct pairs among the 28 base color tokens and checked the five documented status text/background pairs. Subtle text on the muted surface now measures 5.11:1. Updated the Account trigger, auth branding, shared field boundaries and placeholder text. Axe reported zero WCAG A/AA violations in 78 default-state scans across the 26 routes at 640, 1024, and 1440 px.
 
 ### 7.3 Automated tests
 

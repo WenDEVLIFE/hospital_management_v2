@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
@@ -72,7 +73,7 @@ export function DropdownMenu({
 
     const frame = window.requestAnimationFrame(() => {
       const firstItem = menuRef.current?.querySelector<HTMLElement>(
-        '[role="menuitem"]'
+        '[role="menuitem"]:not([disabled])'
       );
       firstItem?.focus();
     });
@@ -88,7 +89,7 @@ export function DropdownMenu({
     }
 
     if (event.key === "Tab") {
-      closeMenu(false);
+      closeMenu(true);
       return;
     }
 
@@ -183,6 +184,31 @@ export function DropdownMenu({
   );
 }
 
+const menuItemClassName =
+  "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs transition-colors cursor-pointer select-none focus:outline-none focus:bg-hospital-surface-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-hospital-green";
+
+export function DropdownMenuLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  const { closeMenu } = React.useContext(DropdownMenuContext);
+
+  return (
+    <Link
+      href={href}
+      role="menuitem"
+      tabIndex={-1}
+      onClick={closeMenu}
+      className={cn(menuItemClassName, "text-hospital-text")}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export interface DropdownMenuItemProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onSelect"> {
   onSelect?: () => void;
@@ -216,11 +242,10 @@ export function DropdownMenuItem({
         closeMenu();
       }}
       className={cn(
-        "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs transition-colors cursor-pointer select-none",
-        "focus:outline-none focus:bg-hospital-surface-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-hospital-green",
+        menuItemClassName,
         "disabled:cursor-not-allowed disabled:opacity-50",
         destructive
-          ? "text-red-600 focus:bg-red-50 focus-visible:ring-red-500"
+          ? "text-red-700 focus:bg-red-50 focus-visible:ring-red-500"
           : "text-hospital-text",
         className
       )}

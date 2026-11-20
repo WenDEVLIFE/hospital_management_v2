@@ -14,9 +14,10 @@ export interface TabsProps {
   value: string;
   onValueChange: (value: string) => void;
   className?: string;
+  panelId?: string;
 }
 
-export function Tabs({ items, value, onValueChange, className }: TabsProps) {
+export function Tabs({ items, value, onValueChange, className, panelId }: TabsProps) {
   const baseId = React.useId();
   const buttonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
   const activeIndex = items.findIndex((item) => item.value === value);
@@ -65,7 +66,8 @@ export function Tabs({ items, value, onValueChange, className }: TabsProps) {
             }}
             type="button"
             role="tab"
-            id={`${baseId}-tab-${item.value}`}
+            id={`${panelId ?? baseId}-tab-${item.value}`}
+            aria-controls={panelId}
             aria-selected={isActive}
             tabIndex={isActive ? 0 : -1}
             onClick={() => onValueChange(item.value)}

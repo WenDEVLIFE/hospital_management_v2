@@ -31,7 +31,7 @@ export function SearchInput({
   return (
     <div
       className={cn(
-        "flex h-9 w-full items-center gap-2 rounded-md border border-hospital-border bg-white px-3 text-sm transition-colors",
+        "flex h-9 w-full items-center gap-2 rounded-md border border-hospital-control-border bg-white px-3 text-sm transition-colors",
         "focus-within:border-hospital-green focus-within:ring-1 focus-within:ring-hospital-green",
         className
       )}
@@ -52,7 +52,7 @@ export function SearchInput({
         }}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        className="h-full w-full min-w-0 border-0 bg-transparent p-0 text-sm text-hospital-text placeholder:text-slate-400 outline-none [&::-webkit-search-cancel-button]:appearance-none"
+        className="h-full w-full min-w-0 border-0 bg-transparent p-0 text-sm text-hospital-text placeholder:text-hospital-text-subtle outline-none [&::-webkit-search-cancel-button]:appearance-none"
       />
       {value && (
         <button

@@ -52,7 +52,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           aria-invalid={isInvalid || undefined}
           aria-describedby={describedBy}
           className={cn(
-            "w-full h-9 appearance-none rounded-md border border-hospital-border bg-white pl-3 pr-9 py-1 text-sm text-hospital-text transition-colors cursor-pointer",
+            "w-full h-9 appearance-none rounded-md border border-hospital-control-border bg-white pl-3 pr-9 py-1 text-sm text-hospital-text transition-colors cursor-pointer",
             "focus:outline-none focus:border-hospital-green focus:ring-1 focus:ring-hospital-green",
             "disabled:cursor-not-allowed disabled:bg-hospital-surface-muted disabled:opacity-60",
             isInvalid && "border-red-500 text-red-700 focus:border-red-500 focus:ring-red-500",

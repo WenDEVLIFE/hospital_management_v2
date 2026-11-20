@@ -21,7 +21,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         type="checkbox"
         disabled={disabled}
         className={cn(
-          "mt-0.5 size-4 shrink-0 rounded border border-hospital-border accent-[var(--hospital-green)] cursor-pointer",
+          "mt-0.5 size-4 shrink-0 rounded border border-hospital-control-border accent-[var(--hospital-green)] cursor-pointer",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hospital-green focus-visible:ring-offset-1",
           "disabled:cursor-not-allowed disabled:opacity-50",
           !label && !description && className

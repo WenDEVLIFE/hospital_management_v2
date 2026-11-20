@@ -25,14 +25,14 @@ export function BrandPanel() {
             <p className="text-sm font-semibold leading-tight">
               Southern Philippines Medical Center
             </p>
-            <p className="mt-0.5 text-[11px] text-white/75">
+            <p className="mt-0.5 text-[11px] text-white">
               Hospital Management System
             </p>
           </div>
         </div>
 
         <div className="mt-8 hidden lg:block">
-          <p className="text-[11px] font-medium text-white/70">
+          <p className="text-[11px] font-medium text-white">
             System scope
           </p>
           <ul className="mt-3">
@@ -48,7 +48,7 @@ export function BrandPanel() {
         </div>
       </div>
 
-      <p className="hidden text-[11px] text-white/60 lg:block">
+      <p className="hidden text-[11px] text-white lg:block">
         Authorized hospital personnel only.
       </p>
     </div>

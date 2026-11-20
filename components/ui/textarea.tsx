@@ -42,7 +42,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         aria-invalid={isInvalid || undefined}
         aria-describedby={describedBy}
         className={cn(
-          "w-full min-h-20 rounded-md border border-hospital-border bg-white px-3 py-2 text-sm text-hospital-text placeholder:text-slate-400 transition-colors",
+          "w-full min-h-20 rounded-md border border-hospital-control-border bg-white px-3 py-2 text-sm text-hospital-text placeholder:text-hospital-text-subtle transition-colors",
           "focus:outline-none focus:border-hospital-green focus:ring-1 focus:ring-hospital-green",
           "disabled:cursor-not-allowed disabled:bg-hospital-surface-muted disabled:opacity-60",
           isInvalid && "border-red-500 text-red-700 focus:border-red-500 focus:ring-red-500",

@@ -57,6 +57,9 @@ export function AppointmentsCalendar({
   }, [rows]);
 
   const cells = buildMonthCells(cursor.year, cursor.month);
+  const weeks = Array.from({ length: Math.ceil(cells.length / 7) }, (_, index) =>
+    cells.slice(index * 7, (index + 1) * 7)
+  );
   const monthPrefix = `${cursor.year}-${String(cursor.month + 1).padStart(2, "0")}`;
   const monthTotal = rows.reduce((total, row) => {
     return manilaDateKey(row.scheduled_at).startsWith(monthPrefix)
@@ -107,7 +110,7 @@ export function AppointmentsCalendar({
       </div>
 
       <div className="overflow-hidden rounded-md border border-hospital-border bg-white">
-        <div role="grid" aria-label={`Appointment calendar for ${calendarMonthLabel(cursor.year, cursor.month)}`}>
+        <div role="table" aria-label={`Appointment calendar for ${calendarMonthLabel(cursor.year, cursor.month)}`}>
           <div role="row" className="grid grid-cols-7 border-b border-hospital-border bg-hospital-surface-muted">
             {WEEKDAY_LABELS.map((label) => (
               <div
@@ -120,69 +123,69 @@ export function AppointmentsCalendar({
             ))}
           </div>
 
-          <div className="grid grid-cols-7">
-            {cells.map((day, index) => {
-              if (day === null) {
+          {weeks.map((week, index) => (
+            <div key={index} role="row" className="grid grid-cols-7">
+              {week.map((day, index) => {
+                if (day === null) {
+                  return (
+                    <div
+                      key={`empty-${index}`}
+                      role="cell"
+                      className="min-h-24 border-b border-r border-hospital-border-subtle bg-hospital-surface"
+                    />
+                  );
+                }
+
+                const dateKey = calendarDateKey(cursor.year, cursor.month, day);
+                const dayRows = rowsByDate.get(dateKey) ?? [];
+                const count = dayRows.length;
+                const label = calendarDayLabel(cursor.year, cursor.month, day);
+
                 return (
                   <div
-                    key={`empty-${index}`}
-                    aria-hidden="true"
-                    className="min-h-24 border-b border-r border-hospital-border-subtle bg-hospital-surface"
-                  />
-                );
-              }
-
-              const dateKey = calendarDateKey(cursor.year, cursor.month, day);
-              const dayRows = rowsByDate.get(dateKey) ?? [];
-              const count = dayRows.length;
-              const label = calendarDayLabel(cursor.year, cursor.month, day);
-
-              return (
-                <div
-                  key={dateKey}
-                  role="gridcell"
-                  aria-label={`${label}, ${count} ${
-                    count === 1 ? "appointment" : "appointments"
-                  }`}
-                  className="min-h-24 min-w-0 border-b border-r border-hospital-border-subtle p-1.5"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[11px] font-medium text-hospital-text">
-                      {day}
-                    </span>
-                    {count > 0 ? (
-                      <span className="rounded-full bg-hospital-green-light px-1.5 text-[10px] font-semibold text-hospital-green-dark">
-                        {count}
+                    key={dateKey}
+                    role="cell"
+                    className="min-h-24 min-w-0 border-b border-r border-hospital-border-subtle p-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="sr-only">{label}</span>
+                      <span aria-hidden="true" className="text-[11px] font-medium text-hospital-text">
+                        {day}
                       </span>
+                      {count > 0 ? (
+                        <span aria-hidden="true" className="rounded-full bg-hospital-green-light px-1.5 text-[10px] font-semibold text-hospital-green-dark">
+                          {count}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {count > 0 ? (
+                      <ul className="mt-1 space-y-0.5">
+                        {dayRows.slice(0, 3).map((row) => (
+                          <li
+                            key={row.id}
+                            title={`${formatAppointmentTime(row.scheduled_at)} ${
+                              row.patient_name
+                            }`}
+                            className="truncate rounded-sm border border-hospital-border bg-hospital-surface px-1 py-0.5 text-[10px] leading-4 text-hospital-text"
+                          >
+                            {formatAppointmentTime(row.scheduled_at)} ·{" "}
+                            {row.patient_name}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+
+                    {count > 3 ? (
+                      <p className="mt-0.5 text-[10px] font-medium text-hospital-text-muted">
+                        +{count - 3} more
+                      </p>
                     ) : null}
                   </div>
-
-                  {count > 0 ? (
-                    <ul className="mt-1 space-y-0.5">
-                      {dayRows.slice(0, 3).map((row) => (
-                        <li
-                          key={row.id}
-                          title={`${formatAppointmentTime(row.scheduled_at)} ${
-                            row.patient_name
-                          }`}
-                          className="truncate rounded-sm border border-hospital-border bg-hospital-surface px-1 py-0.5 text-[10px] leading-4 text-hospital-text"
-                        >
-                          {formatAppointmentTime(row.scheduled_at)} ·{" "}
-                          {row.patient_name}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-
-                  {count > 3 ? (
-                    <p className="mt-0.5 text-[10px] font-medium text-hospital-text-muted">
-                      +{count - 3} more
-                    </p>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
     </div>

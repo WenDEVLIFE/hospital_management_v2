@@ -19,7 +19,7 @@
   /* Typography */
   --hospital-text: #0F172A;
   --hospital-text-muted: #475569;
-  --hospital-text-subtle: #64748B;
+  --hospital-text-subtle: #59697F;
   --hospital-text-inverse: #FFFFFF;
 
   /* Clinical Status */
@@ -65,6 +65,7 @@
   --color-hospital-surface-muted: var(--hospital-surface-muted);
   --color-hospital-border: var(--hospital-border);
   --color-hospital-border-subtle: var(--hospital-border-subtle);
+  --color-hospital-control-border: var(--hospital-text-subtle);
 
   /* Typography */
   --color-hospital-text: var(--hospital-text);

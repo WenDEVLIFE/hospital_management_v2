@@ -535,6 +535,7 @@ export function PatientProfileTabs({
   patient,
   summary,
 }: PatientProfileTabsProps) {
+  const panelId = React.useId();
   const [tab, setTab] = React.useState("overview");
   const [showAddAllergy, setShowAddAllergy] = React.useState(false);
   const can = useCan();
@@ -586,9 +587,15 @@ export function PatientProfileTabs({
 
   return (
     <PageSection>
-      <Tabs items={tabItems} value={tab} onValueChange={setTab} />
+      <Tabs items={tabItems} value={tab} onValueChange={setTab} panelId={panelId} />
 
-      <div role="tabpanel" className="pt-5">
+      <div
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={`${panelId}-tab-${tab}`}
+        tabIndex={0}
+        className="pt-5"
+      >
         {tab === "overview" ? <OverviewPanel patient={patient} /> : null}
 
         {tab === "medical-history" ? (
