@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { AdmissionTrendChart } from "@/components/dashboard/admission-trend-chart";
 import { AppointmentBreakdown } from "@/components/dashboard/appointment-breakdown";
 import { DashboardMetrics } from "@/components/dashboard/metric-grid";
@@ -5,10 +7,34 @@ import { PendingActivities } from "@/components/dashboard/pending-activities";
 import { RecentRegistrationsTable } from "@/components/dashboard/recent-registrations-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageSection } from "@/components/layout/page-section";
+import { MetricCardSkeleton, Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/module/error-state";
 import { getDashboardOverview } from "@/lib/data/dashboard";
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <div className="space-y-4">
+      <PageHeader title="Dashboard" description="Hospital operations overview" />
+      <Suspense fallback={<DashboardLoading />}>
+        <DashboardData />
+      </Suspense>
+    </div>
+  );
+}
+
+function DashboardLoading() {
+  return (
+    <div role="status" className="space-y-4">
+      <span className="sr-only">Loading dashboard metrics</span>
+      <div aria-hidden="true" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => <MetricCardSkeleton key={index} />)}
+      </div>
+      <Skeleton aria-hidden="true" className="h-64" />
+    </div>
+  );
+}
+
+async function DashboardData() {
   const result = await getDashboardOverview();
 
   if (result.error) {
@@ -24,9 +50,7 @@ export default async function DashboardPage() {
   } = result.data;
 
   return (
-    <div className="space-y-4">
-      <PageHeader title="Dashboard" description="Hospital operations overview" />
-
+    <>
       <section aria-label="Key hospital metrics">
         <DashboardMetrics metrics={metrics} />
       </section>
@@ -62,6 +86,6 @@ export default async function DashboardPage() {
           <PendingActivities activities={pendingActivities} />
         </PageSection>
       </div>
-    </div>
+    </>
   );
 }

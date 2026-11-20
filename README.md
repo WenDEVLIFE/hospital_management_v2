@@ -20,6 +20,18 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Preview production navigation
+
+Development mode compiles routes on demand and shows the **Compiling** indicator.
+To preview the built routes and production link prefetching, use a separate port:
+
+```bash
+npm run build
+npm run start -- --hostname 127.0.0.1 --port 3100
+```
+
+Open [http://localhost:3100](http://localhost:3100).
+
 ## Database seed (demo)
 
 `supabase/seed.sql` creates synthetic demo data for every public table plus 12

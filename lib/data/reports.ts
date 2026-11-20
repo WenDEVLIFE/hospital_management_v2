@@ -1,3 +1,5 @@
+import { cacheLife } from "next/cache";
+
 import type { ReportCard, ReportRange } from "@/types/hospital";
 import type { DataResult } from "./result";
 
@@ -170,6 +172,8 @@ function manilaDateKey(value: Date): string {
 export async function listReportCategories(): Promise<
   DataResult<ReportCard[]>
 > {
+  "use cache";
+  cacheLife("max");
   return { data: REPORT_CARDS, error: null };
 }
 

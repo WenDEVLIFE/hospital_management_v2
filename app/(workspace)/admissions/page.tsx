@@ -26,8 +26,8 @@ export const metadata = {
 };
 
 export default async function AdmissionsPage() {
-  const access = await getCurrentUserAccess();
-  const [statsResult, listResult, boardResult] = await Promise.all([
+  const [access, statsResult, listResult, boardResult] = await Promise.all([
+    getCurrentUserAccess(),
     getAdmissionStats(),
     listAdmissions({ pageSize: 200 }),
     getBedBoard(),

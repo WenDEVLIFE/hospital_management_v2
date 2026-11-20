@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { AuthGuard } from "@/components/layout/auth-guard";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { PermissionProvider } from "@/components/providers/permission-provider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -14,16 +14,18 @@ import { getCurrentUserAccess } from "@/lib/auth/access";
 async function WorkspaceContent({ children }: { children: React.ReactNode }) {
   const access = await getCurrentUserAccess();
 
+  if (!access.userId) redirect("/login");
+  if (access.profileStatus === "missing") redirect("/login?error=profile");
+  if (access.profileStatus === "disabled") redirect("/login?error=disabled");
+
   return (
-    <AuthGuard>
-      <PermissionProvider
-        value={{ isAdmin: access.isAdmin, permissions: access.permissions }}
-      >
-        <ToastProvider>
-          <AppShell>{children}</AppShell>
-        </ToastProvider>
-      </PermissionProvider>
-    </AuthGuard>
+    <PermissionProvider
+      value={{ isAdmin: access.isAdmin, permissions: access.permissions }}
+    >
+      <ToastProvider>
+        <AppShell>{children}</AppShell>
+      </ToastProvider>
+    </PermissionProvider>
   );
 }
 

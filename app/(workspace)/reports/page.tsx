@@ -1,10 +1,12 @@
 import { connection } from "next/server";
+import { Suspense } from "react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { PageSection } from "@/components/layout/page-section";
 import { ErrorState } from "@/components/module/error-state";
 import { ReportRangeControls } from "@/components/reports/report-range-controls";
 import { ReportsCategoryGrid } from "@/components/reports/reports-category-grid";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { getReportRange, listReportCategories } from "@/lib/data/reports";
 
@@ -12,13 +14,23 @@ export const metadata = {
   title: "Reports & Analytics",
 };
 
-export default async function ReportsPage() {
+async function CurrentReportRange() {
   await connection();
+  const result = await getReportRange();
 
-  const [categoriesResult, rangeResult] = await Promise.all([
-    listReportCategories(),
-    getReportRange(),
-  ]);
+  return result.error ? (
+    <ErrorState error={result.error} />
+  ) : (
+    <ReportRangeControls
+      defaultStart={result.data.start}
+      defaultEnd={result.data.end}
+      defaultLabel={result.data.label}
+    />
+  );
+}
+
+export default async function ReportsPage() {
+  const categoriesResult = await listReportCategories();
 
   return (
     <div className="space-y-6">
@@ -27,15 +39,9 @@ export default async function ReportsPage() {
         description="Operational and financial reporting by category."
       />
 
-      {rangeResult.error ? (
-        <ErrorState error={rangeResult.error} />
-      ) : (
-        <ReportRangeControls
-          defaultStart={rangeResult.data.start}
-          defaultEnd={rangeResult.data.end}
-          defaultLabel={rangeResult.data.label}
-        />
-      )}
+      <Suspense fallback={<Skeleton className="h-32" aria-hidden="true" />}>
+        <CurrentReportRange />
+      </Suspense>
 
       <Alert variant="info">
         Statistics are only official when produced from authorized hospital

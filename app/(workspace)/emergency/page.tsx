@@ -1,5 +1,4 @@
 import * as React from "react";
-import { connection } from "next/server";
 import Link from "next/link";
 import {
   CheckCircleIcon,
@@ -31,12 +30,9 @@ export const metadata = {
 };
 
 export default async function EmergencyPage() {
-  await connection();
-
-  const access = await getCurrentUserAccess();
-
-  const [statsResult, listResult, detailsResult, patientResult] =
+  const [access, statsResult, listResult, detailsResult, patientResult] =
     await Promise.all([
+      getCurrentUserAccess(),
       getEmergencyStats(),
       listEmergencyVisits({ pageSize: 200 }),
       getEmergencyVisitDetails(),

@@ -14,8 +14,10 @@ export const metadata = {
 };
 
 export default async function DischargesPage() {
-  const access = await getCurrentUserAccess();
-  const listResult = await listDischarges({ pageSize: 200 });
+  const [access, listResult] = await Promise.all([
+    getCurrentUserAccess(),
+    listDischarges({ pageSize: 200 }),
+  ]);
 
   return (
     <div className="space-y-6">

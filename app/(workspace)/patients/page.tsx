@@ -17,24 +17,23 @@ import { accessCan, getCurrentUserAccess } from "@/lib/auth/access";
 import { listPatients } from "@/lib/data/patients";
 
 export default async function PatientsPage() {
-  const access = await getCurrentUserAccess();
-  const canCreate = accessCan(access, "patient.create");
-  const [listResult, totalResult, activeResult, inactiveResult, archivedResult] =
+  const [access, listResult, activeResult, inactiveResult, archivedResult] =
     await Promise.all([
+      getCurrentUserAccess(),
       listPatients({ pageSize: 100 }),
-      listPatients({ pageSize: 1 }),
       listPatients({ status: "active", pageSize: 1 }),
       listPatients({ status: "inactive", pageSize: 1 }),
       listPatients({ status: "archived", pageSize: 1 }),
     ]);
 
+  const canCreate = accessCan(access, "patient.create");
   const counts =
-    totalResult.data &&
+    listResult.data &&
     activeResult.data &&
     inactiveResult.data &&
     archivedResult.data
       ? {
-          total: totalResult.data.total,
+          total: listResult.data.total,
           active: activeResult.data.total,
           inactive: inactiveResult.data.total,
           archived: archivedResult.data.total,

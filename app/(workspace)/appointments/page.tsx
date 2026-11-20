@@ -1,4 +1,3 @@
-import { connection } from "next/server";
 import Link from "next/link";
 import {
   CalendarMarkIcon,
@@ -35,11 +34,8 @@ function manilaMonthKey(): string {
 }
 
 export default async function AppointmentsPage() {
-  await connection();
-
-  const access = await getCurrentUserAccess();
-
-  const [statsResult, listResult] = await Promise.all([
+  const [access, statsResult, listResult] = await Promise.all([
+    getCurrentUserAccess(),
     getAppointmentStats(),
     listAppointments({ pageSize: 200 }),
   ]);
