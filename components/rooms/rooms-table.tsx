@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useCan } from "@/components/providers/permission-provider";
 import { EditRoomDialog } from "./edit-room-dialog";
-import type { Room } from "@/types/hospital";
+import { ManageBedsDialog } from "./manage-beds-dialog";
+import type { BedBoardRow, Room } from "@/types/hospital";
 
 export type RoomTableRow = Room & {
   department_name: string;
@@ -18,11 +19,13 @@ export type RoomTableRow = Room & {
 export interface RoomsTableProps {
   rows: RoomTableRow[];
   departments: Array<{ id: string; name: string }>;
+  beds: BedBoardRow[];
 }
 
-export function RoomsTable({ rows, departments }: RoomsTableProps) {
+export function RoomsTable({ rows, departments, beds }: RoomsTableProps) {
   const canManage = useCan()("bed.manage");
   const [editing, setEditing] = React.useState<RoomTableRow | null>(null);
+  const [managing, setManaging] = React.useState<RoomTableRow | null>(null);
 
   const columns: Column<RoomTableRow>[] = [
     {
@@ -86,7 +89,10 @@ export function RoomsTable({ rows, departments }: RoomsTableProps) {
       key: "actions",
       header: "",
       cell: (row) => (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setManaging(row)}>
+            Beds
+          </Button>
           <Button variant="secondary" onClick={() => setEditing(row)}>
             Edit
           </Button>
@@ -119,6 +125,15 @@ export function RoomsTable({ rows, departments }: RoomsTableProps) {
           room={editing}
           departments={departments}
           onClose={() => setEditing(null)}
+        />
+      ) : null}
+
+      {managing ? (
+        <ManageBedsDialog
+          key={managing.id}
+          room={managing}
+          beds={beds}
+          onClose={() => setManaging(null)}
         />
       ) : null}
     </>

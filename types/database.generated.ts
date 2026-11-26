@@ -716,6 +716,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          is_active: boolean
           room_id: string
           status: Database["public"]["Enums"]["bed_status"]
           updated_at: string
@@ -726,6 +727,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          is_active?: boolean
           room_id: string
           status?: Database["public"]["Enums"]["bed_status"]
           updated_at?: string
@@ -736,6 +738,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          is_active?: boolean
           room_id?: string
           status?: Database["public"]["Enums"]["bed_status"]
           updated_at?: string
@@ -6468,6 +6471,14 @@ export type Database = {
       }
     }
     Functions: {
+      add_bed: {
+        Args: {
+          p_room_id: string
+          p_bed_number: string
+          p_status?: string
+        }
+        Returns: string
+      }
       add_nursing_note: {
         Args: { p_encounter_id: string; p_note: string; p_patient_id: string }
         Returns: string
@@ -6958,6 +6969,10 @@ export type Database = {
           p_released_to: string
         }
         Returns: string
+      }
+      remove_bed: {
+        Args: { p_bed_id: string }
+        Returns: undefined
       }
       review_leave_request: {
         Args: { p_decision: string; p_leave_id: string }

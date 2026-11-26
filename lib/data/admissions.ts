@@ -237,7 +237,8 @@ export async function getBedBoard(): Promise<DataResult<BedBoardRow[]>> {
     .from("beds")
     .select(
       "id, bed_number, status, room_id, rooms(room_number, room_type, floor_number, department_id, departments(name))"
-    );
+    )
+    .eq("is_active", true);
 
   if (bedError) {
     return { data: null, error: toDataError(bedError) };

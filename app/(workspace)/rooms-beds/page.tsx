@@ -132,6 +132,7 @@ export default async function RoomsBedsPage() {
             departments={(departmentsResult.data?.rows ?? []).map(
               (department) => ({ id: department.id, name: department.name })
             )}
+            beds={beds}
           />
         )}
       </PageSection>

@@ -68,6 +68,26 @@ export const bedStatusSchema = z.object({
 
 export type BedStatusInput = z.infer<typeof bedStatusSchema>;
 
+const manualBedCreateStatus = z.enum(["available", "reserved", "maintenance"]);
+
+export const bedCreateSchema = z.object({
+  roomId: z.string().trim().regex(UUID_PATTERN, "Select a valid room."),
+  bedNumber: z
+    .string()
+    .trim()
+    .min(1, "Enter a bed number.")
+    .max(30, "Keep the bed number under 30 characters."),
+  status: manualBedCreateStatus,
+});
+
+export type BedCreateInput = z.infer<typeof bedCreateSchema>;
+
+export const bedRemoveSchema = z.object({
+  bedId: z.string().trim().regex(UUID_PATTERN, "Select a valid bed."),
+});
+
+export type BedRemoveInput = z.infer<typeof bedRemoveSchema>;
+
 export const staffUpdateSchema = z.object({
   staffId: z
     .string()

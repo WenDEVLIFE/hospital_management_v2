@@ -5,11 +5,108 @@ import { revalidatePath } from "next/cache";
 import { pgErrorMessage } from "@/lib/data/result";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  bedCreateSchema,
+  bedRemoveSchema,
   bedStatusSchema,
   roomUpdateSchema,
+  type BedCreateInput,
+  type BedRemoveInput,
   type BedStatusInput,
   type RoomUpdateInput,
 } from "@/lib/validations/organisation";
+
+function bedErrorMessage(error: {
+  code?: string | null;
+  message?: string | null;
+}): string {
+  const message = (error.message ?? "").toLowerCase();
+
+  if (error.code === "23505") {
+    return "That bed number already exists in this room.";
+  }
+
+  if (message.includes("bed not found")) {
+    return "The bed could not be found.";
+  }
+
+  if (message.includes("room not found")) {
+    return "The room could not be found.";
+  }
+
+  if (message.includes("bed number is required")) {
+    return "Enter a bed number.";
+  }
+
+  if (
+    message.includes("active patient assignment") ||
+    message.includes("bed is occupied")
+  ) {
+    return "This bed has a patient. Discharge or transfer the patient first.";
+  }
+
+  if (message.includes("unsupported bed status")) {
+    return "Select a valid bed status.";
+  }
+
+  return pgErrorMessage(error.code ?? "UNKNOWN");
+}
+
+export async function addBedAction(input: BedCreateInput) {
+  const parsed = bedCreateSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Check the bed details.",
+    } as const;
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.rpc("add_bed", {
+    p_room_id: value.roomId,
+    p_bed_number: value.bedNumber,
+    p_status: value.status,
+  });
+
+  if (error) {
+    return { ok: false, formError: bedErrorMessage(error) } as const;
+  }
+
+  revalidatePath("/rooms-beds");
+  revalidatePath("/admissions/new");
+  revalidatePath("/admissions/transfer");
+  revalidatePath("/dashboard");
+
+  return { ok: true } as const;
+}
+
+export async function removeBedAction(input: BedRemoveInput) {
+  const parsed = bedRemoveSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Select a valid bed.",
+    } as const;
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.rpc("remove_bed", {
+    p_bed_id: parsed.data.bedId,
+  });
+
+  if (error) {
+    return { ok: false, formError: bedErrorMessage(error) } as const;
+  }
+
+  revalidatePath("/rooms-beds");
+  revalidatePath("/admissions/new");
+  revalidatePath("/admissions/transfer");
+  revalidatePath("/dashboard");
+
+  return { ok: true } as const;
+}
 
 function roomErrorMessage(error: {
   code?: string | null;
