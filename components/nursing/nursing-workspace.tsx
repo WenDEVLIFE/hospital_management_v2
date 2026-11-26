@@ -5,21 +5,29 @@ import {
   CheckCircleIcon,
   ClipboardListIcon,
   HeartPulseIcon,
+  UserRoundedIcon,
 } from "@solar-icons/react/linear";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { useCan } from "@/components/providers/permission-provider";
+import {
+  useCan,
+  usePermissions,
+} from "@/components/providers/permission-provider";
 import { formatDateTime, formatIdentifier } from "@/lib/format";
 import type { NursingAssignmentRow, VitalSigns } from "@/types/hospital";
 
 import { AddNursingNoteDialog } from "./add-nursing-note-dialog";
+import { AssignNurseDialog } from "./assign-nurse-dialog";
+import { RecordAssessmentDialog } from "./record-assessment-dialog";
 import { RecordVitalsDialog } from "./record-vitals-dialog";
 
 export interface NursingWorkspaceProps {
   rows: NursingAssignmentRow[];
   staffNamesByUserId: Record<string, string>;
+  nurses: Array<{ id: string; full_name: string }>;
+  currentStaffId: string | null;
 }
 
 function buildVitalMetrics(vital: VitalSigns) {
@@ -79,13 +87,18 @@ function recorderName(id: string, names: Record<string, string>) {
 export function NursingWorkspace({
   rows,
   staffNamesByUserId,
+  nurses,
+  currentStaffId,
 }: NursingWorkspaceProps) {
   const [selectedPatientId, setSelectedPatientId] = React.useState<
     string | null
   >(rows[0]?.patient_id ?? null);
   const [vitalsOpen, setVitalsOpen] = React.useState(false);
   const [noteOpen, setNoteOpen] = React.useState(false);
+  const [assignOpen, setAssignOpen] = React.useState(false);
+  const [assessmentOpen, setAssessmentOpen] = React.useState(false);
   const can = useCan();
+  const { isAdmin } = usePermissions();
 
   const selected =
     rows.find((row) => row.patient_id === selectedPatientId) ?? rows[0] ?? null;
@@ -93,6 +106,10 @@ export function NursingWorkspace({
   if (!selected) {
     return null;
   }
+
+  const canChart =
+    isAdmin ||
+    (currentStaffId !== null && selected.assigned_staff_id === currentStaffId);
 
   const latestVitals = selected.latest_vitals;
   const latestRecorder = latestVitals
@@ -105,11 +122,10 @@ export function NursingWorkspace({
         <div className="min-w-0 rounded-md border border-hospital-border bg-white">
           <div className="border-b border-hospital-border-subtle p-4">
             <h2 className="text-sm font-semibold text-hospital-text">
-              Assigned patients
+              Admitted patients
             </h2>
             <p className="mt-1 text-xs text-hospital-text-muted">
-              {rows.length} {rows.length === 1 ? "patient" : "patients"} under
-              your assignment.
+              {rows.length} {rows.length === 1 ? "patient" : "patients"} admitted.
             </p>
           </div>
 
@@ -203,23 +219,63 @@ export function NursingWorkspace({
                     ? ` \u00b7 Assigned nurse ${selected.assigned_staff_name}`
                     : ""}
                 </p>
+                {!canChart ? (
+                  <p className="mt-2 text-[11px] font-medium text-amber-800">
+                    Not assigned to this patient. Assign a nurse before charting
+                    vitals, assessments, or notes.
+                  </p>
+                ) : null}
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                {can("nursing.assign") ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => setAssignOpen(true)}
+                  >
+                    <UserRoundedIcon className="size-4" aria-hidden="true" />
+                    Assign nurse
+                  </Button>
+                ) : null}
                 {can("vital_signs.record") ? (
                   <Button
                     onClick={() => setVitalsOpen(true)}
-                    disabled={!selected.encounter_id}
+                    disabled={!canChart || !selected.encounter_id}
+                    title={
+                      !canChart
+                        ? "Assign a nurse to this patient first."
+                        : undefined
+                    }
                   >
                     <HeartPulseIcon className="size-4" aria-hidden="true" />
                     Record vitals
+                  </Button>
+                ) : null}
+                {can("nursing.assessment.create") ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => setAssessmentOpen(true)}
+                    disabled={!canChart || !selected.encounter_id}
+                    title={
+                      !canChart
+                        ? "Assign a nurse to this patient first."
+                        : undefined
+                    }
+                  >
+                    <ClipboardListIcon className="size-4" aria-hidden="true" />
+                    Record assessment
                   </Button>
                 ) : null}
                 {can("nursing.notes.create") ? (
                   <Button
                     variant="secondary"
                     onClick={() => setNoteOpen(true)}
-                    disabled={!selected.encounter_id}
+                    disabled={!canChart || !selected.encounter_id}
+                    title={
+                      !canChart
+                        ? "Assign a nurse to this patient first."
+                        : undefined
+                    }
                   >
                     <ClipboardListIcon className="size-4" aria-hidden="true" />
                     Add nursing note
@@ -329,6 +385,26 @@ export function NursingWorkspace({
         encounterId={selected.encounter_id ?? ""}
         patientName={selected.patient_name}
         onClose={() => setNoteOpen(false)}
+      />
+
+      <AssignNurseDialog
+        key={`assign-${assignOpen ? selected.patient_id : "closed"}`}
+        open={assignOpen}
+        patientId={selected.patient_id}
+        patientName={selected.patient_name}
+        nurses={nurses}
+        currentStaffId={selected.assigned_staff_id}
+        currentStaffName={selected.assigned_staff_name}
+        onClose={() => setAssignOpen(false)}
+      />
+
+      <RecordAssessmentDialog
+        key={`assessment-${assessmentOpen ? selected.patient_id : "closed"}`}
+        open={assessmentOpen}
+        patientId={selected.patient_id}
+        encounterId={selected.encounter_id ?? ""}
+        patientName={selected.patient_name}
+        onClose={() => setAssessmentOpen(false)}
       />
     </>
   );

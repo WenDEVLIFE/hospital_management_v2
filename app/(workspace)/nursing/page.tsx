@@ -14,16 +14,33 @@ import {
   getNursingStats,
   listNursingAssignments,
 } from "@/lib/data/nursing";
-import { listStaff } from "@/lib/data/staff";
+import { getCurrentStaffId, listNurses, listStaff } from "@/lib/data/staff";
 
 export default async function NursingPage() {
-  const [assignmentsResult, statsResult, staffResult] = await Promise.all([
+  const [
+    assignmentsResult,
+    statsResult,
+    staffResult,
+    nursesResult,
+    currentStaffId,
+  ] = await Promise.all([
     listNursingAssignments(),
     getNursingStats(),
     listStaff({ pageSize: 100 }),
+    listNurses(),
+    getCurrentStaffId(),
   ]);
 
-  const assignments = assignmentsResult.data ?? [];
+  const nurseNamesById = new Map(
+    (nursesResult.data ?? []).map((nurse) => [nurse.id, nurse.full_name])
+  );
+
+  const assignments = (assignmentsResult.data ?? []).map((row) => ({
+    ...row,
+    assigned_staff_name: row.assigned_staff_id
+      ? nurseNamesById.get(row.assigned_staff_id) ?? null
+      : null,
+  }));
 
   const staffNamesByUserId: Record<string, string> = {};
 
@@ -69,14 +86,16 @@ export default async function NursingPage() {
           <PageSection>
             <EmptyState
               icon={<UserRoundedIcon className="size-5" aria-hidden="true" />}
-              title="No assigned patients"
-              description="Patients assigned to you will appear here."
+              title="No admitted patients"
+              description="Admitted patients will appear here once they are assigned to the ward."
             />
           </PageSection>
         ) : (
           <NursingWorkspace
             rows={assignments}
             staffNamesByUserId={staffNamesByUserId}
+            nurses={nursesResult.data ?? []}
+            currentStaffId={currentStaffId}
           />
         )
       ) : null}

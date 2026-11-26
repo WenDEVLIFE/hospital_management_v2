@@ -37,12 +37,10 @@ type AdmissionJoinRow = {
   }> | null;
 };
 
-type CareAssignmentJoinRow = {
+type CareAssignmentRow = {
   patient_id: string;
+  staff_id: string;
   assigned_at: string;
-  staff_profiles: Relation<{
-    profiles: Relation<{ full_name: string }>;
-  }>;
 };
 
 function firstRelation<T>(value: Relation<T>): T | null {
@@ -114,9 +112,7 @@ const loadNursingAssignments = cache(
           .in("patient_id", patientIds),
         supabase
           .from("patient_care_assignments")
-          .select(
-            "patient_id, assigned_at, staff_profiles!inner(profiles!staff_profiles_user_id_fkey(full_name))"
-          )
+          .select("patient_id, staff_id, assigned_at")
           .is("ended_at", null)
           .ilike("assignment_type", "%nurse%")
           .in("patient_id", patientIds)
@@ -158,7 +154,7 @@ const loadNursingAssignments = cache(
       }
     }
 
-    const nurseByPatient = new Map<string, string>();
+    const nurseIdByPatient = new Map<string, string>();
 
     const encounterByAdmission = new Map<string, string>();
 
@@ -181,17 +177,12 @@ const loadNursingAssignments = cache(
     }
 
     if (!careResult.error) {
-      for (const care of (careResult.data ?? []) as CareAssignmentJoinRow[]) {
-        if (nurseByPatient.has(care.patient_id)) {
+      for (const care of (careResult.data ?? []) as CareAssignmentRow[]) {
+        if (nurseIdByPatient.has(care.patient_id)) {
           continue;
         }
 
-        const staff = firstRelation(care.staff_profiles);
-        const profile = staff ? firstRelation(staff.profiles) : null;
-
-        if (profile?.full_name) {
-          nurseByPatient.set(care.patient_id, profile.full_name);
-        }
+        nurseIdByPatient.set(care.patient_id, care.staff_id);
       }
     }
 
@@ -218,7 +209,8 @@ const loadNursingAssignments = cache(
         department_name: department?.name ?? "Unknown department",
         room_number: room?.room_number ?? null,
         bed_number: bed?.bed_number ?? null,
-        assigned_staff_name: nurseByPatient.get(admission.patient_id) ?? null,
+        assigned_staff_id: nurseIdByPatient.get(admission.patient_id) ?? null,
+        assigned_staff_name: null,
         latest_vitals:
           latestVitalsByPatient.get(admission.patient_id) ?? null,
         // No nursing task table exists yet. The schema records completed
@@ -249,7 +241,7 @@ export async function getNursingStats(): Promise<DataResult<NursingStats>> {
   const stats = emptyStats();
   const today = manilaDate(new Date().toISOString());
 
-  stats.assignedPatients = rows.length;
+  stats.assignedPatients = rows.filter((row) => row.assigned_staff_id).length;
 
   for (const row of rows) {
     stats.pendingAssessments += row.pending_assessments;

@@ -2136,6 +2136,7 @@ export type NursingAssignmentRow = {
   department_name: string;
   room_number: string | null;
   bed_number: string | null;
+  assigned_staff_id: string | null;
   assigned_staff_name: string | null;
   latest_vitals: VitalSigns | null;
   pending_assessments: number;

@@ -6483,6 +6483,27 @@ export type Database = {
         Args: { p_encounter_id: string; p_note: string; p_patient_id: string }
         Returns: string
       }
+      assign_nurse: {
+        Args: { p_patient_id: string; p_staff_id: string }
+        Returns: string
+      }
+      list_nurses: {
+        Args: never
+        Returns: Array<{ id: string; full_name: string }>
+      }
+      record_nursing_assessment: {
+        Args: {
+          p_patient_id: string
+          p_encounter_id: string
+          p_assessment_type: string
+          p_notes?: string
+        }
+        Returns: string
+      }
+      unassign_nurse: {
+        Args: { p_patient_id: string }
+        Returns: undefined
+      }
       adjust_inventory: {
         Args: {
           p_batch_id?: string

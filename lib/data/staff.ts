@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import type {
   PhysicianOption,
   StaffListRow,
@@ -124,6 +126,41 @@ export async function listPhysicians(): Promise<
 
   return { data: rows, error: null };
 }
+
+export type NurseOption = {
+  id: string;
+  full_name: string;
+};
+
+export async function listNurses(): Promise<DataResult<NurseOption[]>> {
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("list_nurses");
+
+  if (error) {
+    return { data: null, error: toDataError(error) };
+  }
+
+  return { data: (data ?? []) as NurseOption[], error: null };
+}
+
+export const getCurrentStaffId = cache(async (): Promise<string | null> => {
+  const supabase = await getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("staff_profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  return (data as { id: string } | null)?.id ?? null;
+});
 
 export async function listStaff(
   params: {

@@ -70,3 +70,36 @@ export const nursingNoteSchema = z.object({
 });
 
 export type NursingNoteInput = z.infer<typeof nursingNoteSchema>;
+
+export const nurseAssignmentSchema = z.object({
+  patientId: z.string().trim().regex(UUID_PATTERN, "Select a valid patient."),
+  staffId: z.string().trim().regex(UUID_PATTERN, "Select a nurse."),
+});
+
+export type NurseAssignmentInput = z.infer<typeof nurseAssignmentSchema>;
+
+export const nurseUnassignSchema = z.object({
+  patientId: z.string().trim().regex(UUID_PATTERN, "Select a valid patient."),
+});
+
+export type NurseUnassignInput = z.infer<typeof nurseUnassignSchema>;
+
+export const nursingAssessmentSchema = z.object({
+  patientId: z.string().trim().regex(UUID_PATTERN, "Select a valid patient."),
+  encounterId: z
+    .string()
+    .trim()
+    .regex(UUID_PATTERN, "Select a valid encounter."),
+  assessmentType: z
+    .string()
+    .trim()
+    .min(1, "Select an assessment type.")
+    .max(80, "Keep the assessment type under 80 characters."),
+  notes: z
+    .string()
+    .trim()
+    .max(2000, "Keep the notes under 2,000 characters.")
+    .optional(),
+});
+
+export type NursingAssessmentInput = z.infer<typeof nursingAssessmentSchema>;

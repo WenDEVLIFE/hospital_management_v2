@@ -5,8 +5,14 @@ import { revalidatePath } from "next/cache";
 import { pgErrorMessage } from "@/lib/data/result";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  nurseAssignmentSchema,
+  nurseUnassignSchema,
+  nursingAssessmentSchema,
   nursingNoteSchema,
   vitalSignsSchema,
+  type NurseAssignmentInput,
+  type NurseUnassignInput,
+  type NursingAssessmentInput,
   type NursingNoteInput,
   type VitalSignsInput,
 } from "@/lib/validations/nursing";
@@ -35,6 +41,22 @@ function nursingErrorMessage(error: {
 
   if (message.includes("nursing note is required")) {
     return "Write the nursing note.";
+  }
+
+  if (message.includes("not an active nurse")) {
+    return "Select an active nurse.";
+  }
+
+  if (message.includes("patient not found")) {
+    return "The patient could not be found.";
+  }
+
+  if (message.includes("assessment type is required")) {
+    return "Select an assessment type.";
+  }
+
+  if (message.includes("insufficient permission")) {
+    return "You do not have permission to do that.";
   }
 
   return pgErrorMessage(error.code ?? "UNKNOWN");
@@ -112,6 +134,95 @@ export async function addNursingNoteAction(
     p_patient_id: value.patientId,
     p_encounter_id: value.encounterId,
     p_note: value.note,
+  });
+
+  if (error) {
+    return { ok: false, formError: nursingErrorMessage(error) };
+  }
+
+  revalidateNursing();
+
+  return { ok: true };
+}
+
+export async function assignNurseAction(
+  input: NurseAssignmentInput
+): Promise<NursingWriteResult> {
+  const parsed = nurseAssignmentSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Select a nurse.",
+    };
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.rpc("assign_nurse", {
+    p_patient_id: value.patientId,
+    p_staff_id: value.staffId,
+  });
+
+  if (error) {
+    return { ok: false, formError: nursingErrorMessage(error) };
+  }
+
+  revalidateNursing();
+  revalidatePath("/admissions");
+  revalidatePath("/medical-records");
+
+  return { ok: true };
+}
+
+export async function unassignNurseAction(
+  input: NurseUnassignInput
+): Promise<NursingWriteResult> {
+  const parsed = nurseUnassignSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError: parsed.error.issues[0]?.message ?? "Select a valid patient.",
+    };
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.rpc("unassign_nurse", {
+    p_patient_id: parsed.data.patientId,
+  });
+
+  if (error) {
+    return { ok: false, formError: nursingErrorMessage(error) };
+  }
+
+  revalidateNursing();
+  revalidatePath("/admissions");
+  revalidatePath("/medical-records");
+
+  return { ok: true };
+}
+
+export async function recordNursingAssessmentAction(
+  input: NursingAssessmentInput
+): Promise<NursingWriteResult> {
+  const parsed = nursingAssessmentSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      formError:
+        parsed.error.issues[0]?.message ?? "Check the nursing assessment.",
+    };
+  }
+
+  const value = parsed.data;
+  const supabase = await getSupabaseServerClient();
+  const { error } = await supabase.rpc("record_nursing_assessment", {
+    p_patient_id: value.patientId,
+    p_encounter_id: value.encounterId,
+    p_assessment_type: value.assessmentType,
+    p_notes: value.notes?.trim() ? value.notes.trim() : null,
   });
 
   if (error) {
