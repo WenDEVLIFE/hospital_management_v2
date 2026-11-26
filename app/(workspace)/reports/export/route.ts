@@ -3,8 +3,6 @@ import { buildReportTable, isReportKey } from "@/lib/data/report-exports";
 import { formatDateTime } from "@/lib/format";
 import { toCsv, toPdf, toXlsx } from "@/lib/reports/export-formats";
 
-export const runtime = "nodejs";
-
 const FORMATS = ["csv", "xlsx", "pdf"] as const;
 type ExportFormat = (typeof FORMATS)[number];
 
