@@ -16297,3 +16297,263 @@ grant execute on function public.unassign_nurse(uuid)
   to authenticated, service_role;
 grant execute on function public.record_nursing_assessment(uuid, uuid, text, text)
   to authenticated, service_role;
+
+
+-- ============================================================================
+-- SPMC HMS — nurse least-privilege cleanup
+-- Migration: 20261126000400_nurse_least_privilege.sql
+-- Mirrors supabase/migrations/20261126000400_nurse_least_privilege.sql;
+-- keep both in sync.
+-- ============================================================================
+
+-- ============================================================================
+-- SPMC HMS — nurse least-privilege cleanup
+-- Mirrors supabase/schema.sql; keep both in sync.
+-- ============================================================================
+-- The nurse role is clinical-only. Remove non-nursing module grants so the
+-- sidebar and route guard stay focused on ward work. Admin retains every
+-- permission through is_admin().
+
+delete from public.role_permissions rp
+using public.roles r, public.permissions p
+where rp.role_id = r.id
+  and rp.permission_id = p.id
+  and r.slug = 'nurse'
+  and p.slug = any (array[
+    'hr.view',
+    'reports.view',
+    'ambulance.view',
+    'dietary.view',
+    'housekeeping.view',
+    'equipment.view',
+    'mortuary.view',
+    'insurance.view',
+    'bed.view',
+    'surgery.create',
+    'surgery.update'
+  ]);
+
+
+-- ============================================================================
+-- SPMC HMS — nurses cannot self-assign patients
+-- Migration: 20261126000500_nurse_no_self_assign.sql
+-- Mirrors supabase/migrations/20261126000500_nurse_no_self_assign.sql;
+-- keep both in sync.
+-- ============================================================================
+
+-- ============================================================================
+-- SPMC HMS — nurses cannot self-assign patients
+-- Mirrors supabase/schema.sql; keep both in sync.
+-- ============================================================================
+-- Assigning a patient is a clinical allocation made by a physician or an
+-- administrator. Nurses receive assignments; they do not assign themselves.
+
+delete from public.role_permissions rp
+using public.roles r, public.permissions p
+where rp.role_id = r.id
+  and rp.permission_id = p.id
+  and r.slug = 'nurse'
+  and p.slug = 'nursing.assign';
+
+
+-- ============================================================================
+-- SPMC HMS — only administrators assign nurses to patients
+-- Migration: 20261126000600_admin_only_nurse_assignment.sql
+-- Mirrors supabase/migrations/20261126000600_admin_only_nurse_assignment.sql;
+-- keep both in sync.
+-- ============================================================================
+
+-- ============================================================================
+-- SPMC HMS — only administrators assign nurses to patients
+-- Mirrors supabase/schema.sql; keep both in sync.
+-- ============================================================================
+-- Patient-to-nurse allocation is an administrative decision. Nurses and
+-- physicians do not receive nursing.assign; administrators pass through
+-- is_admin().
+
+delete from public.role_permissions rp
+using public.roles r, public.permissions p
+where rp.role_id = r.id
+  and rp.permission_id = p.id
+  and r.slug in ('nurse', 'physician')
+  and p.slug = 'nursing.assign';
+
+
+-- ============================================================================
+-- SPMC HMS — remove nursing.assign; administrator-only assignment
+-- Migration: 20261126000700_drop_nursing_assign_permission.sql
+-- Mirrors supabase/migrations/20261126000700_drop_nursing_assign_permission.sql;
+-- keep both in sync.
+-- ============================================================================
+
+-- ============================================================================
+-- SPMC HMS — remove nursing.assign; administrator-only assignment
+-- Mirrors supabase/schema.sql; keep both in sync.
+-- ============================================================================
+-- Assignment is a hospital-administration action. The permission slug is
+-- removed entirely; the RPCs gate on public.is_admin().
+
+create or replace function public.list_nurses()
+returns table (id uuid, full_name text)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Insufficient permission' using errcode = '42501';
+  end if;
+
+  return query
+    select
+      sp.id,
+      btrim(concat_ws(' ', sp.first_name, sp.middle_name, sp.last_name))::text
+    from public.staff_profiles sp
+    join public.profiles pr on pr.id = sp.user_id
+    join public.user_roles ur on ur.user_id = sp.user_id
+    join public.roles r on r.id = ur.role_id
+    where r.slug = 'nurse'
+      and sp.is_active
+      and pr.is_active
+    order by sp.last_name, sp.first_name;
+end;
+$$;
+
+create or replace function public.assign_nurse(
+  p_patient_id uuid,
+  p_staff_id uuid
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor uuid := auth.uid();
+  v_assignment_id uuid;
+begin
+  if v_actor is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  if not public.is_admin() then
+    raise exception 'Insufficient permission' using errcode = '42501';
+  end if;
+
+  if not exists (
+    select 1 from public.patients where id = p_patient_id
+  ) then
+    raise exception 'Patient not found' using errcode = '22023';
+  end if;
+
+  if not exists (
+    select 1
+    from public.staff_profiles sp
+    join public.profiles pr on pr.id = sp.user_id
+    join public.user_roles ur on ur.user_id = sp.user_id
+    join public.roles r on r.id = ur.role_id
+    where sp.id = p_staff_id
+      and sp.is_active
+      and pr.is_active
+      and r.slug = 'nurse'
+  ) then
+    raise exception 'Selected staff is not an active nurse'
+      using errcode = '22023';
+  end if;
+
+  update public.patient_care_assignments
+  set ended_at = now()
+  where patient_id = p_patient_id
+    and ended_at is null
+    and assignment_type ilike '%nurse%';
+
+  insert into public.patient_care_assignments (
+    patient_id, staff_id, assignment_type, assigned_by
+  )
+  values (
+    p_patient_id, p_staff_id, 'primary_nurse', v_actor
+  )
+  returning id into v_assignment_id;
+
+  insert into public.audit_logs (
+    actor_id, action, entity_type, entity_id, description, metadata
+  )
+  values (
+    v_actor,
+    'care.assign_nurse',
+    'patient',
+    p_patient_id,
+    'Assigned a nurse to a patient.',
+    jsonb_build_object(
+      'source', 'assign_nurse',
+      'staff_id', p_staff_id,
+      'assignment_id', v_assignment_id
+    )
+  );
+
+  return v_assignment_id;
+end;
+$$;
+
+create or replace function public.unassign_nurse(p_patient_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor uuid := auth.uid();
+begin
+  if v_actor is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  if not public.is_admin() then
+    raise exception 'Insufficient permission' using errcode = '42501';
+  end if;
+
+  if not exists (
+    select 1 from public.patients where id = p_patient_id
+  ) then
+    raise exception 'Patient not found' using errcode = '22023';
+  end if;
+
+  update public.patient_care_assignments
+  set ended_at = now()
+  where patient_id = p_patient_id
+    and ended_at is null
+    and assignment_type ilike '%nurse%';
+
+  insert into public.audit_logs (
+    actor_id, action, entity_type, entity_id, description, metadata
+  )
+  values (
+    v_actor,
+    'care.unassign_nurse',
+    'patient',
+    p_patient_id,
+    'Removed the nurse assignment for a patient.',
+    jsonb_build_object('source', 'unassign_nurse')
+  );
+end;
+$$;
+
+revoke all on function public.list_nurses() from public;
+revoke all on function public.assign_nurse(uuid, uuid) from public;
+revoke all on function public.unassign_nurse(uuid) from public;
+
+grant execute on function public.list_nurses()
+  to authenticated, service_role;
+grant execute on function public.assign_nurse(uuid, uuid)
+  to authenticated, service_role;
+grant execute on function public.unassign_nurse(uuid)
+  to authenticated, service_role;
+
+-- Drop the permission slug and any lingering grants.
+delete from public.role_permissions rp
+using public.permissions p
+where rp.permission_id = p.id
+  and p.slug = 'nursing.assign';
+
+delete from public.permissions where slug = 'nursing.assign';

@@ -99,6 +99,7 @@ export function NursingWorkspace({
   const [assessmentOpen, setAssessmentOpen] = React.useState(false);
   const can = useCan();
   const { isAdmin } = usePermissions();
+  const canAssign = isAdmin;
 
   const selected =
     rows.find((row) => row.patient_id === selectedPatientId) ?? rows[0] ?? null;
@@ -122,10 +123,11 @@ export function NursingWorkspace({
         <div className="min-w-0 rounded-md border border-hospital-border bg-white">
           <div className="border-b border-hospital-border-subtle p-4">
             <h2 className="text-sm font-semibold text-hospital-text">
-              Admitted patients
+              {canAssign ? "Admitted patients" : "My patients"}
             </h2>
             <p className="mt-1 text-xs text-hospital-text-muted">
-              {rows.length} {rows.length === 1 ? "patient" : "patients"} admitted.
+              {rows.length} {rows.length === 1 ? "patient" : "patients"}{" "}
+              {canAssign ? "admitted" : "assigned to you"}.
             </p>
           </div>
 
@@ -221,14 +223,15 @@ export function NursingWorkspace({
                 </p>
                 {!canChart ? (
                   <p className="mt-2 text-[11px] font-medium text-amber-800">
-                    Not assigned to this patient. Assign a nurse before charting
-                    vitals, assessments, or notes.
+                    {canAssign
+                      ? "No nurse is assigned to this patient. Assign one before nursing charting."
+                      : "You are not assigned to this patient."}
                   </p>
                 ) : null}
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {can("nursing.assign") ? (
+                {canAssign ? (
                   <Button
                     variant="secondary"
                     onClick={() => setAssignOpen(true)}

@@ -4,18 +4,8 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- Permission
+-- Assignment is administrator-only (public.is_admin()); no permission slug.
 -- ----------------------------------------------------------------------------
-insert into public.permissions (slug)
-values ('nursing.assign')
-on conflict (slug) do nothing;
-
-insert into public.role_permissions (role_id, permission_id)
-select r.id, p.id
-from public.roles r
-join public.permissions p on p.slug = 'nursing.assign'
-where r.slug in ('nurse', 'physician')
-on conflict do nothing;
 
 -- ----------------------------------------------------------------------------
 -- Let nursing staff read care assignments (previously admin/physician only)
@@ -50,7 +40,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if not public.has_permission('nursing.assign') then
+  if not public.is_admin() then
     raise exception 'Insufficient permission' using errcode = '42501';
   end if;
 
@@ -89,7 +79,7 @@ begin
     raise exception 'Authentication required' using errcode = '42501';
   end if;
 
-  if not public.has_permission('nursing.assign') then
+  if not public.is_admin() then
     raise exception 'Insufficient permission' using errcode = '42501';
   end if;
 
@@ -164,7 +154,7 @@ begin
     raise exception 'Authentication required' using errcode = '42501';
   end if;
 
-  if not public.has_permission('nursing.assign') then
+  if not public.is_admin() then
     raise exception 'Insufficient permission' using errcode = '42501';
   end if;
 
