@@ -7049,6 +7049,17 @@ export type Database = {
         Args: { p_patch: Json; p_patient_id: string }
         Returns: string
       }
+      update_room: {
+        Args: {
+          p_room_id: string
+          p_department_id: string
+          p_room_number: string
+          p_room_type?: string
+          p_floor_number?: string
+          p_is_active?: boolean
+        }
+        Returns: undefined
+      }
       update_staff: {
         Args: { p_patch: Json; p_staff_id: string }
         Returns: string

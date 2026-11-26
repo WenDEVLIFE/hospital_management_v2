@@ -62,11 +62,25 @@ function sortNumeric(left: string, right: string): number {
   return left.localeCompare(right, "en", { numeric: true, sensitivity: "base" });
 }
 
-export interface BedAvailabilityBoardProps {
-  beds: BedBoardRow[];
+export interface BedAvailabilityRoom {
+  id: string;
+  room_number: string;
+  department_id: string;
+  department_name: string;
+  room_type: string | null;
+  floor_number: string | null;
+  bed_count: number;
 }
 
-export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
+export interface BedAvailabilityBoardProps {
+  beds: BedBoardRow[];
+  rooms: BedAvailabilityRoom[];
+}
+
+export function BedAvailabilityBoard({
+  beds,
+  rooms,
+}: BedAvailabilityBoardProps) {
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState("");
   const [department, setDepartment] = React.useState("");
@@ -86,10 +100,16 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
       map.set(bed.department_id, bed.department_name);
     }
 
+    for (const room of rooms) {
+      if (!map.has(room.department_id)) {
+        map.set(room.department_id, room.department_name);
+      }
+    }
+
     return [...map.entries()]
       .map(([value, label]) => ({ value, label }))
       .sort((left, right) => left.label.localeCompare(right.label));
-  }, [beds]);
+  }, [beds, rooms]);
 
   const visibleBeds = React.useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -113,6 +133,35 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
     });
   }, [beds, query, status, department]);
 
+  const emptyRooms = React.useMemo(
+    () => rooms.filter((room) => room.bed_count === 0),
+    [rooms]
+  );
+
+  const visibleEmptyRooms = React.useMemo(() => {
+    const needle = query.trim().toLowerCase();
+
+    return emptyRooms.filter((room) => {
+      if (status) {
+        return false;
+      }
+
+      if (department && room.department_id !== department) {
+        return false;
+      }
+
+      if (!needle) {
+        return true;
+      }
+
+      return `${room.room_number} ${room.room_type ?? ""} ${
+        room.floor_number ?? ""
+      } ${room.department_name}`
+        .toLowerCase()
+        .includes(needle);
+    });
+  }, [emptyRooms, query, status, department]);
+
   const roomGroups = React.useMemo<RoomGroup[]>(() => {
     const groups = new Map<string, RoomGroup>();
 
@@ -134,6 +183,21 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
       });
     }
 
+    for (const room of visibleEmptyRooms) {
+      if (groups.has(room.id)) {
+        continue;
+      }
+
+      groups.set(room.id, {
+        roomId: room.id,
+        roomNumber: room.room_number,
+        departmentName: room.department_name,
+        roomType: room.room_type,
+        floorNumber: room.floor_number,
+        beds: [],
+      });
+    }
+
     return [...groups.values()]
       .map((group) => ({
         ...group,
@@ -142,7 +206,7 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
         ),
       }))
       .sort((left, right) => sortNumeric(left.roomNumber, right.roomNumber));
-  }, [visibleBeds]);
+  }, [visibleBeds, visibleEmptyRooms]);
 
   const openBedDialog = (bed: BedBoardRow) => {
     setSelectedBed(bed);
@@ -234,7 +298,7 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
         </p>
       </div>
 
-      {beds.length === 0 ? (
+      {beds.length === 0 && emptyRooms.length === 0 ? (
         <EmptyState
           icon={<BedIcon className="size-5" aria-hidden="true" />}
           title="No beds configured"
@@ -295,6 +359,12 @@ export function BedAvailabilityBoard({ beds }: BedAvailabilityBoardProps) {
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 lg:grid-cols-4 min-[1440px]:grid-cols-6">
+                      {room.beds.length === 0 ? (
+                        <p className="rounded-md border border-dashed border-hospital-border bg-hospital-surface-muted px-3 py-4 text-[11px] text-hospital-text-muted sm:col-span-2 lg:col-span-4 min-[1440px]:col-span-6">
+                          No beds have been added to this room yet.
+                        </p>
+                      ) : null}
+
                       {room.beds.map((bed) => {
                         const content = (
                           <>

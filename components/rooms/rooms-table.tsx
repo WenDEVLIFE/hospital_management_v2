@@ -1,9 +1,13 @@
 "use client";
 
+import * as React from "react";
 import { Buildings2Icon } from "@solar-icons/react/linear";
 
 import { RecordTable, type Column } from "@/components/module/record-table";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useCan } from "@/components/providers/permission-provider";
+import { EditRoomDialog } from "./edit-room-dialog";
 import type { Room } from "@/types/hospital";
 
 export type RoomTableRow = Room & {
@@ -13,9 +17,13 @@ export type RoomTableRow = Room & {
 
 export interface RoomsTableProps {
   rows: RoomTableRow[];
+  departments: Array<{ id: string; name: string }>;
 }
 
-export function RoomsTable({ rows }: RoomsTableProps) {
+export function RoomsTable({ rows, departments }: RoomsTableProps) {
+  const canManage = useCan()("bed.manage");
+  const [editing, setEditing] = React.useState<RoomTableRow | null>(null);
+
   const columns: Column<RoomTableRow>[] = [
     {
       key: "room_number",
@@ -73,21 +81,46 @@ export function RoomsTable({ rows }: RoomsTableProps) {
     },
   ];
 
+  if (canManage) {
+    columns.push({
+      key: "actions",
+      header: "",
+      cell: (row) => (
+        <div className="flex justify-end">
+          <Button variant="secondary" onClick={() => setEditing(row)}>
+            Edit
+          </Button>
+        </div>
+      ),
+    });
+  }
+
   return (
-    <RecordTable
-      rows={rows}
-      columns={columns}
-      rowKey={(row) => row.id}
-      caption="Hospital rooms"
-      searchPlaceholder="Search by room, type, floor, or department"
-      searchAccessor={(row) =>
-        `${row.room_number} ${row.room_type ?? ""} ${row.floor_number ?? ""} ${
-          row.department_name
-        }`
-      }
-      emptyTitle="No rooms found"
-      emptyDescription="Rooms will appear here once they are registered."
-      emptyIcon={<Buildings2Icon className="size-5" aria-hidden="true" />}
-    />
+    <>
+      <RecordTable
+        rows={rows}
+        columns={columns}
+        rowKey={(row) => row.id}
+        caption="Hospital rooms"
+        searchPlaceholder="Search by room, type, floor, or department"
+        searchAccessor={(row) =>
+          `${row.room_number} ${row.room_type ?? ""} ${row.floor_number ?? ""} ${
+            row.department_name
+          }`
+        }
+        emptyTitle="No rooms found"
+        emptyDescription="Rooms will appear here once they are registered."
+        emptyIcon={<Buildings2Icon className="size-5" aria-hidden="true" />}
+      />
+
+      {editing ? (
+        <EditRoomDialog
+          key={editing.id}
+          room={editing}
+          departments={departments}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
+    </>
   );
 }

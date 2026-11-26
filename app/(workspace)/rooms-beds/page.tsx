@@ -127,7 +127,12 @@ export default async function RoomsBedsPage() {
         {roomsResult.error ? (
           <ErrorState error={roomsResult.error} />
         ) : (
-          <RoomsTable rows={roomRows} />
+          <RoomsTable
+            rows={roomRows}
+            departments={(departmentsResult.data?.rows ?? []).map(
+              (department) => ({ id: department.id, name: department.name })
+            )}
+          />
         )}
       </PageSection>
 
@@ -139,7 +144,18 @@ export default async function RoomsBedsPage() {
           {bedsResult.error ? (
             <ErrorState error={bedsResult.error} />
           ) : (
-            <BedAvailabilityBoard beds={beds} />
+            <BedAvailabilityBoard
+              beds={beds}
+              rooms={roomRows.map((room) => ({
+                id: room.id,
+                room_number: room.room_number,
+                department_id: room.department_id,
+                department_name: room.department_name,
+                room_type: room.room_type,
+                floor_number: room.floor_number,
+                bed_count: room.bed_count,
+              }))}
+            />
           )}
         </PageSection>
       </div>
