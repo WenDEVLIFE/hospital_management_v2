@@ -65,14 +65,13 @@ const REPORT_CARDS: ReportCard[] = [
     description: "Bed availability and occupancy by department.",
     category: "Admission",
     href: "/reports?category=bed-occupancy",
-    formats: ["PDF", "XLSX"],
+    formats: ["PDF", "XLSX", "CSV"],
     columns: [
       "Department",
       "Room number",
       "Bed number",
       "Bed status",
-      "Occupied days",
-      "Occupancy rate",
+      "Patient",
     ],
   },
   {
@@ -85,11 +84,10 @@ const REPORT_CARDS: ReportCard[] = [
     columns: [
       "Order number",
       "Patient name",
-      "Test name",
+      "Test(s)",
       "Priority",
       "Ordered at",
-      "Result status",
-      "Verified at",
+      "Status",
     ],
   },
   {
@@ -102,10 +100,10 @@ const REPORT_CARDS: ReportCard[] = [
     columns: [
       "Prescription number",
       "Patient name",
-      "Medication",
-      "Quantity dispensed",
-      "Dispensed by",
-      "Dispensed at",
+      "Medication(s)",
+      "Items",
+      "Status",
+      "Prescription date",
     ],
   },
   {
@@ -148,7 +146,7 @@ const REPORT_CARDS: ReportCard[] = [
     description: "Staff roster and department assignments.",
     category: "Staff",
     href: "/reports?category=staff",
-    formats: ["PDF", "XLSX"],
+    formats: ["PDF", "XLSX", "CSV"],
     columns: [
       "Staff number",
       "Staff name",

@@ -17,13 +17,11 @@ import {
   UserRoundedIcon,
 } from "@solar-icons/react/linear";
 
-import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import type { ReportCard } from "@/types/hospital";
-
 export interface ReportsCategoryGridProps {
   cards: ReportCard[];
 }
@@ -44,18 +42,37 @@ function iconForReport(title: string) {
   return DocumentTextIcon;
 }
 
+function reportKey(card: ReportCard): string {
+  const query = card.href.split("?")[1] ?? "";
+  const params = new URLSearchParams(query);
+
+  return params.get("category") ?? "";
+}
+
+function downloadReport(card: ReportCard, format: string) {
+  const category = reportKey(card);
+  const url = `/reports/export?category=${encodeURIComponent(
+    category
+  )}&format=${format.toLowerCase()}`;
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = "";
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 export function ReportsCategoryGrid({ cards }: ReportsCategoryGridProps) {
   const [selected, setSelected] = React.useState<ReportCard | null>(null);
-  const [exportRequested, setExportRequested] = React.useState(false);
 
   const openReport = React.useCallback((card: ReportCard) => {
-    setExportRequested(false);
     setSelected(card);
   }, []);
 
   const close = React.useCallback(() => {
     setSelected(null);
-    setExportRequested(false);
   }, []);
 
   if (cards.length === 0) {
@@ -117,24 +134,9 @@ export function ReportsCategoryGrid({ cards }: ReportsCategoryGridProps) {
         description={selected?.description}
         size="md"
         footer={
-          exportRequested ? (
-            <Button variant="secondary" onClick={close}>
-              Close
-            </Button>
-          ) : (
-            <>
-              <Button variant="secondary" onClick={close}>
-                Close
-              </Button>
-              <Button
-                onClick={() => setExportRequested(true)}
-                className="cursor-pointer"
-              >
-                <DownloadIcon className="size-4" aria-hidden="true" />
-                Export
-              </Button>
-            </>
-          )
+          <Button variant="secondary" onClick={close}>
+            Close
+          </Button>
         }
       >
         {selected ? (
@@ -182,12 +184,24 @@ export function ReportsCategoryGrid({ cards }: ReportsCategoryGridProps) {
               </ul>
             </div>
 
-            {exportRequested ? (
-              <Alert variant="info" title="Export unavailable">
-                This action is not available yet because the Supabase backend is
-                not connected.
-              </Alert>
-            ) : null}
+            <div className="border-t border-hospital-border-subtle pt-3">
+              <p className="text-[11px] font-medium text-hospital-text-muted">
+                Download
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {selected.formats.map((format) => (
+                  <Button
+                    key={format}
+                    variant="secondary"
+                    onClick={() => downloadReport(selected, format)}
+                    className="cursor-pointer"
+                  >
+                    <DownloadIcon className="size-4" aria-hidden="true" />
+                    {format}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
         ) : null}
       </Modal>
