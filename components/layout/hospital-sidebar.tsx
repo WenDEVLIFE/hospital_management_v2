@@ -122,7 +122,7 @@ export function HospitalSidebar() {
       <aside
         aria-label="Main navigation"
         className={cn(
-          "hidden h-full min-h-0 shrink-0 flex-col border-r border-hospital-green-hover bg-hospital-green sm:flex",
+          "relative z-20 hidden h-full min-h-0 shrink-0 flex-col border-r border-hospital-green-hover bg-hospital-green sm:flex",
           collapsed ? "w-[72px]" : "w-64"
         )}
       >
