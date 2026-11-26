@@ -15724,3 +15724,112 @@ begin
   end loop;
 end;
 $$;
+
+-- ============================================================================
+-- SPMC HMS — module view permissions
+-- Migration: 20261126000100_module_view_permissions.sql
+-- Mirrors supabase/migrations/20261126000100_module_view_permissions.sql;
+-- keep both in sync.
+-- ============================================================================
+
+insert into public.permissions (slug)
+select slug
+from unnest(array[
+  'blood_bank.view',
+  'insurance.view',
+  'department.view',
+  'ambulance.view',
+  'dietary.view',
+  'housekeeping.view',
+  'equipment.view',
+  'mortuary.view',
+  'notification.view',
+  'reports.view',
+  'settings.view'
+]) as slug
+on conflict (slug) do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.slug = any (array[
+  'blood_bank.view', 'insurance.view', 'department.view', 'ambulance.view',
+  'dietary.view', 'housekeeping.view', 'equipment.view', 'mortuary.view',
+  'notification.view', 'reports.view', 'settings.view'
+])
+where r.slug in ('super_admin', 'hospital_admin')
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.slug = any (array[
+  'insurance.view', 'ambulance.view', 'notification.view', 'reports.view'
+])
+where r.slug = 'receptionist'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.slug = any (array[
+  'blood_bank.view', 'ambulance.view', 'dietary.view', 'mortuary.view',
+  'notification.view', 'reports.view'
+])
+where r.slug = 'physician'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.slug = any (array[
+  'blood_bank.view', 'ambulance.view', 'dietary.view', 'housekeeping.view',
+  'equipment.view', 'mortuary.view', 'notification.view', 'reports.view'
+])
+where r.slug = 'nurse'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.slug = any (array[
+  'blood_bank.view', 'notification.view', 'reports.view'
+])
+where r.slug = 'laboratory_staff'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.slug = any (array[
+  'notification.view', 'reports.view'
+])
+where r.slug = 'radiology_staff'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.slug = any (array[
+  'notification.view', 'reports.view'
+])
+where r.slug = 'pharmacist'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.slug = any (array[
+  'insurance.view', 'notification.view', 'reports.view'
+])
+where r.slug = 'billing_staff'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.slug = any (array[
+  'equipment.view', 'notification.view', 'reports.view'
+])
+where r.slug = 'inventory_staff'
+on conflict do nothing;
