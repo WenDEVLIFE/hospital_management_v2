@@ -15,6 +15,7 @@ import {
   setStaffActiveAction,
   updateStaffAction,
 } from "@/app/(workspace)/staff/actions";
+import { EMPLOYMENT_TYPES } from "@/lib/employment";
 import { formatName } from "@/lib/format";
 import { staffUpdateSchema } from "@/lib/validations/organisation";
 import type { StaffListRow } from "@/types/hospital";
@@ -307,16 +308,23 @@ export function StaffWriteDialog({
           <FormField
             label="Employment type"
             htmlFor="staff_employment_type"
-            hint="Optional."
             error={errors.employmentType}
           >
-            <Input
+            <Select
               id="staff_employment_type"
               value={values.employmentType}
+              invalid={Boolean(errors.employmentType)}
               onChange={(event) =>
                 setField("employmentType", event.target.value)
               }
-            />
+            >
+              <option value="">Select employment type</option>
+              {EMPLOYMENT_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </Select>
           </FormField>
         </div>
 

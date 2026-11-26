@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { usePermissions } from "@/components/providers/permission-provider";
 import { createStaffAction } from "@/app/(workspace)/staff/actions";
+import { EMPLOYMENT_TYPES } from "@/lib/employment";
 
 const emptyForm = {
   fullName: "",
@@ -246,11 +247,18 @@ export function StaffAddAction({
               </FormField>
 
               <FormField label="Employment type" htmlFor="staff_employment">
-                <Input
+                <Select
                   id="staff_employment"
                   value={values.employmentType}
                   onChange={(event) => set("employmentType", event.target.value)}
-                />
+                >
+                  <option value="">Select employment type</option>
+                  {EMPLOYMENT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </Select>
               </FormField>
 
               <FormField
