@@ -39,11 +39,23 @@ export default async function NewAdmissionPage() {
     }))
     .sort((left, right) => left.full_name.localeCompare(right.full_name));
 
+  const board = boardResult.data ?? [];
+
+  // An admission always targets a bed, so only departments that own beds can
+  // accept one. This excludes non-clinical departments (Billing, Administration)
+  // and diagnostic/support units that have no inpatient beds.
+  const bedDepartmentIds = new Set(
+    board.map((bed) => bed.department_id).filter(Boolean)
+  );
+
   const departments = (departmentsResult.data?.rows ?? [])
-    .filter((department) => department.is_active)
+    .filter(
+      (department) =>
+        department.is_active && bedDepartmentIds.has(department.id)
+    )
     .map((department) => ({ id: department.id, name: department.name }));
 
-  const beds = (boardResult.data ?? [])
+  const beds = board
     .filter((bed) => bed.status === "available")
     .map((bed) => ({
       id: bed.bed_id,

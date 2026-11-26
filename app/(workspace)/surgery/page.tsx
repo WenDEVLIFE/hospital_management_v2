@@ -14,6 +14,7 @@ import { SurgeryActions } from "@/components/surgery/surgery-actions";
 import { SurgeryView } from "@/components/surgery/surgery-view";
 import { SurgeryWorkflowStrip } from "@/components/surgery/surgery-workflow-strip";
 import { listDepartments } from "@/lib/data/departments";
+import { isPatientCareDepartment } from "@/lib/departments";
 import { listPatients } from "@/lib/data/patients";
 import { listPhysicians } from "@/lib/data/staff";
 import {
@@ -44,7 +45,7 @@ export default async function SurgeryPage() {
     getOperatingRoomBoard(),
     getSurgeryDetails(),
     listPatients({ pageSize: 300 }),
-    listDepartments({ pageSize: 100 }),
+    listDepartments({ pageSize: 100, isActive: true }),
     listPhysicians(),
   ]);
 
@@ -60,9 +61,12 @@ export default async function SurgeryPage() {
               full_name: patient.full_name,
               medical_record_number: patient.medical_record_number,
             }))}
-            departments={(departmentResult.data?.rows ?? []).map(
-              (department) => ({ id: department.id, name: department.name })
-            )}
+            departments={(departmentResult.data?.rows ?? [])
+              .filter((department) => isPatientCareDepartment(department.code))
+              .map((department) => ({
+                id: department.id,
+                name: department.name,
+              }))}
             rooms={(roomsResult.data ?? []).map((room) => ({
               id: room.id,
               room_name: room.room_name,
